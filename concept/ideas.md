@@ -32,6 +32,7 @@ Ideas I like from other languages:
 
 Ideas in conflict:
 - "Convention over Configuration" a la DHH vs. "Explicit better than Implicit" a la Python zen
+- Actors vs. Objects -- Can all "Objects" (Assuming something _should_ mix state and logic) really be actors?
 
 # Syntactic choices
 
