@@ -20,5 +20,5 @@ rail=./target/debug/rail
 @test "SETUP: 'rail --version' gives a version" {
     run $rail --version
     assert_success
-    assert_output "rail 0.1.0"
+    assert_output --regexp 'rail [0-9]\.[0-9]\.[0-9]'
 }
