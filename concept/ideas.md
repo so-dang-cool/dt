@@ -22,6 +22,7 @@ Ideas I like from other languages:
 - Factor's quotations (Granted, this comes from Lisp, but I really like the factor implementation)
 - Functional must-haves (map, flatMap, reduce, filter, scan)
 - Fortran's idea of "calling a function on a single value or collection just works"
+  - So... polymorphism? Or maybe single value coerces to single element list? Am I in APL territory?
 - Rust's structs/enums/unions (Again, not a first, but maybe best I've seen)
 - Rust's Traits
 - Mercury's IO
