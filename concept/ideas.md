@@ -1,3 +1,13 @@
+Guiding principles:
+
+1. **Left-to-right, top-to-bottom always.** This is a core to giving rail an understandable model. I think this is where other concatenative languages (or functional application in Haskell, etc) starts to require a galaxy brain.
+
+2. **Many UNDERSTANDABLE granular pieces.** Abstraction only works when both the interface and implementation are understandable. An interface MUST be understandable, and an implementation SHOULD be as understandable as possible.
+
+3. **Learn, don't copy.** Many other languages have great features. Learn from, but do not exactly copy features or syntax. What is the actual enjoyable thing behind it?
+
+4. **Reduce complexity.** The essence of computer programming is controlling complexity (BWK, Knuth, others). NEVER make things more complex, only pass on that complexity which is NECESSARY for solving a problem. Don't be afraid to make decisions for others on a default behavior.
+
 # Semantic choices
 
 These are ideas on semantics for a language. Syntax will likely differ from anything here
@@ -16,10 +26,10 @@ Must-haves:
   - But... Also apply this to type restrictions, generics, etc
     - `(a) -> (b)` can be type restricted as something like `(Str/a) -> (Str/b)`
 
-Ideas I like from other languages:
+Ideas I _like_ from other languages:
 - Perl's idea of having ideas like singularity/plurality baked in to the language
 - Haskell's type system (Especially things like `Monad m => a -> m a`)
-- Factor's quotations (Granted, this comes from Lisp, but I really like the factor implementation)
+- Factor's quotations (Granted, this comes from Lisp, but I really enjoy the factor implementation)
 - Functional must-haves (map, flatMap, reduce, filter, scan)
 - Fortran's idea of "calling a function on a single value or collection just works"
   - So... polymorphism? Or maybe single value coerces to single element list? Am I in APL territory?
@@ -30,6 +40,9 @@ Ideas I like from other languages:
 - Tail call recursion
 - Spread operators (esp JavaScript's)
 - Actor model from Erlang (esp spawn/receive semantics. PID lacks type information)
+- Pipe operator `|>` from languages like Elixir/F#, and `->` and `->>` from Clojure
+
+(Like != should have. This is just a list of things that make me happy.)
 
 Ideas in conflict:
 - "Convention over Configuration" a la DHH vs. "Explicit better than Implicit" a la Python zen
@@ -61,4 +74,11 @@ Also would like (or at least... want to think about):
 - optional input through default argument values (if that can even make sense)
 - function polymorphism (maybe like Haskell instances)
 
+# Experience
 
+- IDE Suggestions, Tab-completions (Through an LSP I think)
+- "Heat map" view, for when stack gets too huge
+  - Need to prevent too many things in a stack, no one can manage that
+  - Need to be configurable (per project? per file? per function?)
+- Need stack status (what types near top?) as hints when hovering
+- Rust's compiler is so helpful and positive. Take notes
