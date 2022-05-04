@@ -9,11 +9,11 @@ main =
   loop (Just [])
   >> return ()
 
-data RailTerm = RailInt Integer
-              | RailOp (Integer -> Integer -> Integer)
+data RailTerm = RailInt Double
+              | RailOp (Double -> Double -> Double)
               | RailCmd String
 
-railOps = [("+", (+)), ("-", (-)), ("*", (*)), ("/", div)]
+railOps = [("+", (+)), ("-", (-)), ("*", (*)), ("/", (/))]
 
 parseTerm :: String -> RailTerm
 parseTerm s
@@ -22,13 +22,13 @@ parseTerm s
     Just op -> RailOp op
     Nothing -> RailCmd s
 
-loop :: Maybe [Integer] -> IO (Maybe [Integer])
+loop :: Maybe [Double] -> IO (Maybe [Double])
 loop Nothing = return Nothing
 loop (Just stack) = do
   shouldExit <- isEOF
   if shouldExit
   then
-    putStrLn "end of the line" >> return Nothing
+    putStrLn "Derailed" >> return Nothing
   else do
     -- putStr ">> "
     hFlush stdout
@@ -47,7 +47,7 @@ loop (Just stack) = do
           loop (Just stack3)
       RailCmd cmd -> case cmd of
         "." -> do
-          print stack
+          print . reverse $ stack
           loop (Just stack)
         unknown -> do
           error $ "Unknown command: " ++ unknown
