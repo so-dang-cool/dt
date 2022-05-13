@@ -59,7 +59,7 @@ enum RailMathOp {
 }
 
 impl RailTerm {
-    // TODO: Convert to actual FromStr impl.
+    // TODO: Make a parser yo
     fn from_str(s: &str) -> Self {
         use RailMathOp::*;
         use RailTerm::*;
