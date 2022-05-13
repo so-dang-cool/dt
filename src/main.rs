@@ -37,14 +37,31 @@ fn main() {
 
 type Stack = Vec<i64>;
 
-struct RailOp {
-    name: String,
-    consumes: Vec<String>,
-    produces: Vec<String>,
-    op: Box<dyn FnMut(&mut Stack)>,
+struct RailOp<'a> {
+    name: &'a str,
+    consumes: &'a [&'a str],
+    produces: &'a [&'a str],
+    op: Box<dyn FnMut(&mut Stack) + 'a>,
 }
 
-impl RailOp {
+impl RailOp<'_> {
+    fn new<'a, F>(
+        name: &'a str,
+        consumes: &'a [&'a str],
+        produces: &'a [&'a str],
+        op: F,
+    ) -> RailOp<'a>
+    where
+        F: FnMut(&mut Stack) + 'a,
+    {
+        RailOp {
+            name,
+            consumes,
+            produces,
+            op: Box::new(op),
+        }
+    }
+
     fn go(&mut self, stack: &mut Stack) {
         if stack.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
@@ -64,68 +81,30 @@ impl RailOp {
     }
 }
 
-fn new_dictionary() -> Vec<RailOp> {
+fn new_dictionary() -> Vec<RailOp<'static>> {
     vec![
-        RailOp {
-            name: String::from("."),
-            consumes: vec![String::from("a")],
-            produces: vec![],
-            op: Box::new(|stack| println!("{:?}", stack.pop().unwrap())),
-        },
-        RailOp {
-            name: String::from(".s"),
-            consumes: vec![],
-            produces: vec![],
-            op: Box::new(|stack| println!("{:?}", stack)),
-        },
-        RailOp {
-            name: String::from("+"),
-            consumes: vec![String::from("i64"), String::from("i64")],
-            produces: vec![String::from("i64")],
-            op: binary_op(|a, b| a + b),
-        },
-        RailOp {
-            name: String::from("-"),
-            consumes: vec![String::from("i64"), String::from("i64")],
-            produces: vec![String::from("i64")],
-            op: binary_op(|a, b| a - b),
-        },
-        RailOp {
-            name: String::from("*"),
-            consumes: vec![String::from("i64"), String::from("i64")],
-            produces: vec![String::from("i64")],
-            op: binary_op(|a, b| a * b),
-        },
-        RailOp {
-            name: String::from("/"),
-            consumes: vec![String::from("i64"), String::from("i64")],
-            produces: vec![String::from("i64")],
-            op: binary_op(|a, b| a / b),
-        },
-        RailOp {
-            name: String::from("swap"),
-            consumes: vec![String::from("b"), String::from("a")],
-            produces: vec![String::from("a"), String::from("b")],
-            op: Box::new(|stack| {
-                let a = stack.pop().unwrap();
-                let b = stack.pop().unwrap();
-                stack.push(a);
-                stack.push(b);
-            }),
-        },
-        RailOp {
-            name: String::from("rot"),
-            consumes: vec![String::from("c"), String::from("b"), String::from("a")],
-            produces: vec![String::from("a"), String::from("c"), String::from("b")],
-            op: Box::new(|stack| {
-                let a = stack.pop().unwrap();
-                let b = stack.pop().unwrap();
-                let c = stack.pop().unwrap();
-                stack.push(a);
-                stack.push(c);
-                stack.push(b);
-            }),
-        },
+        RailOp::new(".", &["a"], &[], |stack| {
+            println!("{:?}", stack.pop().unwrap())
+        }),
+        RailOp::new(".s", &[], &[], |stack| println!("{:?}", stack)),
+        RailOp::new("+", &["i64", "i64"], &["i64"], binary_op(|a, b| a + b)),
+        RailOp::new("-", &["i64", "i64"], &["i64"], binary_op(|a, b| a - b)),
+        RailOp::new("*", &["i64", "i64"], &["i64"], binary_op(|a, b| a * b)),
+        RailOp::new("/", &["i64", "i64"], &["i64"], binary_op(|a, b| a / b)),
+        RailOp::new("swap", &["b", "a"], &["a", "b"], |stack| {
+            let a = stack.pop().unwrap();
+            let b = stack.pop().unwrap();
+            stack.push(a);
+            stack.push(b);
+        }),
+        RailOp::new("rot", &["c", "b", "a"], &["a", "c", "b"], |stack| {
+            let a = stack.pop().unwrap();
+            let b = stack.pop().unwrap();
+            let c = stack.pop().unwrap();
+            stack.push(a);
+            stack.push(c);
+            stack.push(b);
+        }),
     ]
 }
 
