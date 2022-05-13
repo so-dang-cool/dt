@@ -20,12 +20,17 @@ fn main() {
 
         editor.add_history_entry(&input);
 
-        if let Some(op) = dictionary.iter_mut().find(|op| op.name == input) {
-            op.go(&mut stack);
-        } else if let Ok(i) = input.parse::<i64>() {
-            stack.push(i);
-        } else {
-            eprintln!("Derailed: unknown term {:?}", input);
+        let terms = input.split_whitespace();
+
+        for term in terms {
+            if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
+                op.go(&mut stack);
+            } else if let Ok(i) = term.parse::<i64>() {
+                stack.push(i);
+            } else {
+                eprintln!("Derailed: unknown term {:?}", term);
+                std::process::exit(1);
+            }
         }
     }
 }
@@ -53,6 +58,8 @@ impl RailOp {
             std::process::exit(1);
         }
 
+        // TODO: Type checks
+
         (self.op)(stack);
     }
 }
@@ -61,6 +68,12 @@ fn new_dictionary() -> Vec<RailOp> {
     vec![
         RailOp {
             name: String::from("."),
+            consumes: vec![String::from("a")],
+            produces: vec![],
+            op: Box::new(|stack| println!("{:?}", stack.pop().unwrap())),
+        },
+        RailOp {
+            name: String::from(".s"),
             consumes: vec![],
             produces: vec![],
             op: Box::new(|stack| println!("{:?}", stack)),
