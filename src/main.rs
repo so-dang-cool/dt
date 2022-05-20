@@ -1,6 +1,10 @@
 use rustyline::Editor;
 
+pub const RAIL_VERSION: &str = std::env!("CARGO_PKG_VERSION");
+
 fn main() {
+    println!("rail {}", RAIL_VERSION);
+
     let mut editor = Editor::<()>::new();
 
     let mut stack: Vec<i64> = vec![];
@@ -91,6 +95,35 @@ fn new_dictionary() -> Vec<RailOp<'static>> {
         RailOp::new("-", &["i64", "i64"], &["i64"], binary_op(|a, b| a - b)),
         RailOp::new("*", &["i64", "i64"], &["i64"], binary_op(|a, b| a * b)),
         RailOp::new("/", &["i64", "i64"], &["i64"], binary_op(|a, b| a / b)),
+        RailOp::new("%", &["i64", "i64"], &["i64"], binary_op(|a, b| a % b)),
+        RailOp::new("==", &["i64", "i64"], &["bool"], binary_pred(|a, b| a == b)),
+        RailOp::new("!=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a != b)),
+        RailOp::new(">", &["i64", "i64"], &["bool"], binary_pred(|a, b| a > b)),
+        RailOp::new("<", &["i64", "i64"], &["bool"], binary_pred(|a, b| a < b)),
+        RailOp::new(">=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a >= b)),
+        RailOp::new("<=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a <= b)),
+        RailOp::new("!", &["bool"], &["bool"], unary_pred(|a| a <= 0)),
+        RailOp::new("abs", &["i64"], &["i64"], unary_op(|a| a.abs())),
+        RailOp::new(
+            "max",
+            &["i64", "i64"],
+            &["i64"],
+            binary_op(|a, b| if a >= b { a } else { b }),
+        ),
+        RailOp::new(
+            "min",
+            &["i64", "i64"],
+            &["i64"],
+            binary_op(|a, b| if a <= b { a } else { b }),
+        ),
+        RailOp::new("drop", &["a"], &[], |stack| {
+            stack.pop().unwrap();
+        }),
+        RailOp::new("dup", &["a"], &["a", "a"], |stack| {
+            let a = stack.pop().unwrap();
+            stack.push(a);
+            stack.push(a);
+        }),
         RailOp::new("swap", &["b", "a"], &["a", "b"], |stack| {
             let a = stack.pop().unwrap();
             let b = stack.pop().unwrap();
@@ -108,6 +141,19 @@ fn new_dictionary() -> Vec<RailOp<'static>> {
     ]
 }
 
+// Operations
+
+fn unary_op<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
+where
+    F: Fn(i64) -> i64 + Sized + 'a,
+{
+    Box::new(move |stack: &mut Stack| {
+        let a = stack.pop().unwrap();
+        let res = op(a);
+        stack.push(res);
+    })
+}
+
 fn binary_op<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
 where
     F: Fn(i64, i64) -> i64 + Sized + 'a,
@@ -115,7 +161,32 @@ where
     Box::new(move |stack: &mut Stack| {
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
-        let c = op(a, b);
-        stack.push(c);
+        let res = op(a, b);
+        stack.push(res);
+    })
+}
+
+// Predicates
+
+fn unary_pred<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
+where
+    F: Fn(i64) -> bool + Sized + 'a,
+{
+    Box::new(move |stack: &mut Stack| {
+        let a = stack.pop().unwrap();
+        let res = if op(a) { 1 } else { 0 };
+        stack.push(res);
+    })
+}
+
+fn binary_pred<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
+where
+    F: Fn(i64, i64) -> bool + Sized + 'a,
+{
+    Box::new(move |stack: &mut Stack| {
+        let a = stack.pop().unwrap();
+        let b = stack.pop().unwrap();
+        let res = if op(a, b) { 1 } else { 0 };
+        stack.push(res);
     })
 }
