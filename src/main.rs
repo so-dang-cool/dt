@@ -24,11 +24,14 @@ fn main() {
 
         editor.add_history_entry(&input);
 
-        let terms = input.split_whitespace();
+        let terms = input.split_whitespace().collect::<Vec<_>>();
 
         for term in terms {
             if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
                 op.go(&mut stack);
+            } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
+                let s = term.chars().skip(1).take(term.len() - 2).collect();
+                stack.push(RailTerm::String(s));
             } else if let Ok(i) = term.parse::<i64>() {
                 stack.push(RailTerm::I64(i));
             } else {
@@ -39,9 +42,10 @@ fn main() {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 enum RailTerm {
     I64(i64),
+    String(String),
 }
 
 impl std::fmt::Display for RailTerm {
@@ -49,6 +53,7 @@ impl std::fmt::Display for RailTerm {
         use RailTerm::*;
         match self {
             I64(n) => write!(fmt, "{:?}", n),
+            String(s) => write!(fmt, "\"{}\"", s),
         }
     }
 }
@@ -165,7 +170,7 @@ fn new_dictionary() -> Vec<RailOp<'static>> {
         }),
         RailOp::new("dup", &["a"], &["a", "a"], |stack| {
             let a = stack.pop().unwrap();
-            stack.push(a);
+            stack.push(a.clone());
             stack.push(a);
         }),
         RailOp::new("swap", &["b", "a"], &["a", "b"], |stack| {
@@ -198,6 +203,7 @@ where
                 let res = op(a);
                 stack.push(RailTerm::I64(res));
             }
+            _ => panic!("Attempted to do math with Strings!"),
         }
     })
 }
@@ -214,6 +220,7 @@ where
                 let res = op(a, b);
                 stack.push(RailTerm::I64(res));
             }
+            _ => panic!("Attempted to do math with Strings!"),
         }
     })
 }
@@ -231,6 +238,7 @@ where
                 let res = if op(a) { 1 } else { 0 };
                 stack.push(RailTerm::I64(res));
             }
+            _ => panic!("Attempted to do math with Strings!"),
         }
     })
 }
@@ -247,6 +255,7 @@ where
                 let res = if op(a, b) { 1 } else { 0 };
                 stack.push(RailTerm::I64(res));
             }
+            _ => panic!("Attempted to do math with Strings!"),
         }
     })
 }
