@@ -7,7 +7,7 @@ fn main() {
 
     let mut editor = Editor::<()>::new();
 
-    let mut stack: Vec<i64> = vec![];
+    let mut stack: Stack = Stack::new();
 
     let mut dictionary = new_dictionary();
 
@@ -15,8 +15,8 @@ fn main() {
         let input = editor.readline("> ");
 
         if let Err(e) = input {
-            eprintln!("Final state: {:?}", stack);
             eprintln!("Derailed: {:?}", e);
+            eprintln!("Final state:\n{}", stack);
             std::process::exit(1);
         }
 
@@ -30,7 +30,7 @@ fn main() {
             if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
                 op.go(&mut stack);
             } else if let Ok(i) = term.parse::<i64>() {
-                stack.push(i);
+                stack.push(RailTerm::I64(i));
             } else {
                 eprintln!("Derailed: unknown term {:?}", term);
                 std::process::exit(1);
@@ -39,7 +39,51 @@ fn main() {
     }
 }
 
-type Stack = Vec<i64>;
+#[derive(Clone, Copy, Debug)]
+enum RailTerm {
+    I64(i64),
+}
+
+impl std::fmt::Display for RailTerm {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use RailTerm::*;
+        match self {
+            I64(n) => write!(fmt, "{:?}", n),
+        }
+    }
+}
+
+struct Stack {
+    terms: Vec<RailTerm>,
+}
+
+impl Stack {
+    fn new() -> Self {
+        Stack { terms: vec![] }
+    }
+
+    fn push(&mut self, term: RailTerm) {
+        self.terms.push(term)
+    }
+
+    fn len(&self) -> usize {
+        self.terms.len()
+    }
+
+    fn pop(&mut self) -> Option<RailTerm> {
+        self.terms.pop()
+    }
+}
+
+impl std::fmt::Display for Stack {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        for term in &self.terms {
+            term.fmt(f).unwrap();
+            write!(f, " ").unwrap();
+        }
+        Ok(())
+    }
+}
 
 struct RailOp<'a> {
     name: &'a str,
@@ -90,7 +134,7 @@ fn new_dictionary() -> Vec<RailOp<'static>> {
         RailOp::new(".", &["a"], &[], |stack| {
             println!("{:?}", stack.pop().unwrap())
         }),
-        RailOp::new(".s", &[], &[], |stack| println!("{:?}", stack)),
+        RailOp::new(".s", &[], &[], |stack| println!("{}", stack)),
         RailOp::new("+", &["i64", "i64"], &["i64"], binary_op(|a, b| a + b)),
         RailOp::new("-", &["i64", "i64"], &["i64"], binary_op(|a, b| a - b)),
         RailOp::new("*", &["i64", "i64"], &["i64"], binary_op(|a, b| a * b)),
@@ -149,8 +193,12 @@ where
 {
     Box::new(move |stack: &mut Stack| {
         let a = stack.pop().unwrap();
-        let res = op(a);
-        stack.push(res);
+        match a {
+            RailTerm::I64(a) => {
+                let res = op(a);
+                stack.push(RailTerm::I64(res));
+            }
+        }
     })
 }
 
@@ -161,8 +209,12 @@ where
     Box::new(move |stack: &mut Stack| {
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
-        let res = op(a, b);
-        stack.push(res);
+        match (a, b) {
+            (RailTerm::I64(a), RailTerm::I64(b)) => {
+                let res = op(a, b);
+                stack.push(RailTerm::I64(res));
+            }
+        }
     })
 }
 
@@ -174,8 +226,12 @@ where
 {
     Box::new(move |stack: &mut Stack| {
         let a = stack.pop().unwrap();
-        let res = if op(a) { 1 } else { 0 };
-        stack.push(res);
+        match a {
+            RailTerm::I64(a) => {
+                let res = if op(a) { 1 } else { 0 };
+                stack.push(RailTerm::I64(res));
+            }
+        }
     })
 }
 
@@ -186,7 +242,11 @@ where
     Box::new(move |stack: &mut Stack| {
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
-        let res = if op(a, b) { 1 } else { 0 };
-        stack.push(res);
+        match (a, b) {
+            (RailTerm::I64(a), RailTerm::I64(b)) => {
+                let res = if op(a, b) { 1 } else { 0 };
+                stack.push(RailTerm::I64(res));
+            }
+        }
     })
 }
