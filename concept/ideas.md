@@ -26,23 +26,34 @@ Must-haves:
   - But... Also apply this to type restrictions, generics, etc
     - `(a) -> (b)` can be type restricted as something like `(Str/a) -> (Str/b)`
 
+No clear idea on whether the following can be reconciled at all, but...
+
 Ideas I _like_ from other languages:
-- Perl's idea of having ideas like singularity/plurality baked in to the language
+
+- Perl's idea of having semantic, linguistic ideas like singularity/plurality baked in to the language via sigils.
+  - ColorForth and [RetroForth](http://www.retroforth.org) had similar ideas
 - Haskell's type system (Especially things like `Monad m => a -> m a`)
-- Factor's quotations (Granted, this comes from Lisp, but I really enjoy the factor implementation)
+- Factor's quotations (Granted, this comes from Common Lisp, but I really enjoy the factor implementation)
 - Functional must-haves (map, flatMap, reduce, filter, scan)
 - Fortran's idea of "calling a function on a single value or collection just works"
   - So... polymorphism? Or maybe single value coerces to single element list? Am I in APL territory?
 - Rust's structs/enums/unions (Again, not a first, but maybe best I've seen)
 - Rust's Traits
-- Mercury's IO
+- Rust's "put tests anywhere, probably right in the source file" convention
+- Mercury's IO sugar
 - Matching in function definitions a-la Erlang/Elixir
 - Tail call recursion
 - Spread operators (esp JavaScript's)
 - Actor model from Erlang (esp spawn/receive semantics. PID lacks type information)
 - Pipe operator `|>` from languages like Elixir/F#, and `->` and `->>` from Clojure
+- Elymas's stack reordering https://github.com/Drahflow/Elymas
+- min and mn's lispy style for lambdas, lists, etc https://h3rald.com/mn/Mn_DeveloperGuide.htm
+- Zig's "Speak the C ABI" goal
+  - Shen's one-language transpiling to many languages goal is similar, but an opposite approach
+- Zig's comptime
 
-(Like != should have. This is just a list of things that make me happy.)
+Like != should have. The above is just a list of things that make me happy.
+[Start with No](https://basecamp.com/gettingreal/05.3-start-with-no) is still a good idea.
 
 Ideas in conflict:
 - "Convention over Configuration" a la DHH vs. "Explicit better than Implicit" a la Python zen
