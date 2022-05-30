@@ -4,6 +4,7 @@ pub const RAIL_VERSION: &str = std::env!("CARGO_PKG_VERSION");
 
 fn main() {
     println!("rail {}", RAIL_VERSION);
+    let base_prompt = "> ";
 
     let mut editor = Editor::<()>::new();
 
@@ -11,8 +12,11 @@ fn main() {
 
     let mut dictionary = new_dictionary();
 
+    let mut depth = 0;
+
     loop {
-        let input = editor.readline("> ");
+        let prompt = if depth == 0 { base_prompt.to_owned() } else { format!("{}{} ", ">".repeat(depth*2), base_prompt) };
+        let input = editor.readline(&prompt);
 
         if let Err(e) = input {
             eprintln!("Derailed: {:?}", e);
@@ -27,25 +31,48 @@ fn main() {
         let terms = input.split_whitespace().collect::<Vec<_>>();
 
         for term in terms {
-            if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
+            let result = parse(&mut dictionary, &mut stack, term, depth);
+            if let AfterParse { action: Some(op), nesting_depth: 0 } = result {
+                let mut op = op;
                 op.go(&mut stack);
-            } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
-                let s = term.chars().skip(1).take(term.len() - 2).collect();
-                stack.push(RailTerm::String(s));
-            } else if let Ok(i) = term.parse::<i64>() {
-                stack.push(RailTerm::I64(i));
-            } else {
-                eprintln!("Derailed: unknown term {:?}", term);
-                std::process::exit(1);
+            } else if let AfterParse { action: Some(op), nesting_depth: n } = result {
+                depth = n;
+                let mut substack = stack.peek();
             }
         }
     }
+}
+
+fn parse<'a>(dictionary: &mut Dictionary, stack: &mut Stack, term: &str, depth: usize) -> AfterParse<'a> {
+    if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
+        return AfterParse { action: Some(*op), nesting_depth: depth };
+    } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
+        let s = term.chars().skip(1).take(term.len() - 2).collect();
+        stack.push(RailTerm::String(s));
+    } else if let "(" = term {
+        stack.push(RailTerm::SubStack(Stack::new()));
+        return AfterParse { action: None, nesting_depth: depth + 1};
+    } else if let ")" = term {
+        return AfterParse { action: None, nesting_depth: depth - 1};
+    } else if let Ok(i) = term.parse::<i64>() {
+        stack.push(RailTerm::I64(i));
+    } else {
+        eprintln!("Derailed: unknown term {:?}", term);
+        std::process::exit(1);
+    }
+    AfterParse { action: None, nesting_depth: depth}
+}
+
+struct AfterParse<'a> {
+    action: Option<RailOp<'a>>,
+    nesting_depth: usize,
 }
 
 #[derive(Clone, Debug)]
 enum RailTerm {
     I64(i64),
     String(String),
+    SubStack(Stack),
 }
 
 impl std::fmt::Display for RailTerm {
@@ -54,10 +81,12 @@ impl std::fmt::Display for RailTerm {
         match self {
             I64(n) => write!(fmt, "{:?}", n),
             String(s) => write!(fmt, "\"{}\"", s),
+            SubStack(stack) => write!(fmt, "({})", stack),
         }
     }
 }
 
+#[derive(Clone, Debug)]
 struct Stack {
     terms: Vec<RailTerm>,
 }
@@ -77,6 +106,10 @@ impl Stack {
 
     fn pop(&mut self) -> Option<RailTerm> {
         self.terms.pop()
+    }
+
+    fn peek(&self) -> Option<RailTerm> {
+        self.terms.last().cloned()
     }
 }
 
@@ -115,6 +148,23 @@ impl RailOp<'_> {
         }
     }
 
+    fn newb<'a, F>(
+        name: &'a str,
+        consumes: &'a [&'a str],
+        produces: &'a [&'a str],
+        op: Box<F>,
+    ) -> RailOp<'a>
+    where
+        F: FnMut(&mut Stack) + 'a,
+    {
+        RailOp {
+            name,
+            consumes,
+            produces,
+            op,
+        }
+    }
+
     fn go(&mut self, stack: &mut Stack) {
         if stack.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
@@ -134,32 +184,34 @@ impl RailOp<'_> {
     }
 }
 
-fn new_dictionary() -> Vec<RailOp<'static>> {
+type Dictionary = Vec<RailOp<'static>>;
+
+fn new_dictionary() -> Dictionary {
     vec![
         RailOp::new(".", &["a"], &[], |stack| {
             println!("{:?}", stack.pop().unwrap())
         }),
         RailOp::new(".s", &[], &[], |stack| println!("{}", stack)),
-        RailOp::new("+", &["i64", "i64"], &["i64"], binary_op(|a, b| a + b)),
-        RailOp::new("-", &["i64", "i64"], &["i64"], binary_op(|a, b| a - b)),
-        RailOp::new("*", &["i64", "i64"], &["i64"], binary_op(|a, b| a * b)),
-        RailOp::new("/", &["i64", "i64"], &["i64"], binary_op(|a, b| a / b)),
-        RailOp::new("%", &["i64", "i64"], &["i64"], binary_op(|a, b| a % b)),
-        RailOp::new("==", &["i64", "i64"], &["bool"], binary_pred(|a, b| a == b)),
-        RailOp::new("!=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a != b)),
-        RailOp::new(">", &["i64", "i64"], &["bool"], binary_pred(|a, b| a > b)),
-        RailOp::new("<", &["i64", "i64"], &["bool"], binary_pred(|a, b| a < b)),
-        RailOp::new(">=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a >= b)),
-        RailOp::new("<=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a <= b)),
-        RailOp::new("!", &["bool"], &["bool"], unary_pred(|a| a <= 0)),
-        RailOp::new("abs", &["i64"], &["i64"], unary_op(|a| a.abs())),
-        RailOp::new(
+        RailOp::newb("+", &["i64", "i64"], &["i64"], binary_op(|a, b| a + b)),
+        RailOp::newb("-", &["i64", "i64"], &["i64"], binary_op(|a, b| a - b)),
+        RailOp::newb("*", &["i64", "i64"], &["i64"], binary_op(|a, b| a * b)),
+        RailOp::newb("/", &["i64", "i64"], &["i64"], binary_op(|a, b| a / b)),
+        RailOp::newb("%", &["i64", "i64"], &["i64"], binary_op(|a, b| a % b)),
+        RailOp::newb("==", &["i64", "i64"], &["bool"], binary_pred(|a, b| a == b)),
+        RailOp::newb("!=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a != b)),
+        RailOp::newb(">", &["i64", "i64"], &["bool"], binary_pred(|a, b| a > b)),
+        RailOp::newb("<", &["i64", "i64"], &["bool"], binary_pred(|a, b| a < b)),
+        RailOp::newb(">=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a >= b)),
+        RailOp::newb("<=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a <= b)),
+        RailOp::newb("!", &["bool"], &["bool"], unary_pred(|a| a <= 0)),
+        RailOp::newb("abs", &["i64"], &["i64"], unary_op(|a| a.abs())),
+        RailOp::newb(
             "max",
             &["i64", "i64"],
             &["i64"],
             binary_op(|a, b| if a >= b { a } else { b }),
         ),
-        RailOp::new(
+        RailOp::newb(
             "min",
             &["i64", "i64"],
             &["i64"],
@@ -227,7 +279,7 @@ where
 
 // Predicates
 
-fn unary_pred<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
+fn unary_pred<'a, F, G>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
 where
     F: Fn(i64) -> bool + Sized + 'a,
 {
