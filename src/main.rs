@@ -1,45 +1,65 @@
-use rustyline::Editor;
+use rustyline::{Editor, Helper};
 
 pub const RAIL_VERSION: &str = std::env!("CARGO_PKG_VERSION");
 
 fn main() {
     println!("rail {}", RAIL_VERSION);
 
-    let mut editor = Editor::<()>::new();
-
     let mut stack: Stack = Stack::new();
 
     let mut dictionary = new_dictionary();
 
-    loop {
-        let input = editor.readline("> ");
+    let editor = Editor::<()>::new();
+    let rail_prompt = RailPrompt::new(editor);
 
-        if let Err(e) = input {
-            eprintln!("Derailed: {:?}", e);
-            eprintln!("Final state:\n{}", stack);
+    rail_prompt.for_each(|term|  {
+        if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
+            op.go(&mut stack);
+        } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
+            let s = term.chars().skip(1).take(term.len() - 2).collect();
+            stack.push(RailTerm::String(s));
+        } else if let Ok(i) = term.parse::<i64>() {
+            stack.push(RailTerm::I64(i));
+        } else {
+            eprintln!("Derailed: unknown term {:?}", term);
             std::process::exit(1);
         }
+    });
+}
 
-        let input = input.unwrap();
+struct RailPrompt<H: Helper> {
+    editor: Editor<H>,
+    terms: Vec<String>
+}
 
-        editor.add_history_entry(&input);
+impl <H: Helper> RailPrompt<H> {
+    fn new(editor: Editor<H>) -> RailPrompt<H> {
+        RailPrompt { editor, terms: vec![] }
+    }
+}
 
-        let terms = input.split_whitespace().collect::<Vec<_>>();
+impl <H: Helper> Iterator for RailPrompt<H> {
+    type Item = String;
+    
+    fn next(&mut self) -> Option<String> {
+        while self.terms.is_empty() {
+            let input = self.editor.readline("> ");
 
-        for term in terms {
-            if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
-                op.go(&mut stack);
-            } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
-                let s = term.chars().skip(1).take(term.len() - 2).collect();
-                stack.push(RailTerm::String(s));
-            } else if let Ok(i) = term.parse::<i64>() {
-                stack.push(RailTerm::I64(i));
-            } else {
-                eprintln!("Derailed: unknown term {:?}", term);
+            if let Err(e) = input {
+                eprintln!("Derailed: {:?}", e);
+                // TODO: Stack dump?
                 std::process::exit(1);
             }
+
+            let input = input.unwrap();
+
+            self.editor.add_history_entry(&input);
+
+            self.terms = input.split_whitespace().map(|s| s.to_owned()).rev().collect::<Vec<_>>();
         }
-    }
+
+        self.terms.pop()
+     }
 }
 
 #[derive(Clone, Debug)]
@@ -134,7 +154,9 @@ impl RailOp<'_> {
     }
 }
 
-fn new_dictionary() -> Vec<RailOp<'static>> {
+type Dictionary = Vec<RailOp<'static>>;
+
+fn new_dictionary() -> Dictionary {
     vec![
         RailOp::new(".", &["a"], &[], |stack| {
             println!("{:?}", stack.pop().unwrap())
