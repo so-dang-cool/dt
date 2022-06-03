@@ -10,18 +10,20 @@ fn main() {
 
 struct RailPrompt {
     editor: Editor<()>,
-    terms: Vec<String>
+    terms: Vec<String>,
 }
 
 impl RailPrompt {
     fn new() -> RailPrompt {
-        RailPrompt { editor: Editor::<()>::new(), terms: vec![] }
+        let editor = Editor::<()>::new();
+        let terms = vec![];
+        RailPrompt { editor, terms }
     }
 }
 
 impl Iterator for RailPrompt {
     type Item = String;
-    
+
     fn next(&mut self) -> Option<String> {
         while self.terms.is_empty() {
             let input = self.editor.readline("> ");
@@ -36,11 +38,15 @@ impl Iterator for RailPrompt {
 
             self.editor.add_history_entry(&input);
 
-            self.terms = input.split_whitespace().map(|s| s.to_owned()).rev().collect::<Vec<_>>();
+            self.terms = input
+                .split_whitespace()
+                .map(|s| s.to_owned())
+                .rev()
+                .collect::<Vec<_>>();
         }
 
         self.terms.pop()
-     }
+    }
 }
 
 struct RailState {
@@ -50,7 +56,9 @@ struct RailState {
 
 impl RailState {
     fn new() -> RailState {
-        RailState { stack: Stack::new(), dictionary: new_dictionary() }
+        let stack = Stack::new();
+        let dictionary = new_dictionary();
+        RailState { stack, dictionary }
     }
 }
 
@@ -174,7 +182,10 @@ fn new_dictionary() -> Dictionary {
             println!("{:?}", stack.pop().unwrap());
             stack
         }),
-        RailOp::new(".s", &[], &[], |stack| {println!("{}", stack); stack }),
+        RailOp::new(".s", &[], &[], |stack| {
+            println!("{}", stack);
+            stack
+        }),
         RailOp::new("+", &["i64", "i64"], &["i64"], binary_op(|a, b| a + b)),
         RailOp::new("-", &["i64", "i64"], &["i64"], binary_op(|a, b| a - b)),
         RailOp::new("*", &["i64", "i64"], &["i64"], binary_op(|a, b| a * b)),
