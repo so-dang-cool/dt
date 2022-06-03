@@ -5,14 +5,11 @@ pub const RAIL_VERSION: &str = std::env!("CARGO_PKG_VERSION");
 fn main() {
     println!("rail {}", RAIL_VERSION);
 
-    let mut stack: Stack = Stack::new();
-
-    let mut dictionary = new_dictionary();
-
     let editor = Editor::<()>::new();
-    let rail_prompt = RailPrompt::new(editor);
 
-    rail_prompt.for_each(|term| operate(term, &mut dictionary, &mut stack));
+    let initial_state = RailState { stack: Stack::new(), dictionary: new_dictionary() };
+
+    RailPrompt::new(editor).fold(initial_state, operate);
 }
 
 struct RailPrompt<H: Helper> {
@@ -50,9 +47,17 @@ impl <H: Helper> Iterator for RailPrompt<H> {
      }
 }
 
-fn operate(term: String, dictionary: &mut Dictionary, stack: &mut Stack) {
+struct RailState {
+    stack: Stack,
+    dictionary: Dictionary,
+}
+
+fn operate(state: RailState, term: String) -> RailState {
+    let mut stack = state.stack;
+    let mut dictionary = state.dictionary;
+
     if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
-        op.go(stack);
+        op.go(&mut stack);
     } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
         let s = term.chars().skip(1).take(term.len() - 2).collect();
         stack.push(RailTerm::String(s));
@@ -62,6 +67,8 @@ fn operate(term: String, dictionary: &mut Dictionary, stack: &mut Stack) {
         eprintln!("Derailed: unknown term {:?}", term);
         std::process::exit(1);
     }
+
+    RailState { stack, dictionary }
 }
 
 #[derive(Clone, Debug)]
