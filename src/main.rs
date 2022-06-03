@@ -12,19 +12,7 @@ fn main() {
     let editor = Editor::<()>::new();
     let rail_prompt = RailPrompt::new(editor);
 
-    rail_prompt.for_each(|term|  {
-        if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
-            op.go(&mut stack);
-        } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
-            let s = term.chars().skip(1).take(term.len() - 2).collect();
-            stack.push(RailTerm::String(s));
-        } else if let Ok(i) = term.parse::<i64>() {
-            stack.push(RailTerm::I64(i));
-        } else {
-            eprintln!("Derailed: unknown term {:?}", term);
-            std::process::exit(1);
-        }
-    });
+    rail_prompt.for_each(|term| operate(term, &mut dictionary, &mut stack));
 }
 
 struct RailPrompt<H: Helper> {
@@ -60,6 +48,20 @@ impl <H: Helper> Iterator for RailPrompt<H> {
 
         self.terms.pop()
      }
+}
+
+fn operate(term: String, dictionary: &mut Dictionary, stack: &mut Stack) {
+    if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
+        op.go(stack);
+    } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
+        let s = term.chars().skip(1).take(term.len() - 2).collect();
+        stack.push(RailTerm::String(s));
+    } else if let Ok(i) = term.parse::<i64>() {
+        stack.push(RailTerm::I64(i));
+    } else {
+        eprintln!("Derailed: unknown term {:?}", term);
+        std::process::exit(1);
+    }
 }
 
 #[derive(Clone, Debug)]
