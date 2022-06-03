@@ -59,7 +59,7 @@ fn operate(state: RailState, term: String) -> RailState {
     let mut dictionary = state.dictionary;
 
     if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
-        op.go(&mut stack);
+        stack = op.go(stack);
     } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
         let s = term.chars().skip(1).take(term.len() - 2).collect();
         stack.push(RailTerm::String(s));
@@ -125,7 +125,7 @@ struct RailOp<'a> {
     name: &'a str,
     consumes: &'a [&'a str],
     produces: &'a [&'a str],
-    op: Box<dyn FnMut(&mut Stack) + 'a>,
+    op: Box<dyn Fn(Stack) -> Stack + 'a>,
 }
 
 impl RailOp<'_> {
@@ -136,7 +136,7 @@ impl RailOp<'_> {
         op: F,
     ) -> RailOp<'a>
     where
-        F: FnMut(&mut Stack) + 'a,
+        F: Fn(Stack) -> Stack + 'a,
     {
         RailOp {
             name,
@@ -146,7 +146,7 @@ impl RailOp<'_> {
         }
     }
 
-    fn go(&mut self, stack: &mut Stack) {
+    fn go(&mut self, stack: Stack) -> Stack {
         if stack.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
             eprintln!(
@@ -161,7 +161,7 @@ impl RailOp<'_> {
 
         // TODO: Type checks
 
-        (self.op)(stack);
+        (self.op)(stack)
     }
 }
 
@@ -170,9 +170,11 @@ type Dictionary = Vec<RailOp<'static>>;
 fn new_dictionary() -> Dictionary {
     vec![
         RailOp::new(".", &["a"], &[], |stack| {
-            println!("{:?}", stack.pop().unwrap())
+            let mut stack = stack;
+            println!("{:?}", stack.pop().unwrap());
+            stack
         }),
-        RailOp::new(".s", &[], &[], |stack| println!("{}", stack)),
+        RailOp::new(".s", &[], &[], |stack| {println!("{}", stack); stack }),
         RailOp::new("+", &["i64", "i64"], &["i64"], binary_op(|a, b| a + b)),
         RailOp::new("-", &["i64", "i64"], &["i64"], binary_op(|a, b| a - b)),
         RailOp::new("*", &["i64", "i64"], &["i64"], binary_op(|a, b| a * b)),
@@ -199,37 +201,46 @@ fn new_dictionary() -> Dictionary {
             binary_op(|a, b| if a <= b { a } else { b }),
         ),
         RailOp::new("drop", &["a"], &[], |stack| {
+            let mut stack = stack;
             stack.pop().unwrap();
+            stack
         }),
         RailOp::new("dup", &["a"], &["a", "a"], |stack| {
+            let mut stack = stack;
             let a = stack.pop().unwrap();
             stack.push(a.clone());
             stack.push(a);
+            stack
         }),
         RailOp::new("swap", &["b", "a"], &["a", "b"], |stack| {
+            let mut stack = stack;
             let a = stack.pop().unwrap();
             let b = stack.pop().unwrap();
             stack.push(a);
             stack.push(b);
+            stack
         }),
         RailOp::new("rot", &["c", "b", "a"], &["a", "c", "b"], |stack| {
+            let mut stack = stack;
             let a = stack.pop().unwrap();
             let b = stack.pop().unwrap();
             let c = stack.pop().unwrap();
             stack.push(a);
             stack.push(c);
             stack.push(b);
+            stack
         }),
     ]
 }
 
 // Operations
 
-fn unary_op<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
+fn unary_op<'a, F>(op: F) -> Box<dyn Fn(Stack) -> Stack + 'a>
 where
     F: Fn(i64) -> i64 + Sized + 'a,
 {
-    Box::new(move |stack: &mut Stack| {
+    Box::new(move |stack: Stack| {
+        let mut stack = stack;
         let a = stack.pop().unwrap();
         match a {
             RailTerm::I64(a) => {
@@ -238,14 +249,16 @@ where
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
+        stack
     })
 }
 
-fn binary_op<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
+fn binary_op<'a, F>(op: F) -> Box<dyn Fn(Stack) -> Stack + 'a>
 where
     F: Fn(i64, i64) -> i64 + Sized + 'a,
 {
-    Box::new(move |stack: &mut Stack| {
+    Box::new(move |stack: Stack| {
+        let mut stack = stack;
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
         match (a, b) {
@@ -255,16 +268,18 @@ where
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
+        stack
     })
 }
 
 // Predicates
 
-fn unary_pred<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
+fn unary_pred<'a, F>(op: F) -> Box<dyn Fn(Stack) -> Stack + 'a>
 where
     F: Fn(i64) -> bool + Sized + 'a,
 {
-    Box::new(move |stack: &mut Stack| {
+    Box::new(move |stack: Stack| {
+        let mut stack = stack;
         let a = stack.pop().unwrap();
         match a {
             RailTerm::I64(a) => {
@@ -273,14 +288,16 @@ where
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
+        stack
     })
 }
 
-fn binary_pred<'a, F>(op: F) -> Box<dyn FnMut(&mut Stack) + 'a>
+fn binary_pred<'a, F>(op: F) -> Box<dyn Fn(Stack) -> Stack + 'a>
 where
     F: Fn(i64, i64) -> bool + Sized + 'a,
 {
-    Box::new(move |stack: &mut Stack| {
+    Box::new(move |stack: Stack| {
+        let mut stack = stack;
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
         match (a, b) {
@@ -290,5 +307,6 @@ where
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
+        stack
     })
 }
