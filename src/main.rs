@@ -1,29 +1,25 @@
-use rustyline::{Editor, Helper};
+use rustyline::Editor;
 
 pub const RAIL_VERSION: &str = std::env!("CARGO_PKG_VERSION");
 
 fn main() {
     println!("rail {}", RAIL_VERSION);
 
-    let editor = Editor::<()>::new();
-
-    let initial_state = RailState { stack: Stack::new(), dictionary: new_dictionary() };
-
-    RailPrompt::new(editor).fold(initial_state, operate);
+    RailPrompt::new().fold(RailState::new(), operate);
 }
 
-struct RailPrompt<H: Helper> {
-    editor: Editor<H>,
+struct RailPrompt {
+    editor: Editor<()>,
     terms: Vec<String>
 }
 
-impl <H: Helper> RailPrompt<H> {
-    fn new(editor: Editor<H>) -> RailPrompt<H> {
-        RailPrompt { editor, terms: vec![] }
+impl RailPrompt {
+    fn new() -> RailPrompt {
+        RailPrompt { editor: Editor::<()>::new(), terms: vec![] }
     }
 }
 
-impl <H: Helper> Iterator for RailPrompt<H> {
+impl Iterator for RailPrompt {
     type Item = String;
     
     fn next(&mut self) -> Option<String> {
@@ -50,6 +46,12 @@ impl <H: Helper> Iterator for RailPrompt<H> {
 struct RailState {
     stack: Stack,
     dictionary: Dictionary,
+}
+
+impl RailState {
+    fn new() -> RailState {
+        RailState { stack: Stack::new(), dictionary: new_dictionary() }
+    }
 }
 
 fn operate(state: RailState, term: String) -> RailState {
