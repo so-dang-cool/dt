@@ -1,5 +1,5 @@
 use crate::RailState;
-use crate::RailTerm;
+use crate::RailVal;
 use crate::Stack;
 
 pub fn operate(state: RailState, term: String) -> RailState {
@@ -10,9 +10,9 @@ pub fn operate(state: RailState, term: String) -> RailState {
         stack = op.go(stack);
     } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
         let s = term.chars().skip(1).take(term.len() - 2).collect();
-        stack.push(RailTerm::String(s));
+        stack.push(RailVal::String(s));
     } else if let Ok(i) = term.parse::<i64>() {
-        stack.push(RailTerm::I64(i));
+        stack.push(RailVal::I64(i));
     } else {
         eprintln!("Derailed: unknown term {:?}", term);
         std::process::exit(1);
@@ -146,9 +146,9 @@ where
         let mut stack = stack;
         let a = stack.pop().unwrap();
         match a {
-            RailTerm::I64(a) => {
+            RailVal::I64(a) => {
                 let res = op(a);
-                stack.push(RailTerm::I64(res));
+                stack.push(RailVal::I64(res));
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
@@ -165,9 +165,9 @@ where
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
         match (a, b) {
-            (RailTerm::I64(a), RailTerm::I64(b)) => {
+            (RailVal::I64(a), RailVal::I64(b)) => {
                 let res = op(a, b);
-                stack.push(RailTerm::I64(res));
+                stack.push(RailVal::I64(res));
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
@@ -185,9 +185,9 @@ where
         let mut stack = stack;
         let a = stack.pop().unwrap();
         match a {
-            RailTerm::I64(a) => {
+            RailVal::I64(a) => {
                 let res = if op(a) { 1 } else { 0 };
-                stack.push(RailTerm::I64(res));
+                stack.push(RailVal::I64(res));
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
@@ -204,9 +204,9 @@ where
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
         match (a, b) {
-            (RailTerm::I64(a), RailTerm::I64(b)) => {
+            (RailVal::I64(a), RailVal::I64(b)) => {
                 let res = if op(a, b) { 1 } else { 0 };
-                stack.push(RailTerm::I64(res));
+                stack.push(RailVal::I64(res));
             }
             _ => panic!("Attempted to do math with Strings!"),
         }

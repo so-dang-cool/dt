@@ -24,14 +24,14 @@ impl Default for RailState {
 }
 
 #[derive(Clone, Debug)]
-enum RailTerm {
+enum RailVal {
     I64(i64),
     String(String),
 }
 
-impl std::fmt::Display for RailTerm {
+impl std::fmt::Display for RailVal {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use RailTerm::*;
+        use RailVal::*;
         match self {
             I64(n) => write!(fmt, "{:?}", n),
             String(s) => write!(fmt, "\"{}\"", s),
@@ -40,7 +40,7 @@ impl std::fmt::Display for RailTerm {
 }
 
 struct Stack {
-    terms: Vec<RailTerm>,
+    terms: Vec<RailVal>,
 }
 
 impl Stack {
@@ -48,7 +48,7 @@ impl Stack {
         Stack { terms: vec![] }
     }
 
-    fn push(&mut self, term: RailTerm) {
+    fn push(&mut self, term: RailVal) {
         self.terms.push(term)
     }
 
@@ -56,7 +56,7 @@ impl Stack {
         self.terms.len()
     }
 
-    fn pop(&mut self) -> Option<RailTerm> {
+    fn pop(&mut self) -> Option<RailVal> {
         self.terms.pop()
     }
 }
