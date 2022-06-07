@@ -1,13 +1,24 @@
+use crate::Context;
 use crate::RailState;
 use crate::RailVal;
-use crate::Stack;
+use std::fmt::Debug;
+use std::sync::Arc;
 
 pub fn operate(state: RailState, term: String) -> RailState {
-    let mut stack = state.stack;
-    let mut dictionary = state.dictionary;
+    let mut stack = state.stack.clone();
+    let mut dictionary = state.dictionary.clone();
+    let context = state.context.clone();
 
-    if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
-        stack = op.go(stack);
+    if term == "[" {
+        return state.deeper();
+    } else if term == "]" {
+        return state.higher();
+    } else if let Some(op) = dictionary.iter_mut().find(|op| op.name == term) {
+        if let Context::Main = context {
+            return op.go(state.clone());
+        } else {
+            stack.push(RailVal::Operator(op.clone()));
+        }
     } else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
         let s = term.chars().skip(1).take(term.len() - 2).collect();
         stack.push(RailVal::String(s));
@@ -18,85 +29,80 @@ pub fn operate(state: RailState, term: String) -> RailState {
         std::process::exit(1);
     }
 
-    RailState { stack, dictionary }
+    RailState {
+        stack,
+        dictionary,
+        context,
+    }
 }
 
 pub fn new_dictionary() -> Dictionary {
     vec![
-        RailOp::new(".", &["a"], &[], |stack| {
-            let mut stack = stack;
+        RailOp::new(".", &["a"], &[], |state| {
+            let mut stack = state.stack.clone();
             println!("{:?}", stack.pop().unwrap());
-            stack
+            state.update_stack(stack)
         }),
-        RailOp::new(".s", &[], &[], |stack| {
-            println!("{}", stack);
-            stack
+        RailOp::new(".s", &[], &[], |state| {
+            println!("{}", state.stack);
+            state
         }),
-        RailOp::new("+", &["i64", "i64"], &["i64"], binary_op(|a, b| a + b)),
-        RailOp::new("-", &["i64", "i64"], &["i64"], binary_op(|a, b| a - b)),
-        RailOp::new("*", &["i64", "i64"], &["i64"], binary_op(|a, b| a * b)),
-        RailOp::new("/", &["i64", "i64"], &["i64"], binary_op(|a, b| a / b)),
-        RailOp::new("%", &["i64", "i64"], &["i64"], binary_op(|a, b| a % b)),
-        RailOp::new("==", &["i64", "i64"], &["bool"], binary_pred(|a, b| a == b)),
-        RailOp::new("!=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a != b)),
-        RailOp::new(">", &["i64", "i64"], &["bool"], binary_pred(|a, b| a > b)),
-        RailOp::new("<", &["i64", "i64"], &["bool"], binary_pred(|a, b| a < b)),
-        RailOp::new(">=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a >= b)),
-        RailOp::new("<=", &["i64", "i64"], &["bool"], binary_pred(|a, b| a <= b)),
-        RailOp::new("!", &["bool"], &["bool"], unary_pred(|a| a <= 0)),
-        RailOp::new("abs", &["i64"], &["i64"], unary_op(|a| a.abs())),
-        RailOp::new(
-            "max",
-            &["i64", "i64"],
-            &["i64"],
-            binary_op(|a, b| if a >= b { a } else { b }),
-        ),
-        RailOp::new(
-            "min",
-            &["i64", "i64"],
-            &["i64"],
-            binary_op(|a, b| if a <= b { a } else { b }),
-        ),
-        RailOp::new("drop", &["a"], &[], |stack| {
-            let mut stack = stack;
+        unary_i64_op("abs", |a| a.abs()),
+        binary_i64_op("+", |a, b| a + b),
+        binary_i64_op("-", |a, b| a - b),
+        binary_i64_op("*", |a, b| a * b),
+        binary_i64_op("/", |a, b| a / b),
+        binary_i64_op("%", |a, b| a % b),
+        binary_i64_op("max", |a, b| if a >= b { a } else { b }),
+        binary_i64_op("min", |a, b| if a <= b { a } else { b }),
+        unary_i64_pred("!", |a| a <= 0),
+        binary_i64_pred("==", |a, b| a == b),
+        binary_i64_pred("!=", |a, b| a != b),
+        binary_i64_pred(">", |a, b| a > b),
+        binary_i64_pred("<", |a, b| a < b),
+        binary_i64_pred(">=", |a, b| a >= b),
+        binary_i64_pred("<=", |a, b| a <= b),
+        RailOp::new("drop", &["a"], &[], |state| {
+            let mut stack = state.stack.clone();
             stack.pop().unwrap();
-            stack
+            state.update_stack(stack)
         }),
-        RailOp::new("dup", &["a"], &["a", "a"], |stack| {
-            let mut stack = stack;
+        RailOp::new("dup", &["a"], &["a", "a"], |state| {
+            let mut stack = state.stack.clone();
             let a = stack.pop().unwrap();
             stack.push(a.clone());
             stack.push(a);
-            stack
+            state.update_stack(stack)
         }),
-        RailOp::new("swap", &["b", "a"], &["a", "b"], |stack| {
-            let mut stack = stack;
+        RailOp::new("swap", &["b", "a"], &["a", "b"], |state| {
+            let mut stack = state.stack.clone();
             let a = stack.pop().unwrap();
             let b = stack.pop().unwrap();
             stack.push(a);
             stack.push(b);
-            stack
+            state.update_stack(stack)
         }),
-        RailOp::new("rot", &["c", "b", "a"], &["a", "c", "b"], |stack| {
-            let mut stack = stack;
+        RailOp::new("rot", &["c", "b", "a"], &["a", "c", "b"], |state| {
+            let mut stack = state.stack.clone();
             let a = stack.pop().unwrap();
             let b = stack.pop().unwrap();
             let c = stack.pop().unwrap();
             stack.push(a);
             stack.push(c);
             stack.push(b);
-            stack
+            state.update_stack(stack)
         }),
     ]
 }
 
 pub type Dictionary = Vec<RailOp<'static>>;
 
+#[derive(Clone)]
 pub struct RailOp<'a> {
     name: &'a str,
     consumes: &'a [&'a str],
     produces: &'a [&'a str],
-    op: Box<dyn Fn(Stack) -> Stack + 'a>,
+    op: Arc<dyn Fn(RailState) -> RailState + 'a>,
 }
 
 impl RailOp<'_> {
@@ -107,43 +113,53 @@ impl RailOp<'_> {
         op: F,
     ) -> RailOp<'a>
     where
-        F: Fn(Stack) -> Stack + 'a,
+        F: Fn(RailState) -> RailState + 'a,
     {
         RailOp {
             name,
             consumes,
             produces,
-            op: Box::new(op),
+            op: Arc::new(op),
         }
     }
 
-    fn go(&mut self, stack: Stack) -> Stack {
-        if stack.len() < self.consumes.len() {
+    fn go(&mut self, state: RailState) -> RailState {
+        if state.stack.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
             eprintln!(
                 "Derailed: stack underflow for \"{}\" ({:?} -> {:?}): stack only had {}",
                 self.name,
                 self.consumes,
                 self.produces,
-                stack.len()
+                state.stack.len()
             );
             std::process::exit(1);
         }
 
         // TODO: Type checks
 
-        (self.op)(stack)
+        (self.op)(state)
+    }
+}
+
+impl Debug for RailOp<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            ": {} ({:?} -- {:?}) ... ;",
+            self.name, self.consumes, self.produces
+        )
     }
 }
 
 // Operations
 
-fn unary_op<'a, F>(op: F) -> Box<dyn Fn(Stack) -> Stack + 'a>
+fn unary_i64_op<'a, F>(name: &'a str, op: F) -> RailOp<'a>
 where
     F: Fn(i64) -> i64 + Sized + 'a,
 {
-    Box::new(move |stack: Stack| {
-        let mut stack = stack;
+    RailOp::new(name, &["i64"], &["i64"], move |state| {
+        let mut stack = state.stack.clone();
         let a = stack.pop().unwrap();
         match a {
             RailVal::I64(a) => {
@@ -152,16 +168,16 @@ where
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
-        stack
+        state.update_stack(stack)
     })
 }
 
-fn binary_op<'a, F>(op: F) -> Box<dyn Fn(Stack) -> Stack + 'a>
+fn binary_i64_op<'a, F>(name: &'a str, op: F) -> RailOp<'a>
 where
     F: Fn(i64, i64) -> i64 + Sized + 'a,
 {
-    Box::new(move |stack: Stack| {
-        let mut stack = stack;
+    RailOp::new(name, &["i64", "i64"], &["i64"], move |state| {
+        let mut stack = state.stack.clone();
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
         match (a, b) {
@@ -171,18 +187,18 @@ where
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
-        stack
+        state.update_stack(stack)
     })
 }
 
 // Predicates
 
-fn unary_pred<'a, F>(op: F) -> Box<dyn Fn(Stack) -> Stack + 'a>
+fn unary_i64_pred<'a, F>(name: &'a str, op: F) -> RailOp<'a>
 where
     F: Fn(i64) -> bool + Sized + 'a,
 {
-    Box::new(move |stack: Stack| {
-        let mut stack = stack;
+    RailOp::new(name, &["i64"], &["bool"], move |state| {
+        let mut stack = state.stack.clone();
         let a = stack.pop().unwrap();
         match a {
             RailVal::I64(a) => {
@@ -191,16 +207,16 @@ where
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
-        stack
+        state.update_stack(stack)
     })
 }
 
-fn binary_pred<'a, F>(op: F) -> Box<dyn Fn(Stack) -> Stack + 'a>
+fn binary_i64_pred<'a, F>(name: &'a str, op: F) -> RailOp<'a>
 where
     F: Fn(i64, i64) -> bool + Sized + 'a,
 {
-    Box::new(move |stack: Stack| {
-        let mut stack = stack;
+    RailOp::new(name, &["i64"], &["bool"], move |state| {
+        let mut stack = state.stack.clone();
         let a = stack.pop().unwrap();
         let b = stack.pop().unwrap();
         match (a, b) {
@@ -210,6 +226,6 @@ where
             }
             _ => panic!("Attempted to do math with Strings!"),
         }
-        stack
+        state.update_stack(stack)
     })
 }
