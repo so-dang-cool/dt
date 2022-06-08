@@ -92,6 +92,29 @@ pub fn new_dictionary() -> Dictionary {
             stack.push(b);
             state.update_stack(stack)
         }),
+        RailOp::new("call", &["quot"], &["..."], |state| {
+            let mut stack = state.stack.clone();
+            let rail_val = stack.pop().unwrap();
+            let state = state.update_stack(stack);
+            if let RailVal::Quotation(quot) = rail_val {
+                quot.terms.iter().fold(state, |state, rail_val| {
+                    let mut stack = state.stack.clone();
+                    match rail_val {
+                        RailVal::Operator(op) => {
+                            let mut op = op.clone();
+                            return op.go(state);
+                        }
+                        _ => stack.push(rail_val.clone()),
+                    }
+                    state.update_stack(stack)
+                })
+            } else {
+                panic!(
+                    "call is only implemented for quotations, but got {:?}",
+                    rail_val
+                );
+            }
+        }),
     ]
 }
 
