@@ -210,7 +210,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rail"
+name = "rail-lang"
 version = "0.2.0"
 dependencies = [
  "rustyline",
