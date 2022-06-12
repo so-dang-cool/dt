@@ -1,3 +1,5 @@
+use crate::RailState;
+use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 pub struct RailPrompt {
@@ -10,6 +12,12 @@ impl RailPrompt {
         let editor = Editor::<()>::new();
         let terms = vec![];
         RailPrompt { editor, terms }
+    }
+
+    pub fn run(self) {
+        let end_state = self.fold(RailState::default(), super::operate);
+
+        println!("{}", end_state.stack);
     }
 }
 
@@ -27,8 +35,16 @@ impl Iterator for RailPrompt {
             let input = self.editor.readline("> ");
 
             if let Err(e) = input {
+                // ^D and ^C are not error cases.
+                if let ReadlineError::Eof = e {
+                    eprintln!("Derailed: End of input");
+                    return None;
+                } else if let ReadlineError::Interrupted = e {
+                    eprintln!("Derailed: Process interrupt");
+                    return None;
+                }
+
                 eprintln!("Derailed: {:?}", e);
-                // TODO: Stack dump?
                 std::process::exit(1);
             }
 

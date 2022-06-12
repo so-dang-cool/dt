@@ -5,7 +5,7 @@ use crate::corelib::RailOp;
 pub use corelib::operate;
 use corelib::{new_dictionary, Dictionary};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RailState {
     stack: Stack,
     dictionary: Dictionary,
@@ -65,7 +65,7 @@ impl Default for RailState {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Context {
     Main,
     Quotation {
