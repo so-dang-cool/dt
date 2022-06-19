@@ -14,6 +14,8 @@ rail 0.3.0
 2
 3
 4
+> drop [ [ 0 ] [ "goodbye" ] [ 1 ] [ "hello" ] ] opt .s
+"hello"
 ```
 
 ## Installation

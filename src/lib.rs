@@ -115,6 +115,10 @@ impl Stack {
     fn pop(&mut self) -> Option<RailVal> {
         self.terms.pop()
     }
+
+    fn is_empty(&self) -> bool {
+        self.terms.is_empty()
+    }
 }
 
 impl std::fmt::Display for Stack {

@@ -112,8 +112,8 @@ pub fn new_dictionary() -> Dictionary {
                 RailVal::String(name) => name,
                 rail_val => panic!("def requires a string name, but got {:?}", rail_val),
             };
-            let quot = match stack.pop() {
-                Some(RailVal::Quotation(quot)) => quot,
+            let quot = match stack.pop().unwrap() {
+                RailVal::Quotation(quot) => quot,
                 rail_val => panic!("def requires a quotation, but got {:?}", rail_val),
             };
             let mut dictionary = state.dictionary;
@@ -130,11 +130,61 @@ pub fn new_dictionary() -> Dictionary {
                 RailVal::I64(n) => n,
                 rail_val => panic!("def requires an integer, but got {:?}", rail_val),
             };
-            let quot = match stack.pop() {
-                Some(RailVal::Quotation(quot)) => quot,
+            let quot = match stack.pop().unwrap() {
+                RailVal::Quotation(quot) => quot,
                 rail_val => panic!("def requires a quotation, but got {:?}", rail_val),
             };
-            (0..n).fold(state.update_stack(stack), |state, _n| run_quot(&quot, state))
+            (0..n).fold(state.update_stack(stack), |state, _n| {
+                run_quot(&quot, state)
+            })
+        }),
+        RailOp::new("opt", &["seq"], &[], |state| {
+            let mut stack = state.stack.clone();
+
+            // TODO: All conditions and all actions must have the same stack effect.
+            let mut options = match stack.pop().unwrap() {
+                RailVal::Quotation(seq) => seq,
+                rail_val => panic!("opt requires a quotation, but got {:?}", rail_val),
+            };
+
+            let mut state = state.update_stack(stack);
+
+            while !options.is_empty() {
+                let action: Stack = match options.pop().unwrap() {
+                    RailVal::Quotation(action) => action,
+                    rail_val => panic!(
+                        "each entry for opt requires a quotation of quotations, but got {:?}",
+                        rail_val
+                    ),
+                };
+                let condition: Stack = match options.pop().unwrap() {
+                    RailVal::Quotation(action) => action,
+                    rail_val => panic!(
+                        "each entry for opt requires a quotation of quotations, but got {:?}",
+                        rail_val
+                    ),
+                };
+                state = run_quot(&condition, state);
+                let mut stack = state.stack.clone();
+                let success = truthy(stack.pop().unwrap());
+                state = state.update_stack(stack);
+                if success {
+                    state = run_quot(&action, state);
+                    break;
+                }
+            }
+
+            state
+        }),
+        RailOp::new("len", &["quot"], &["i64"], |state| {
+            let mut stack = state.stack.clone();
+            let quot = match stack.pop().unwrap() {
+                RailVal::Quotation(quot) => quot,
+                rail_val => panic!("def requires a quotation, but got {:?}", rail_val),
+            };
+            let len: i64 = quot.len().try_into().unwrap();
+            stack.push(RailVal::I64(len));
+            state.update_stack(stack)
         }),
     ]
 }
@@ -151,6 +201,13 @@ fn run_quot(quot: &Stack, state: RailState) -> RailState {
         }
         state.update_stack(stack)
     })
+}
+
+fn truthy(value: RailVal) -> bool {
+    match value {
+        RailVal::I64(n) => n != 0,
+        _ => false,
+    }
 }
 
 pub type Dictionary = Vec<RailOp<'static>>;
