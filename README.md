@@ -9,7 +9,7 @@ rail 0.3.0
 > 1 1 + .s
 2
 > [ 1 + ] "inc" def
-> 1 .s inc .s inc .s inc .s
+> 1 .s [ inc .s ] 3 times
 1
 2
 3

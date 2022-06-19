@@ -134,7 +134,7 @@ pub fn new_dictionary() -> Dictionary {
                 Some(RailVal::Quotation(quot)) => quot,
                 rail_val => panic!("def requires a quotation, but got {:?}", rail_val),
             };
-            (1..n).fold(state.update_stack(stack), |state, _n| run_quot(&quot, state))
+            (0..n).fold(state.update_stack(stack), |state, _n| run_quot(&quot, state))
         }),
     ]
 }
