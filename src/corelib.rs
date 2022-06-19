@@ -1,6 +1,7 @@
 use crate::Context;
 use crate::RailState;
 use crate::RailVal;
+use crate::Stack;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -40,7 +41,7 @@ pub fn new_dictionary() -> Dictionary {
     vec![
         RailOp::new(".", &["a"], &[], |state| {
             let mut stack = state.stack.clone();
-            println!("{:?}", stack.pop().unwrap());
+            println!("{}", stack.pop().unwrap());
             state.update_stack(stack)
         }),
         RailOp::new(".s", &[], &[], |state| {
@@ -97,17 +98,7 @@ pub fn new_dictionary() -> Dictionary {
             let rail_val = stack.pop().unwrap();
             let state = state.update_stack(stack);
             if let RailVal::Quotation(quot) = rail_val {
-                quot.terms.iter().fold(state, |state, rail_val| {
-                    let mut stack = state.stack.clone();
-                    match rail_val {
-                        RailVal::Operator(op) => {
-                            let mut op = op.clone();
-                            return op.go(state);
-                        }
-                        _ => stack.push(rail_val.clone()),
-                    }
-                    state.update_stack(stack)
-                })
+                run_quot(&quot, state)
             } else {
                 panic!(
                     "call is only implemented for quotations, but got {:?}",
@@ -115,34 +106,77 @@ pub fn new_dictionary() -> Dictionary {
                 );
             }
         }),
+        RailOp::new("def", &["quot", "s"], &[], |state| {
+            let mut stack = state.stack;
+            let name = match stack.pop().unwrap() {
+                RailVal::String(name) => name,
+                rail_val => panic!("def requires a string name, but got {:?}", rail_val),
+            };
+            let quot = match stack.pop() {
+                Some(RailVal::Quotation(quot)) => quot,
+                rail_val => panic!("def requires a quotation, but got {:?}", rail_val),
+            };
+            let mut dictionary = state.dictionary;
+            dictionary.push(RailOp::from_quot(&name, quot));
+            RailState {
+                stack,
+                dictionary,
+                context: state.context,
+            }
+        }),
     ]
+}
+
+fn run_quot(quot: &Stack, state: RailState) -> RailState {
+    quot.terms.iter().fold(state, |state, rail_val| {
+        let mut stack = state.stack.clone();
+        match rail_val {
+            RailVal::Operator(op) => {
+                let mut op = op.clone();
+                return op.go(state);
+            }
+            _ => stack.push(rail_val.clone()),
+        }
+        state.update_stack(stack)
+    })
 }
 
 pub type Dictionary = Vec<RailOp<'static>>;
 
 #[derive(Clone)]
 pub struct RailOp<'a> {
-    name: &'a str,
+    name: String,
     consumes: &'a [&'a str],
     produces: &'a [&'a str],
-    op: Arc<dyn Fn(RailState) -> RailState + 'a>,
+    action: RailAction<'a>,
+}
+
+#[derive(Clone)]
+pub enum RailAction<'a> {
+    Builtin(Arc<dyn Fn(RailState) -> RailState + 'a>),
+    Quotation(Stack),
 }
 
 impl RailOp<'_> {
-    fn new<'a, F>(
-        name: &'a str,
-        consumes: &'a [&'a str],
-        produces: &'a [&'a str],
-        op: F,
-    ) -> RailOp<'a>
+    fn new<'a, F>(name: &str, consumes: &'a [&'a str], produces: &'a [&'a str], op: F) -> RailOp<'a>
     where
         F: Fn(RailState) -> RailState + 'a,
     {
         RailOp {
-            name,
+            name: name.to_string(),
             consumes,
             produces,
-            op: Arc::new(op),
+            action: RailAction::Builtin(Arc::new(op)),
+        }
+    }
+
+    fn from_quot<'a>(name: &str, quot: Stack) -> RailOp<'a> {
+        // TODO: Infer stack effects
+        RailOp {
+            name: name.to_string(),
+            consumes: &[],
+            produces: &[],
+            action: RailAction::Quotation(quot),
         }
     }
 
@@ -161,7 +195,10 @@ impl RailOp<'_> {
 
         // TODO: Type checks
 
-        (self.op)(state)
+        match &self.action {
+            RailAction::Builtin(op) => op(state),
+            RailAction::Quotation(quot) => run_quot(quot, state),
+        }
     }
 }
 
