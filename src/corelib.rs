@@ -180,7 +180,7 @@ pub fn new_dictionary() -> Dictionary {
             let mut stack = state.stack.clone();
             let quot = match stack.pop().unwrap() {
                 RailVal::Quotation(quot) => quot,
-                rail_val => panic!("def requires a quotation, but got {:?}", rail_val),
+                rail_val => panic!("len requires a quotation, but got {:?}", rail_val),
             };
             let len: i64 = quot.len().try_into().unwrap();
             stack.push(RailVal::I64(len));
