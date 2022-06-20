@@ -75,7 +75,7 @@ pub enum Context {
 }
 
 #[derive(Clone, Debug)]
-enum RailVal {
+pub enum RailVal {
     I64(i64),
     String(String),
     Operator(RailOp<'static>),
