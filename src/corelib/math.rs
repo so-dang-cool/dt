@@ -1,4 +1,4 @@
-use crate::{RailOp, RailVal};
+use crate::RailOp;
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
@@ -20,8 +20,7 @@ where
     RailOp::new(name, &["i64"], &["i64"], move |state| {
         let mut stack = state.stack.clone();
         let a = stack.pop_i64(name);
-        let res = RailVal::I64(op(a));
-        stack.push(res);
+        stack.push_i64(op(a));
         state.update_stack(stack)
     })
 }
@@ -34,8 +33,7 @@ where
         let mut stack = state.stack.clone();
         let b = stack.pop_i64(name);
         let a = stack.pop_i64(name);
-        let res = RailVal::I64(op(a, b));
-        stack.push(res);
+        stack.push_i64(op(a, b));
         state.update_stack(stack)
     })
 }

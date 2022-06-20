@@ -31,17 +31,17 @@ pub fn operate(state: RailState, term: String) -> RailState {
         if let Context::Main = context {
             return op.clone().go(state.clone());
         } else {
-            stack.push(RailVal::Operator(op.clone()));
+            stack.push_operator(op.clone());
         }
     }
     // Strings
     else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
         let s = term.chars().skip(1).take(term.len() - 2).collect();
-        stack.push(RailVal::String(s));
+        stack.push_string(s);
     }
     // Integers
     else if let Ok(i) = term.parse::<i64>() {
-        stack.push(RailVal::I64(i));
+        stack.push_i64(i);
     }
     // Unknown
     else {

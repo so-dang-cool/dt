@@ -7,7 +7,7 @@ pub fn builtins() -> Vec<RailOp<'static>> {
         RailOp::new("!", &["bool"], &["bool"], |state| {
             let mut stack = state.stack.clone();
             let b = stack.pop_bool("!");
-            stack.push(RailVal::Boolean(!b));
+            stack.push_bool(!b);
             state.update_stack(stack)
         }),
         equality("==", Equality::Equal),
@@ -22,7 +22,7 @@ pub fn builtins() -> Vec<RailOp<'static>> {
 fn push_bool(name: &str, b: bool) -> RailOp<'_> {
     RailOp::new(name, &[], &["bool"], move |state| {
         let mut stack = state.stack.clone();
-        stack.push(RailVal::Boolean(b));
+        stack.push_bool(b);
         state.update_stack(stack)
     })
 }
@@ -52,7 +52,7 @@ fn equality(name: &str, eq: Equality) -> RailOp<'_> {
             Equality::NotEqual => !res,
         };
 
-        stack.push(RailVal::Boolean(res));
+        stack.push_bool(res);
 
         state.update_stack(stack)
     })
@@ -66,8 +66,7 @@ where
         let mut stack = state.stack.clone();
         let b = stack.pop_i64(name);
         let a = stack.pop_i64(name);
-        let res = RailVal::Boolean(op(a, b));
-        stack.push(res);
+        stack.push_bool(op(a, b));
         state.update_stack(stack)
     })
 }

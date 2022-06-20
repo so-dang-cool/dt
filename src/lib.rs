@@ -49,7 +49,7 @@ impl RailState {
             Context::Main => panic!("Can't escape main"),
         };
 
-        stack.push(RailVal::Quotation(self.stack));
+        stack.push_quotation(self.stack);
 
         RailState {
             stack,
@@ -116,6 +116,26 @@ impl Stack {
 
     fn push(&mut self, term: RailVal) {
         self.terms.push(term)
+    }
+
+    fn push_bool(&mut self, b: bool) {
+        self.terms.push(RailVal::Boolean(b))
+    }
+
+    fn push_i64(&mut self, i: i64) {
+        self.terms.push(RailVal::I64(i))
+    }
+
+    fn push_operator(&mut self, op: RailOp<'static>) {
+        self.terms.push(RailVal::Operator(op))
+    }
+
+    fn push_quotation(&mut self, quot: Stack) {
+        self.terms.push(RailVal::Quotation(quot))
+    }
+
+    fn push_string(&mut self, s: String) {
+        self.terms.push(RailVal::String(s))
     }
 
     fn pop(&mut self) -> Option<RailVal> {
