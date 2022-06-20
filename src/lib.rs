@@ -106,12 +106,16 @@ impl Stack {
         Stack { terms: vec![] }
     }
 
-    fn push(&mut self, term: RailVal) {
-        self.terms.push(term)
-    }
-
     fn len(&self) -> usize {
         self.terms.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.terms.is_empty()
+    }
+
+    fn push(&mut self, term: RailVal) {
+        self.terms.push(term)
     }
 
     fn pop(&mut self) -> Option<RailVal> {
@@ -132,7 +136,7 @@ impl Stack {
         }
     }
 
-    fn pop_operator(&mut self, context: &str) -> RailOp<'static> {
+    fn _pop_operator(&mut self, context: &str) -> RailOp<'static> {
         match self.terms.pop().unwrap() {
             RailVal::Operator(op) => op,
             rail_val => panic!("{}", type_panic_msg(context, "operator", rail_val)),
@@ -151,10 +155,6 @@ impl Stack {
             RailVal::String(s) => s,
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
         }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.terms.is_empty()
     }
 }
 

@@ -19,14 +19,9 @@ where
 {
     RailOp::new(name, &["i64"], &["i64"], move |state| {
         let mut stack = state.stack.clone();
-        let a = stack.pop().unwrap();
-        match a {
-            RailVal::I64(a) => {
-                let res = op(a);
-                stack.push(RailVal::I64(res));
-            }
-            _ => panic!("Attempted to do math with Strings!"),
-        }
+        let a = stack.pop_i64(name);
+        let res = RailVal::I64(op(a));
+        stack.push(res);
         state.update_stack(stack)
     })
 }
@@ -37,15 +32,10 @@ where
 {
     RailOp::new(name, &["i64", "i64"], &["i64"], move |state| {
         let mut stack = state.stack.clone();
-        let a = stack.pop().unwrap();
-        let b = stack.pop().unwrap();
-        match (a, b) {
-            (RailVal::I64(a), RailVal::I64(b)) => {
-                let res = op(a, b);
-                stack.push(RailVal::I64(res));
-            }
-            _ => panic!("Attempted to do math with Strings!"),
-        }
+        let b = stack.pop_i64(name);
+        let a = stack.pop_i64(name);
+        let res = RailVal::I64(op(a, b));
+        stack.push(res);
         state.update_stack(stack)
     })
 }

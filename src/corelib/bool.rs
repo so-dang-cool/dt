@@ -19,7 +19,7 @@ pub fn builtins() -> Vec<RailOp<'static>> {
     ]
 }
 
-fn push_bool<'a>(name: &'a str, b: bool) -> RailOp<'a> {
+fn push_bool(name: &str, b: bool) -> RailOp<'_> {
     RailOp::new(name, &[], &["bool"], move |state| {
         let mut stack = state.stack.clone();
         stack.push(RailVal::Boolean(b));
@@ -32,7 +32,7 @@ enum Equality {
     NotEqual,
 }
 
-fn equality<'a>(name: &'a str, eq: Equality) -> RailOp<'a> {
+fn equality(name: &str, eq: Equality) -> RailOp<'_> {
     RailOp::new(name, &["a", "a"], &["bool"], move |state| {
         let mut stack = state.stack.clone();
         let b = stack.pop().unwrap();
