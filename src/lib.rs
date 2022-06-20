@@ -77,6 +77,7 @@ pub enum Context {
 #[derive(Clone, Debug)]
 pub enum RailVal {
     Boolean(bool),
+    // TODO: Make a "Numeric" typeclass. (And floating-point/rational numbers)
     I64(i64),
     Operator(RailOp<'static>),
     Quotation(Stack),
