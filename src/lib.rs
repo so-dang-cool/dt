@@ -76,20 +76,22 @@ pub enum Context {
 
 #[derive(Clone, Debug)]
 pub enum RailVal {
+    Boolean(bool),
     I64(i64),
-    String(String),
     Operator(RailOp<'static>),
     Quotation(Stack),
+    String(String),
 }
 
 impl std::fmt::Display for RailVal {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         use RailVal::*;
         match self {
+            Boolean(b) => write!(fmt, "{}", if *b { "true" } else { "false" }),
             I64(n) => write!(fmt, "{:?}", n),
-            String(s) => write!(fmt, "\"{}\"", s),
             Operator(o) => write!(fmt, "{:?}", o),
             Quotation(q) => write!(fmt, "{:?}", q),
+            String(s) => write!(fmt, "\"{}\"", s),
         }
     }
 }
@@ -116,6 +118,41 @@ impl Stack {
         self.terms.pop()
     }
 
+    fn pop_bool(&mut self, context: &str) -> bool {
+        match self.terms.pop().unwrap() {
+            RailVal::Boolean(b) => b,
+            rail_val => panic!("{}", type_panic_msg(context, "boolean", rail_val)),
+        }
+    }
+
+    fn pop_i64(&mut self, context: &str) -> i64 {
+        match self.terms.pop().unwrap() {
+            RailVal::I64(n) => n,
+            rail_val => panic!("{}", type_panic_msg(context, "i64", rail_val)),
+        }
+    }
+
+    fn pop_operator(&mut self, context: &str) -> RailOp<'static> {
+        match self.terms.pop().unwrap() {
+            RailVal::Operator(op) => op,
+            rail_val => panic!("{}", type_panic_msg(context, "operator", rail_val)),
+        }
+    }
+
+    fn pop_quotation(&mut self, context: &str) -> Stack {
+        match self.terms.pop().unwrap() {
+            RailVal::Quotation(quot) => quot,
+            rail_val => panic!("{}", type_panic_msg(context, "quotation", rail_val)),
+        }
+    }
+
+    fn pop_string(&mut self, context: &str) -> String {
+        match self.terms.pop().unwrap() {
+            RailVal::String(s) => s,
+            rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
+        }
+    }
+
     fn is_empty(&self) -> bool {
         self.terms.is_empty()
     }
@@ -129,4 +166,11 @@ impl std::fmt::Display for Stack {
         }
         Ok(())
     }
+}
+
+fn type_panic_msg(context: &str, expected: &str, actual: RailVal) -> String {
+    format!(
+        "[Context: {}] Wanted {}, but got {:?}",
+        context, expected, actual
+    )
 }

@@ -84,13 +84,6 @@ fn run_quot(quot: &Stack, state: RailState) -> RailState {
     })
 }
 
-fn truthy(value: RailVal) -> bool {
-    match value {
-        RailVal::I64(n) => n != 0,
-        _ => false,
-    }
-}
-
 pub type Dictionary = HashMap<String, RailOp<'static>>;
 
 #[derive(Clone)]
