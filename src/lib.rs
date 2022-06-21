@@ -43,9 +43,19 @@ impl RailState {
         }
     }
 
+    pub fn in_main(&self) -> bool {
+        matches!(self.context, Context::Main)
+    }
+
     pub fn higher(self) -> RailState {
         let (context, mut stack) = match self.context {
             Context::Quotation { context, parent } => (*context, *parent),
+            Context::String { context: _ } => {
+                unreachable!("Should never try to escape while in a string")
+            }
+            Context::Comment { context: _ } => {
+                unreachable!("Should never try to escape while in a comment")
+            }
             Context::Main => panic!("Can't escape main"),
         };
 
@@ -53,6 +63,85 @@ impl RailState {
 
         RailState {
             stack,
+            dictionary: self.dictionary,
+            context,
+        }
+    }
+
+    pub fn enter_string(self) -> RailState {
+        let context = Context::String {
+            context: Box::new(self.context),
+        };
+
+        let mut stack = self.stack;
+
+        stack.push_string(String::new());
+
+        RailState {
+            stack,
+            dictionary: self.dictionary,
+            context,
+        }
+    }
+
+    pub fn in_string(&self) -> bool {
+        matches!(self.context, Context::String { context: _ })
+    }
+
+    pub fn append_string(self, s: &str) -> RailState {
+        self.append_string_exact(" ").append_string_exact(s)
+    }
+
+    pub fn append_string_exact(self, s: &str) -> RailState {
+        let mut stack = self.stack.clone();
+        let s = stack.pop_string("string_parser") + s;
+        stack.push_string(s);
+        self.update_stack(stack)
+    }
+
+    pub fn exit_string(self) -> RailState {
+        let context = match self.context {
+            Context::String { context } => *context,
+            ctx => unreachable!(
+                "can't exit string when not even in a string. Context: {:?}",
+                ctx
+            ),
+        };
+
+        RailState {
+            stack: self.stack,
+            dictionary: self.dictionary,
+            context,
+        }
+    }
+
+    pub fn enter_comment(self) -> RailState {
+        let context = Context::Comment {
+            context: Box::new(self.context),
+        };
+
+        RailState {
+            stack: self.stack,
+            dictionary: self.dictionary,
+            context,
+        }
+    }
+
+    pub fn in_comment(&self) -> bool {
+        matches!(self.context, Context::Comment { context: _ })
+    }
+
+    pub fn exit_comment(self) -> RailState {
+        let context = match self.context {
+            Context::Comment { context } => *context,
+            ctx => unreachable!(
+                "can't exit comment when not even in a comment. Context: {:?}",
+                ctx
+            ),
+        };
+
+        RailState {
+            stack: self.stack,
             dictionary: self.dictionary,
             context,
         }
@@ -71,6 +160,12 @@ pub enum Context {
     Quotation {
         context: Box<Context>,
         parent: Box<Stack>,
+    },
+    String {
+        context: Box<Context>,
+    },
+    Comment {
+        context: Box<Context>,
     },
 }
 

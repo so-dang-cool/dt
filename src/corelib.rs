@@ -1,4 +1,3 @@
-use crate::Context;
 use crate::RailState;
 use crate::RailVal;
 use crate::Stack;
@@ -13,11 +12,43 @@ mod function;
 mod math;
 mod shuffle;
 mod stack;
+mod string;
 
 pub fn operate(state: RailState, term: String) -> RailState {
     let mut stack = state.stack.clone();
     let dictionary = state.dictionary.clone();
     let context = state.context.clone();
+
+    // Comments
+    if state.in_comment() {
+        if term == "*/" {
+            return state.exit_comment();
+        }
+        return state;
+    } else if term == "/*" {
+        return state.enter_comment();
+    }
+
+    // Strings
+    // TODO: Need a better way to soak up exact whitespace characters.
+    if state.in_string() {
+        if term == "\"" {
+            return state.append_string("").exit_string();
+        } else if term.ends_with('"') {
+            let term = term.strip_suffix('"').unwrap();
+            return state.append_string(term).exit_string();
+        }
+        return state.append_string(&term);
+    } else if term.starts_with('"') {
+        if term == "\"" {
+            return state.enter_string();
+        } else if term.ends_with('"') {
+            let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
+            return state.enter_string().append_string_exact(term).exit_string();
+        }
+        let term = term.strip_prefix('"').unwrap();
+        return state.enter_string().append_string_exact(term);
+    }
 
     // Quotations
     if term == "[" {
@@ -25,19 +56,13 @@ pub fn operate(state: RailState, term: String) -> RailState {
     } else if term == "]" {
         return state.higher();
     }
-
     // Defined operations
-    if let Some(op) = dictionary.get(&term) {
-        if let Context::Main = context {
+    else if let Some(op) = dictionary.get(&term) {
+        if state.in_main() {
             return op.clone().go(state.clone());
         } else {
             stack.push_operator(op.clone());
         }
-    }
-    // Strings
-    else if let (Some('"'), Some('"')) = (term.chars().next(), term.chars().last()) {
-        let s = term.chars().skip(1).take(term.len() - 2).collect();
-        stack.push_string(s);
     }
     // Integers
     else if let Ok(i) = term.parse::<i64>() {
@@ -65,6 +90,7 @@ pub fn new_dictionary() -> Dictionary {
         .chain(math::builtins())
         .chain(shuffle::builtins())
         .chain(stack::builtins())
+        .chain(string::builtins())
         .map(|op| (op.name.clone(), op));
 
     HashMap::from_iter(ops)

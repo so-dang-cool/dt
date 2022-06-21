@@ -5,7 +5,7 @@ programming language.
 
 ```
 $ rail
-rail 0.4.3
+rail 0.4.4
 > 1 1 + .s
 2
 > [ 1 + ] "inc" def
