@@ -185,7 +185,7 @@ impl std::fmt::Display for RailVal {
         match self {
             Boolean(b) => write!(fmt, "{}", if *b { "true" } else { "false" }),
             I64(n) => write!(fmt, "{}", n),
-            Operator(o) => write!(fmt, "{:?}", o),
+            Operator(o) => write!(fmt, "{}", o.name),
             Quotation(q) => write!(fmt, "{}", q),
             String(s) => write!(fmt, "\"{}\"", s),
         }

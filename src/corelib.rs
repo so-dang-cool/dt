@@ -116,7 +116,7 @@ pub type Dictionary = HashMap<String, RailOp<'static>>;
 
 #[derive(Clone)]
 pub struct RailOp<'a> {
-    name: String,
+    pub name: String,
     consumes: &'a [&'a str],
     produces: &'a [&'a str],
     action: RailAction<'a>,
