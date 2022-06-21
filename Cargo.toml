@@ -1,6 +1,6 @@
 [package]
 name = "rail-lang"
-version = "0.4.4"
+version = "0.4.5"
 authors = ["J.R. Hill <hiljusti@so.dang.cool>"]
 description = "WIP concatenative language"
 license = "GPL-2.0-only"
