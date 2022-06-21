@@ -184,9 +184,9 @@ impl std::fmt::Display for RailVal {
         use RailVal::*;
         match self {
             Boolean(b) => write!(fmt, "{}", if *b { "true" } else { "false" }),
-            I64(n) => write!(fmt, "{:?}", n),
+            I64(n) => write!(fmt, "{}", n),
             Operator(o) => write!(fmt, "{:?}", o),
-            Quotation(q) => write!(fmt, "{:?}", q),
+            Quotation(q) => write!(fmt, "{}", q),
             String(s) => write!(fmt, "\"{}\"", s),
         }
     }
@@ -276,10 +276,15 @@ impl Stack {
 
 impl std::fmt::Display for Stack {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "[ ").unwrap();
+
         for term in &self.terms {
             term.fmt(f).unwrap();
             write!(f, " ").unwrap();
         }
+
+        write!(f, "]").unwrap();
+
         Ok(())
     }
 }
