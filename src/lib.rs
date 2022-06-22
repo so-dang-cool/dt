@@ -2,7 +2,6 @@ pub mod corelib;
 pub mod prompt;
 
 use crate::corelib::RailOp;
-pub use corelib::operate;
 use corelib::{new_dictionary, Dictionary};
 
 #[derive(Clone, Debug)]
