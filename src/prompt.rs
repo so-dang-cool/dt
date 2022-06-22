@@ -1,42 +1,12 @@
+use crate::tokens;
 use crate::RailState;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-pub fn operate(state: RailState, term: String) -> RailState {
+pub fn operate_term(state: RailState, term: String) -> RailState {
     let mut stack = state.stack.clone();
     let dictionary = state.dictionary.clone();
     let context = state.context.clone();
-
-    // Comments
-    if state.in_comment() {
-        if term == "*/" {
-            return state.exit_comment();
-        }
-        return state;
-    } else if term == "/*" {
-        return state.enter_comment();
-    }
-
-    // Strings
-    // TODO: Need a better way to soak up exact whitespace characters.
-    if state.in_string() {
-        if term == "\"" {
-            return state.append_string("").exit_string();
-        } else if term.ends_with('"') {
-            let term = term.strip_suffix('"').unwrap();
-            return state.append_string(term).exit_string();
-        }
-        return state.append_string(&term);
-    } else if term.starts_with('"') {
-        if term == "\"" {
-            return state.enter_string();
-        } else if term.ends_with('"') {
-            let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-            return state.enter_string().append_string_exact(term).exit_string();
-        }
-        let term = term.strip_prefix('"').unwrap();
-        return state.enter_string().append_string_exact(term);
-    }
 
     // Quotations
     if term == "[" {
@@ -51,6 +21,11 @@ pub fn operate(state: RailState, term: String) -> RailState {
         } else {
             stack.push_operator(op.clone());
         }
+    }
+    // Strings
+    else if term.starts_with('"') && term.ends_with('"') {
+        let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
+        stack.push_string(term.to_string());
     }
     // Integers
     else if let Ok(i) = term.parse::<i64>() {
@@ -82,7 +57,7 @@ impl RailPrompt {
     }
 
     pub fn run(self) {
-        let end_state = self.fold(RailState::default(), operate);
+        let end_state = self.fold(RailState::default(), operate_term);
 
         println!("{}", end_state.stack);
     }
@@ -119,11 +94,8 @@ impl Iterator for RailPrompt {
 
             self.editor.add_history_entry(&input);
 
-            self.terms = input
-                .split_whitespace()
-                .map(|s| s.to_owned())
-                .rev()
-                .collect::<Vec<_>>();
+            self.terms = tokens::tokenize(&input);
+            self.terms.reverse();
         }
 
         self.terms.pop()

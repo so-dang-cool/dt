@@ -1,5 +1,6 @@
 pub mod corelib;
 pub mod prompt;
+pub mod tokens;
 
 use crate::corelib::RailOp;
 use corelib::{new_dictionary, Dictionary};
@@ -51,9 +52,6 @@ impl RailState {
             Context::Quotation { context, parent } => (*context, *parent),
             Context::String { context: _ } => {
                 unreachable!("Should never try to escape while in a string")
-            }
-            Context::Comment { context: _ } => {
-                unreachable!("Should never try to escape while in a comment")
             }
             Context::Main => panic!("Can't escape main"),
         };
@@ -113,38 +111,6 @@ impl RailState {
             context,
         }
     }
-
-    pub fn enter_comment(self) -> RailState {
-        let context = Context::Comment {
-            context: Box::new(self.context),
-        };
-
-        RailState {
-            stack: self.stack,
-            dictionary: self.dictionary,
-            context,
-        }
-    }
-
-    pub fn in_comment(&self) -> bool {
-        matches!(self.context, Context::Comment { context: _ })
-    }
-
-    pub fn exit_comment(self) -> RailState {
-        let context = match self.context {
-            Context::Comment { context } => *context,
-            ctx => unreachable!(
-                "can't exit comment when not even in a comment. Context: {:?}",
-                ctx
-            ),
-        };
-
-        RailState {
-            stack: self.stack,
-            dictionary: self.dictionary,
-            context,
-        }
-    }
 }
 
 impl Default for RailState {
@@ -161,9 +127,6 @@ pub enum Context {
         parent: Box<Stack>,
     },
     String {
-        context: Box<Context>,
-    },
-    Comment {
         context: Box<Context>,
     },
 }
