@@ -1,3 +1,8 @@
+
+![License](https://img.shields.io/github/license/hiljusti/rail)
+![Lines of code](https://img.shields.io/tokei/lines/github/hiljusti/rail)
+![GitHub repo size](https://img.shields.io/github/repo-size/hiljusti/rail)
+
 # Rail
 
 A very experimental [concatenative](https://concatenative.org/wiki/view/Concatenative%20language)
