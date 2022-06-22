@@ -21,5 +21,16 @@ pub fn builtins() -> Vec<RailOp<'static>> {
                 context: state.context,
             }
         }),
+        RailOp::new("undef", &["s"], &[], |state| {
+            let mut stack = state.stack;
+            let name = stack.pop_string("undef");
+            let mut dictionary = state.dictionary;
+            dictionary.remove(&name).expect(&format!("Cannot undef \"{}\", it was already undefined", name));
+            RailState {
+                stack,
+                dictionary,
+                context: state.context,
+            }
+        }),
     ]
 }

@@ -25,5 +25,12 @@ pub fn builtins() -> Vec<RailOp<'static>> {
             stack.push(a);
             state.update_stack(stack)
         }),
+        RailOp::new("rev", &["quot"], &["quot"], |state| {
+            let mut stack = state.stack.clone();
+            let mut quot = stack.pop_quotation("push");
+            quot.terms.reverse();
+            stack.push_quotation(quot);
+            state.update_stack(stack)
+        }),
     ]
 }

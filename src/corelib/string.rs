@@ -41,5 +41,13 @@ pub fn builtins() -> Vec<RailOp<'static>> {
             stack.push_string(s.join(" "));
             state.update_stack(stack)
         }),
+        RailOp::new("chars", &["string"], &["quot"], |state| {
+            let mut stack = state.stack.clone();
+            let s = stack.pop_string("words");
+            let mut cs = Stack::new();
+            s.chars().for_each(|c| cs.push_string(c.to_string()));
+            stack.push_quotation(cs);
+            state.update_stack(stack)
+        }),
     ]
 }
