@@ -7,7 +7,7 @@ pub fn builtins() -> Vec<RailOp<'static>> {
 
         let invocation = stack.pop_string("execute ");
         let invocation = invocation.trim();
-        let (exe, args) = invocation.split_once(" ").unwrap_or((invocation, ""));
+        let (exe, args) = invocation.split_once(' ').unwrap_or((invocation, ""));
         let args = args.split_ascii_whitespace().collect::<Vec<_>>();
 
         let res = std::process::Command::new(exe).args(args).output().unwrap();

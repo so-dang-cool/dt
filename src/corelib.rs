@@ -1,6 +1,4 @@
-use crate::RailState;
-use crate::RailVal;
-use crate::Stack;
+use crate::{RailState, RailVal, Stack};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;

@@ -31,6 +31,14 @@ impl RailState {
         }
     }
 
+    pub fn contextless_child(&self, stack: Stack) -> RailState {
+        RailState {
+            stack,
+            dictionary: self.dictionary.clone(),
+            context: Context::None,
+        }
+    }
+
     pub fn deeper(self) -> RailState {
         let context = Context::Quotation {
             context: Box::new(self.context),
@@ -98,7 +106,7 @@ impl std::fmt::Display for RailVal {
             I64(n) => write!(fmt, "{}", n),
             Operator(o) => write!(fmt, "{}", o.name),
             Quotation(q) => write!(fmt, "{}", q),
-            String(s) => write!(fmt, "\"{}\"", s.replace("\n", "\\n")),
+            String(s) => write!(fmt, "\"{}\"", s.replace('\n', "\\n")),
         }
     }
 }
