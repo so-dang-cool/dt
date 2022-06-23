@@ -10,6 +10,7 @@ mod choice;
 mod display;
 mod function;
 mod math;
+mod process;
 mod repeat;
 mod shuffle;
 mod stack;
@@ -22,6 +23,7 @@ pub fn new_dictionary() -> Dictionary {
         .chain(display::builtins())
         .chain(function::builtins())
         .chain(math::builtins())
+        .chain(process::builtins())
         .chain(repeat::builtins())
         .chain(shuffle::builtins())
         .chain(stack::builtins())

@@ -1,5 +1,5 @@
 use crate::corelib::run_quot;
-use crate::{RailOp, RailState};
+use crate::{Context, RailOp, RailState};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
@@ -8,6 +8,24 @@ pub fn builtins() -> Vec<RailOp<'static>> {
             let quot = stack.pop_quotation("call");
             let state = state.update_stack(stack);
             run_quot(&quot, state)
+        }),
+        RailOp::new("call-in", &["quot", "quot"], &["quot"], |state| {
+            let mut stack = state.stack.clone();
+            let quot = stack.pop_quotation("call-in");
+            let working_stack = stack.pop_quotation("call-in");
+
+            // A mini-world for the changes
+            let mini_world = RailState {
+                stack: working_stack,
+                dictionary: state.dictionary.clone(),
+                context: Context::None,
+            };
+
+            let mini_world = run_quot(&quot, mini_world);
+
+            stack.push_quotation(mini_world.stack);
+
+            state.update_stack(stack)
         }),
         RailOp::new("def", &["quot", "s"], &[], |state| {
             let mut stack = state.stack;

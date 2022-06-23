@@ -55,19 +55,26 @@ fn rail_interpret(stdin: &str) -> RailRunResult {
         .stderr(Stdio::piped())
         .spawn()
         .expect("Error running process");
-    
-        rail_proc
+
+    rail_proc
         .stdin
         .expect("Error sending stdin")
         .write_all(stdin.as_bytes())
         .unwrap();
-    
 
     let mut stdout = String::new();
-    rail_proc.stdout.unwrap().read_to_string(&mut stdout).unwrap();
+    rail_proc
+        .stdout
+        .unwrap()
+        .read_to_string(&mut stdout)
+        .unwrap();
 
     let mut stderr = String::new();
-    rail_proc.stderr.unwrap().read_to_string(&mut stderr).unwrap();
+    rail_proc
+        .stderr
+        .unwrap()
+        .read_to_string(&mut stderr)
+        .unwrap();
 
     RailRunResult { stdout, stderr }
 }

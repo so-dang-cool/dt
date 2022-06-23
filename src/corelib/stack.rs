@@ -1,5 +1,5 @@
-use crate::Stack;
 use crate::RailOp;
+use crate::Stack;
 
 // TODO: Should all these work for a String too? Should String also be a stack?
 pub fn builtins() -> Vec<RailOp<'static>> {

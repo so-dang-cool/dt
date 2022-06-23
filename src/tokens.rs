@@ -2,6 +2,7 @@ use regex::Regex;
 
 pub fn tokenize(line: &str) -> Vec<String> {
     // TODO: Validate that a line does not contain unterminated strings.
+    // TODO: Allow for string escapes for quotes, newlines, etc
     let re: Regex = Regex::new(r#"(".*?"|\S*)"#).unwrap();
     re.captures_iter(line)
         .flat_map(|cap| cap.iter().take(1).collect::<Vec<_>>())

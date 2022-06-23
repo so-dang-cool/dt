@@ -51,6 +51,7 @@ impl RailState {
         let (context, mut stack) = match self.context {
             Context::Quotation { context, parent } => (*context, *parent),
             Context::Main => panic!("Can't escape main"),
+            Context::None => panic!("Can't escape"),
         };
 
         stack.push_quotation(self.stack);
@@ -76,6 +77,7 @@ pub enum Context {
         context: Box<Context>,
         parent: Box<Stack>,
     },
+    None,
 }
 
 #[derive(Clone, Debug)]
@@ -96,7 +98,7 @@ impl std::fmt::Display for RailVal {
             I64(n) => write!(fmt, "{}", n),
             Operator(o) => write!(fmt, "{}", o.name),
             Quotation(q) => write!(fmt, "{}", q),
-            String(s) => write!(fmt, "\"{}\"", s),
+            String(s) => write!(fmt, "\"{}\"", s.replace("\n", "\\n")),
         }
     }
 }
@@ -141,6 +143,10 @@ impl Stack {
 
     fn push_string(&mut self, s: String) {
         self.terms.push(RailVal::String(s))
+    }
+
+    fn push_str(&mut self, s: &str) {
+        self.terms.push(RailVal::String(s.to_owned()))
     }
 
     fn pop(&mut self) -> Option<RailVal> {
