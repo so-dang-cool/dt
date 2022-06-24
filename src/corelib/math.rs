@@ -1,4 +1,4 @@
-use crate::RailOp;
+use crate::rail_machine::RailOp;
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![

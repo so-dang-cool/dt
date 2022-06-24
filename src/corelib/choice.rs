@@ -1,5 +1,4 @@
-use crate::corelib::run_quot;
-use crate::{RailOp, Stack};
+use crate::rail_machine::{run_quot, RailOp, Stack};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![RailOp::new("opt", &["seq"], &[], |state| {

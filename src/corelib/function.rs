@@ -1,5 +1,4 @@
-use crate::corelib::run_quot;
-use crate::{RailOp, RailState};
+use crate::rail_machine::{run_quot, RailOp, RailState};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![

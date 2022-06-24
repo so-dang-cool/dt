@@ -1,5 +1,4 @@
-use crate::corelib::run_quot;
-use crate::{RailOp, Stack};
+use crate::rail_machine::{run_quot, RailOp, Stack};
 
 // TODO: Should all these work for a String too? Should String also be a stack?
 pub fn builtins() -> Vec<RailOp<'static>> {

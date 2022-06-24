@@ -1,5 +1,4 @@
-use crate::RailOp;
-use crate::Stack;
+use crate::rail_machine::{RailOp, Stack};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
@@ -52,9 +51,11 @@ fn string_splitter<'a>(name: &'a str, delimiter: &'a str) -> RailOp<'a> {
     })
 }
 
-fn split(s: String, delimiter:&str) -> Stack {
+fn split(s: String, delimiter: &str) -> Stack {
     let mut words = Stack::new();
-    s.split(delimiter).map(|s| s.to_string()).for_each(|s| words.push_string(s));
+    s.split(delimiter)
+        .map(|s| s.to_string())
+        .for_each(|s| words.push_string(s));
     words
 }
 
@@ -69,7 +70,7 @@ fn string_joiner<'a>(name: &'a str, delimiter: &'a str) -> RailOp<'a> {
 
 fn join(context: &str, words: Stack, delimiter: &str) -> String {
     let mut s = vec![];
-    let mut words = words.clone();
+    let mut words = words;
     while !words.is_empty() {
         s.push(words.pop_string(context));
     }

@@ -1,5 +1,4 @@
-use crate::RailOp;
-use crate::Stack;
+use crate::rail_machine::{RailOp, Stack};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![RailOp::new("execute", &["s"], &["quot"], |state| {

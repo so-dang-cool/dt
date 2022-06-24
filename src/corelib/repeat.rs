@@ -1,5 +1,4 @@
-use crate::corelib::run_quot;
-use crate::RailOp;
+use crate::rail_machine::{run_quot, RailOp};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![RailOp::new("times", &["quot", "i64"], &[], |state| {

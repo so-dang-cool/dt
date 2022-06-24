@@ -1,12 +1,11 @@
+use crate::rail_machine::RailState;
 use crate::tokens;
-use crate::RailState;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 pub fn operate_term(state: RailState, term: String) -> RailState {
     let mut stack = state.stack.clone();
     let dictionary = state.dictionary.clone();
-    let context = state.context.clone();
 
     // Quotations
     if term == "[" {
@@ -33,14 +32,14 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
     }
     // Unknown
     else {
-        eprintln!("Derailed: unknown term {:?}", term);
+        eprintln!("Derailed: unknown term {}", term);
         std::process::exit(1);
     }
 
     RailState {
         stack,
         dictionary,
-        context,
+        context: state.context,
     }
 }
 
@@ -86,7 +85,7 @@ impl Iterator for RailPrompt {
                     return None;
                 }
 
-                eprintln!("Derailed: {:?}", e);
+                eprintln!("Derailed: {}", e);
                 std::process::exit(1);
             }
 

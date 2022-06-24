@@ -1,4 +1,4 @@
-use crate::{RailOp, RailVal};
+use crate::rail_machine::{RailOp, RailVal};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
@@ -44,7 +44,7 @@ fn equality(name: &str, eq: Equality) -> RailOp<'_> {
             (Boolean(a), Boolean(b)) => a == b,
             (I64(a), I64(b)) => a == b,
             (String(a), String(b)) => a == b,
-            (a, b) => panic!("Cannot compare equality of {:?} and {:?}", a, b),
+            (a, b) => panic!("Cannot compare equality of {} and {}", a, b),
         };
 
         let res = match eq {
