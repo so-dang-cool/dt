@@ -1,10 +1,10 @@
-use crate::rail_machine::{RailOp, RailVal};
+use crate::rail_machine::{RailDef, RailVal};
 
-pub fn builtins() -> Vec<RailOp<'static>> {
+pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
         push_bool("true", true),
         push_bool("false", false),
-        RailOp::on_stack("not", &["bool"], &["bool"], |stack| {
+        RailDef::on_stack("not", &["bool"], &["bool"], |stack| {
             let (b, stack) = stack.pop_bool("not");
             stack.push_bool(!b)
         }),
@@ -17,8 +17,8 @@ pub fn builtins() -> Vec<RailOp<'static>> {
     ]
 }
 
-fn push_bool(name: &str, b: bool) -> RailOp<'_> {
-    RailOp::on_stack(name, &[], &["bool"], move |stack| stack.push_bool(b))
+fn push_bool(name: &str, b: bool) -> RailDef<'_> {
+    RailDef::on_stack(name, &[], &["bool"], move |stack| stack.push_bool(b))
 }
 
 enum Equality {
@@ -26,8 +26,8 @@ enum Equality {
     NotEqual,
 }
 
-fn equality(name: &str, eq: Equality) -> RailOp<'_> {
-    RailOp::on_stack(name, &["a", "a"], &["bool"], move |stack| {
+fn equality(name: &str, eq: Equality) -> RailDef<'_> {
+    RailDef::on_stack(name, &["a", "a"], &["bool"], move |stack| {
         let (b, stack) = stack.pop();
         let (a, stack) = stack.pop();
 
@@ -49,11 +49,11 @@ fn equality(name: &str, eq: Equality) -> RailOp<'_> {
     })
 }
 
-fn binary_i64_pred<'a, F>(name: &'a str, op: F) -> RailOp<'a>
+fn binary_i64_pred<'a, F>(name: &'a str, op: F) -> RailDef<'a>
 where
     F: Fn(i64, i64) -> bool + Sized + 'a,
 {
-    RailOp::on_stack(name, &["i64", "i64"], &["bool"], move |stack| {
+    RailDef::on_stack(name, &["i64", "i64"], &["bool"], move |stack| {
         let (b, stack) = stack.pop_i64(name);
         let (a, stack) = stack.pop_i64(name);
         stack.push_bool(op(a, b))

@@ -1,13 +1,13 @@
-use crate::rail_machine::{run_quot, RailOp};
+use crate::rail_machine::{run_quot, RailDef};
 
-pub fn builtins() -> Vec<RailOp<'static>> {
+pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailOp::on_state("call", &["quot"], &["..."], |state| {
+        RailDef::on_state("call", &["quot"], &["..."], |state| {
             let (quot, stack) = state.stack.clone().pop_quotation("call");
             let state = state.replace_stack(stack);
             run_quot(&quot, state)
         }),
-        RailOp::on_state("call-in", &["quot", "quot"], &["quot"], |state| {
+        RailDef::on_state("call-in", &["quot", "quot"], &["quot"], |state| {
             state.clone().update_stack(|stack| {
                 let (quot, stack) = stack.pop_quotation("call-in");
                 let (working_stack, stack) = stack.pop_quotation("call-in");
@@ -18,22 +18,22 @@ pub fn builtins() -> Vec<RailOp<'static>> {
                 stack.push_quotation(substate.stack)
             })
         }),
-        RailOp::on_state("def", &["quot", "s"], &[], |state| {
+        RailDef::on_state("def", &["quot", "s"], &[], |state| {
             state.update_stack_and_dict(|stack, dictionary| {
                 let mut dictionary = dictionary;
                 let (name, stack) = stack.pop_string("def");
                 let (quot, stack) = stack.pop_quotation("def");
-                dictionary.insert(name.clone(), RailOp::from_quot(&name, quot));
+                dictionary.insert(name.clone(), RailDef::from_quot(&name, quot));
                 (stack, dictionary)
             })
         }),
-        RailOp::on_state("def?", &["s"], &["bool"], |state| {
+        RailDef::on_state("def?", &["s"], &["bool"], |state| {
             state.clone().update_stack(|stack| {
                 let (name, stack) = stack.pop_string("def?");
                 stack.push_bool(state.dictionary.contains_key(&name))
             })
         }),
-        RailOp::on_state("undef", &["s"], &[], |state| {
+        RailDef::on_state("undef", &["s"], &[], |state| {
             state.update_stack_and_dict(|stack, dictionary| {
                 let mut dictionary = dictionary;
                 let (name, stack) = stack.pop_string("undef");

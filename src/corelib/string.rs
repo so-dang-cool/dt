@@ -1,20 +1,20 @@
-use crate::rail_machine::{RailOp, Stack};
+use crate::rail_machine::{RailDef, Stack};
 
-pub fn builtins() -> Vec<RailOp<'static>> {
+pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailOp::on_state("upcase", &["string"], &["string"], |state| {
+        RailDef::on_state("upcase", &["string"], &["string"], |state| {
             state.update_stack(|stack| {
                 let (s, stack) = stack.pop_string("upcase");
                 stack.push_string(s.to_uppercase())
             })
         }),
-        RailOp::on_state("downcase", &["string"], &["string"], |state| {
+        RailDef::on_state("downcase", &["string"], &["string"], |state| {
             state.update_stack(|stack| {
                 let (s, stack) = stack.pop_string("downcase");
                 stack.push_string(s.to_lowercase())
             })
         }),
-        RailOp::on_state("trim", &["string"], &["string"], |state| {
+        RailDef::on_state("trim", &["string"], &["string"], |state| {
             state.update_stack(|stack| {
                 let (s, stack) = stack.pop_string("trim");
                 stack.push_string(s.trim().to_string())
@@ -25,14 +25,14 @@ pub fn builtins() -> Vec<RailOp<'static>> {
         string_splitter("chars", ""),
         string_splitter("lines", "\n"),
         string_joiner("unlines", "\n"),
-        RailOp::on_state("split", &["string", "string"], &["quot"], |state| {
+        RailDef::on_state("split", &["string", "string"], &["quot"], |state| {
             state.update_stack(|stack| {
                 let (delimiter, stack) = stack.pop_string("split");
                 let (s, stack) = stack.pop_string("split");
                 stack.push_quotation(split(s, &delimiter))
             })
         }),
-        RailOp::on_state("join", &["quot", "string"], &["string"], |state| {
+        RailDef::on_state("join", &["quot", "string"], &["string"], |state| {
             state.update_stack(|stack| {
                 let (delimiter, stack) = stack.pop_string("join");
                 let (quot, stack) = stack.pop_quotation("join");
@@ -42,8 +42,8 @@ pub fn builtins() -> Vec<RailOp<'static>> {
     ]
 }
 
-fn string_splitter<'a>(name: &'a str, delimiter: &'a str) -> RailOp<'a> {
-    RailOp::on_state(name, &["string"], &["quot"], move |state| {
+fn string_splitter<'a>(name: &'a str, delimiter: &'a str) -> RailDef<'a> {
+    RailDef::on_state(name, &["string"], &["quot"], move |state| {
         state.update_stack(|stack| {
             let (s, stack) = stack.pop_string(name);
             stack.push_quotation(split(s, delimiter))
@@ -59,8 +59,8 @@ fn split(s: String, delimiter: &str) -> Stack {
     words
 }
 
-fn string_joiner<'a>(name: &'a str, delimiter: &'a str) -> RailOp<'a> {
-    RailOp::on_state(name, &["string"], &["quot"], move |state| {
+fn string_joiner<'a>(name: &'a str, delimiter: &'a str) -> RailDef<'a> {
+    RailDef::on_state(name, &["string"], &["quot"], move |state| {
         state.update_stack(|stack| {
             let (quot, stack) = stack.pop_quotation(name);
             stack.push_string(join(name, quot, delimiter))

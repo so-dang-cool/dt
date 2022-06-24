@@ -16,7 +16,7 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
     // Defined operations
     else if let Some(op) = dictionary.get(&term) {
         if state.in_main() {
-            return op.clone().go(state.clone());
+            return op.clone().act(state.clone());
         } else {
             stack = stack.push_operator(op.clone());
         }

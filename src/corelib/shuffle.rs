@@ -1,18 +1,18 @@
-use crate::rail_machine::RailOp;
+use crate::rail_machine::RailDef;
 
-pub fn builtins() -> Vec<RailOp<'static>> {
+pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailOp::on_stack("drop", &["a"], &[], |stack| stack.pop().1),
-        RailOp::on_stack("dup", &["a"], &["a", "a"], |stack| {
+        RailDef::on_stack("drop", &["a"], &[], |stack| stack.pop().1),
+        RailDef::on_stack("dup", &["a"], &["a", "a"], |stack| {
             let (a, stack) = stack.pop();
             stack.push(a.clone()).push(a)
         }),
-        RailOp::on_stack("swap", &["b", "a"], &["a", "b"], |stack| {
+        RailDef::on_stack("swap", &["b", "a"], &["a", "b"], |stack| {
             let (a, stack) = stack.pop();
             let (b, stack) = stack.pop();
             stack.push(a).push(b)
         }),
-        RailOp::on_stack("rot", &["c", "b", "a"], &["a", "c", "b"], |stack| {
+        RailDef::on_stack("rot", &["c", "b", "a"], &["a", "c", "b"], |stack| {
             let (a, stack) = stack.pop();
             let (b, stack) = stack.pop();
             let (c, stack) = stack.pop();

@@ -1,13 +1,13 @@
-use crate::rail_machine::RailOp;
+use crate::rail_machine::RailDef;
 
-pub fn builtins() -> Vec<RailOp<'static>> {
+pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailOp::on_stack(".", &["a"], &[], |stack| {
+        RailDef::on_stack(".", &["a"], &[], |stack| {
             let (a, stack) = stack.pop();
             println!("{}", a);
             stack
         }),
-        RailOp::on_state(".s", &[], &[], |state| {
+        RailDef::on_state(".s", &[], &[], |state| {
             println!("{}", state.stack);
             state
         }),
