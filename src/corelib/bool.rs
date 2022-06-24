@@ -4,9 +4,9 @@ pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
         push_bool("true", true),
         push_bool("false", false),
-        RailOp::new("!", &["bool"], &["bool"], |state| {
+        RailOp::new("not", &["bool"], &["bool"], |state| {
             let mut stack = state.stack.clone();
-            let b = stack.pop_bool("!");
+            let b = stack.pop_bool("not");
             stack.push_bool(!b);
             state.update_stack(stack)
         }),
