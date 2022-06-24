@@ -18,17 +18,17 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
         if state.in_main() {
             return op.clone().go(state.clone());
         } else {
-            stack.push_operator(op.clone());
+            stack = stack.push_operator(op.clone());
         }
     }
     // Strings
     else if term.starts_with('"') && term.ends_with('"') {
         let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-        stack.push_string(term.to_string());
+        stack = stack.push_string(term.to_string());
     }
     // Integers
     else if let Ok(i) = term.parse::<i64>() {
-        stack.push_i64(i);
+        stack = stack.push_i64(i);
     }
     // Unknown
     else {

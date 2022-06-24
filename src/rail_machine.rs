@@ -22,7 +22,27 @@ impl RailState {
         }
     }
 
-    pub fn update_stack(self, stack: Stack) -> RailState {
+    pub fn update_stack(self, update: impl Fn(Stack) -> Stack) -> RailState {
+        RailState {
+            stack: update(self.stack),
+            dictionary: self.dictionary,
+            context: self.context,
+        }
+    }
+
+    pub fn update_stack_and_dict(
+        self,
+        update: impl Fn(Stack, Dictionary) -> (Stack, Dictionary),
+    ) -> RailState {
+        let (stack, dictionary) = update(self.stack, self.dictionary);
+        RailState {
+            stack,
+            dictionary,
+            context: self.context,
+        }
+    }
+
+    pub fn replace_stack(self, stack: Stack) -> RailState {
         RailState {
             stack,
             dictionary: self.dictionary,
@@ -55,13 +75,13 @@ impl RailState {
     }
 
     pub fn higher(self) -> RailState {
-        let (context, mut stack) = match self.context {
+        let (context, stack) = match self.context {
             Context::Quotation { context, parent } => (*context, *parent),
             Context::Main => panic!("Can't escape main"),
             Context::None => panic!("Can't escape"),
         };
 
-        stack.push_quotation(self.stack);
+        let stack = stack.push_quotation(self.stack);
 
         RailState {
             stack,
@@ -128,69 +148,77 @@ impl Stack {
         self.terms.is_empty()
     }
 
-    pub fn push(&mut self, term: RailVal) {
-        self.terms.push(term)
+    pub fn push(mut self, term: RailVal) -> Stack {
+        self.terms.push(term);
+        self
     }
 
-    pub fn push_bool(&mut self, b: bool) {
-        self.terms.push(RailVal::Boolean(b))
+    pub fn push_bool(mut self, b: bool) -> Stack {
+        self.terms.push(RailVal::Boolean(b));
+        self
     }
 
-    pub fn push_i64(&mut self, i: i64) {
-        self.terms.push(RailVal::I64(i))
+    pub fn push_i64(mut self, i: i64) -> Stack {
+        self.terms.push(RailVal::I64(i));
+        self
     }
 
-    pub fn push_operator(&mut self, op: RailOp<'static>) {
-        self.terms.push(RailVal::Operator(op))
+    pub fn push_operator(mut self, op: RailOp<'static>) -> Stack {
+        self.terms.push(RailVal::Operator(op));
+        self
     }
 
-    pub fn push_quotation(&mut self, quot: Stack) {
-        self.terms.push(RailVal::Quotation(quot))
+    pub fn push_quotation(mut self, quot: Stack) -> Stack {
+        self.terms.push(RailVal::Quotation(quot));
+        self
     }
 
-    pub fn push_string(&mut self, s: String) {
-        self.terms.push(RailVal::String(s))
+    pub fn push_string(mut self, s: String) -> Stack {
+        self.terms.push(RailVal::String(s));
+        self
     }
 
-    pub fn push_str(&mut self, s: &str) {
-        self.terms.push(RailVal::String(s.to_owned()))
+    pub fn push_str(mut self, s: &str) -> Stack {
+        self.terms.push(RailVal::String(s.to_owned()));
+        self
     }
 
-    pub fn pop(&mut self) -> Option<RailVal> {
-        self.terms.pop()
+    pub fn pop(mut self) -> (RailVal, Stack) {
+        let term = self.terms.pop().unwrap();
+        (term, self)
     }
 
-    pub fn pop_bool(&mut self, context: &str) -> bool {
+    pub fn pop_bool(mut self, context: &str) -> (bool, Stack) {
         match self.terms.pop().unwrap() {
-            RailVal::Boolean(b) => b,
+            RailVal::Boolean(b) => (b, self),
             rail_val => panic!("{}", type_panic_msg(context, "boolean", rail_val)),
         }
     }
 
-    pub fn pop_i64(&mut self, context: &str) -> i64 {
+    pub fn pop_i64(mut self, context: &str) -> (i64, Stack) {
         match self.terms.pop().unwrap() {
-            RailVal::I64(n) => n,
+            RailVal::I64(n) => (n, self),
             rail_val => panic!("{}", type_panic_msg(context, "i64", rail_val)),
         }
     }
 
-    fn _pop_operator(&mut self, context: &str) -> RailOp<'static> {
+    fn _pop_operator(mut self, context: &str) -> (RailOp<'static>, Stack) {
         match self.terms.pop().unwrap() {
-            RailVal::Operator(op) => op,
+            RailVal::Operator(op) => (op, self),
             rail_val => panic!("{}", type_panic_msg(context, "operator", rail_val)),
         }
     }
 
-    pub fn pop_quotation(&mut self, context: &str) -> Stack {
+    pub fn pop_quotation(mut self, context: &str) -> (Stack, Stack) {
         match self.terms.pop().unwrap() {
-            RailVal::Quotation(quot) => quot,
+            RailVal::Quotation(quot) => (quot, self),
             rail_val => panic!("{}", type_panic_msg(context, "quotation", rail_val)),
         }
     }
 
-    pub fn pop_string(&mut self, context: &str) -> String {
+    pub fn pop_string(mut self, context: &str) -> (String, Stack) {
         match self.terms.pop().unwrap() {
-            RailVal::String(s) => s,
+            RailVal::String(s) => (s, self),
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
         }
     }
@@ -302,15 +330,10 @@ impl Debug for RailOp<'_> {
 }
 
 pub fn run_quot(quot: &Stack, state: RailState) -> RailState {
-    quot.terms.iter().fold(state, |state, rail_val| {
-        let mut stack = state.stack.clone();
-        match rail_val {
-            RailVal::Operator(op) => {
-                let mut op = op.clone();
-                return op.go(state);
-            }
-            _ => stack.push(rail_val.clone()),
-        }
-        state.update_stack(stack)
-    })
+    quot.terms
+        .iter()
+        .fold(state, |state, rail_val| match rail_val {
+            RailVal::Operator(op) => op.clone().go(state),
+            _ => state.update_stack(|stack| stack.push(rail_val.clone())),
+        })
 }

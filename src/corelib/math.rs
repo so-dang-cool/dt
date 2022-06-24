@@ -18,10 +18,10 @@ where
     F: Fn(i64) -> i64 + Sized + 'a,
 {
     RailOp::new(name, &["i64"], &["i64"], move |state| {
-        let mut stack = state.stack.clone();
-        let a = stack.pop_i64(name);
-        stack.push_i64(op(a));
-        state.update_stack(stack)
+        state.update_stack(|stack| {
+            let (a, stack) = stack.pop_i64(name);
+            stack.push_i64(op(a))
+        })
     })
 }
 
@@ -30,10 +30,10 @@ where
     F: Fn(i64, i64) -> i64 + Sized + 'a,
 {
     RailOp::new(name, &["i64", "i64"], &["i64"], move |state| {
-        let mut stack = state.stack.clone();
-        let b = stack.pop_i64(name);
-        let a = stack.pop_i64(name);
-        stack.push_i64(op(a, b));
-        state.update_stack(stack)
+        state.update_stack(|stack| {
+            let (b, stack) = stack.pop_i64(name);
+            let (a, stack) = stack.pop_i64(name);
+            stack.push_i64(op(a, b))
+        })
     })
 }

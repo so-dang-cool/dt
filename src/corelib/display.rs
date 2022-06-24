@@ -3,9 +3,11 @@ use crate::rail_machine::RailOp;
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
         RailOp::new(".", &["a"], &[], |state| {
-            let mut stack = state.stack.clone();
-            println!("{}", stack.pop().unwrap());
-            state.update_stack(stack)
+            state.update_stack(|stack| {
+                let (a, stack) = stack.pop();
+                println!("{}", a);
+                stack
+            })
         }),
         RailOp::new(".s", &[], &[], |state| {
             println!("{}", state.stack);

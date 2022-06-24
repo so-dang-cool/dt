@@ -41,7 +41,7 @@ Ideas I _like_ from other languages:
 - Rust's Traits
 - Rust's "put tests anywhere, probably right in the source file" convention
 - Mercury's IO sugar
-- Matching in function definitions a-la Erlang/Elixir
+- Matching in function definitions a-la Erlang/Elixir/Prolog
 - Tail call recursion
 - Spread operators (esp JavaScript's)
 - Actor model from Erlang (esp spawn/receive semantics. PID lacks type information)
@@ -51,6 +51,14 @@ Ideas I _like_ from other languages:
 - Zig's "Speak the C ABI" goal
   - Shen's one-language transpiling to many languages goal is similar, but an opposite approach
 - Zig's comptime
+  - Mostly that it's possible to write macro-ish stuff in the language itself. That it *can*
+    be resolved at compile time is nice too.
+  - Kind of related to homoiconic languages
+- Everything is a ____ paradigms.
+  - List: Lisp/Scheme/etc
+  - Object: Java/Python/Ruby and their friends
+  - String: Tcl
+  - File: Unix/Linux/BSD
 
 Like != should have. The above is just a list of things that make me happy.
 [Start with No](https://basecamp.com/gettingreal/05.3-start-with-no) is still a good idea.

@@ -2,23 +2,20 @@ use crate::rail_machine::{run_quot, RailOp, Stack};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![RailOp::new("opt", &["seq"], &[], |state| {
-        let mut stack = state.stack.clone();
-
         // TODO: All conditions and all actions must have the same stack effect.
-        let mut options = stack.pop_quotation("opt");
-
-        let mut state = state.update_stack(stack);
+        let (mut options, stack) = state.stack.clone().pop_quotation("opt");
+        let state = state.replace_stack(stack);
 
         while !options.is_empty() {
-            let action: Stack = options.pop_quotation("opt");
-            let condition: Stack = options.pop_quotation("opt");
-            state = run_quot(&condition, state);
-            let mut stack = state.stack.clone();
-            let success = stack.pop_bool("opt");
-            state = state.update_stack(stack);
+            let (action, opts) = options.pop_quotation("opt");
+            let (condition, opts) = opts.pop_quotation("opt");
+            options = opts;
+
+            let substate = run_quot(&condition, state.contextless_child(Stack::default()));
+            let (success, _) = substate.stack.pop_bool("opt");
+
             if success {
-                state = run_quot(&action, state);
-                break;
+                return run_quot(&action, state);
             }
         }
 

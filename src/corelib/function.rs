@@ -1,55 +1,47 @@
-use crate::rail_machine::{run_quot, RailOp, RailState};
+use crate::rail_machine::{run_quot, RailOp};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
         RailOp::new("call", &["quot"], &["..."], |state| {
-            let mut stack = state.stack.clone();
-            let quot = stack.pop_quotation("call");
-            let state = state.update_stack(stack);
+            let (quot, stack) = state.stack.clone().pop_quotation("call");
+            let state = state.replace_stack(stack);
             run_quot(&quot, state)
         }),
         RailOp::new("call-in", &["quot", "quot"], &["quot"], |state| {
-            let mut stack = state.stack.clone();
-            let quot = stack.pop_quotation("call-in");
-            let working_stack = stack.pop_quotation("call-in");
+            state.clone().update_stack(|stack| {
+                let (quot, stack) = stack.pop_quotation("call-in");
+                let (working_stack, stack) = stack.pop_quotation("call-in");
 
-            let substate = state.contextless_child(working_stack);
-            let substate = run_quot(&quot, substate);
+                let substate = state.contextless_child(working_stack);
+                let substate = run_quot(&quot, substate);
 
-            stack.push_quotation(substate.stack);
-
-            state.update_stack(stack)
+                stack.push_quotation(substate.stack)
+            })
         }),
         RailOp::new("def", &["quot", "s"], &[], |state| {
-            let mut stack = state.stack;
-            let name = stack.pop_string("def");
-            let quot = stack.pop_quotation("def");
-            let mut dictionary = state.dictionary;
-            dictionary.insert(name.clone(), RailOp::from_quot(&name, quot));
-            RailState {
-                stack,
-                dictionary,
-                context: state.context,
-            }
+            state.update_stack_and_dict(|stack, dictionary| {
+                let mut dictionary = dictionary;
+                let (name, stack) = stack.pop_string("def");
+                let (quot, stack) = stack.pop_quotation("def");
+                dictionary.insert(name.clone(), RailOp::from_quot(&name, quot));
+                (stack, dictionary)
+            })
         }),
         RailOp::new("def?", &["s"], &["bool"], |state| {
-            let mut stack = state.stack.clone();
-            let name = stack.pop_string("def?");
-            stack.push_bool(state.dictionary.contains_key(&name));
-            state.update_stack(stack)
+            state.clone().update_stack(|stack| {
+                let (name, stack) = stack.pop_string("def?");
+                stack.push_bool(state.dictionary.contains_key(&name))
+            })
         }),
         RailOp::new("undef", &["s"], &[], |state| {
-            let mut stack = state.stack;
-            let name = stack.pop_string("undef");
-            let mut dictionary = state.dictionary;
-            dictionary
-                .remove(&name)
-                .unwrap_or_else(|| panic!("Cannot undef \"{}\", it was already undefined", name));
-            RailState {
-                stack,
-                dictionary,
-                context: state.context,
-            }
+            state.update_stack_and_dict(|stack, dictionary| {
+                let mut dictionary = dictionary;
+                let (name, stack) = stack.pop_string("undef");
+                dictionary.remove(&name).unwrap_or_else(|| {
+                    panic!("Cannot undef \"{}\", it was already undefined", name)
+                });
+                (stack, dictionary)
+            })
         }),
     ]
 }

@@ -3,34 +3,28 @@ use crate::rail_machine::RailOp;
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
         RailOp::new("drop", &["a"], &[], |state| {
-            let mut stack = state.stack.clone();
-            stack.pop().unwrap();
-            state.update_stack(stack)
+            state.update_stack(|stack| stack.pop().1)
         }),
         RailOp::new("dup", &["a"], &["a", "a"], |state| {
-            let mut stack = state.stack.clone();
-            let a = stack.pop().unwrap();
-            stack.push(a.clone());
-            stack.push(a);
-            state.update_stack(stack)
+            state.update_stack(|stack| {
+                let (a, stack) = stack.pop();
+                stack.push(a.clone()).push(a)
+            })
         }),
         RailOp::new("swap", &["b", "a"], &["a", "b"], |state| {
-            let mut stack = state.stack.clone();
-            let a = stack.pop().unwrap();
-            let b = stack.pop().unwrap();
-            stack.push(a);
-            stack.push(b);
-            state.update_stack(stack)
+            state.update_stack(|stack| {
+                let (a, stack) = stack.pop();
+                let (b, stack) = stack.pop();
+                stack.push(a).push(b)
+            })
         }),
         RailOp::new("rot", &["c", "b", "a"], &["a", "c", "b"], |state| {
-            let mut stack = state.stack.clone();
-            let a = stack.pop().unwrap();
-            let b = stack.pop().unwrap();
-            let c = stack.pop().unwrap();
-            stack.push(a);
-            stack.push(c);
-            stack.push(b);
-            state.update_stack(stack)
+            state.update_stack(|stack| {
+                let (a, stack) = stack.pop();
+                let (b, stack) = stack.pop();
+                let (c, stack) = stack.pop();
+                stack.push(a).push(c).push(b)
+            })
         }),
     ]
 }
