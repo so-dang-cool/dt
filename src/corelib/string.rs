@@ -26,31 +26,53 @@ pub fn builtins() -> Vec<RailOp<'static>> {
         string_splitter("chars", ""),
         string_splitter("lines", "\n"),
         string_joiner("unlines", "\n"),
+        RailOp::new("split", &["string", "string"], &["quot"], |state| {
+            let mut stack = state.stack.clone();
+            let delimiter = stack.pop_string("split");
+            let s = stack.pop_string("split");
+            stack.push_quotation(split(s, &delimiter));
+            state.update_stack(stack)
+        }),
+        RailOp::new("join", &["quot", "string"], &["string"], |state| {
+            let mut stack = state.stack.clone();
+            let delimiter = stack.pop_string("split");
+            let quot = stack.pop_quotation("join");
+            stack.push_string(join("join", quot, &delimiter));
+            state.update_stack(stack)
+        }),
     ]
 }
 
-pub fn string_splitter<'a>(name: &'a str, delimiter: &'a str) -> RailOp<'a> {
+fn string_splitter<'a>(name: &'a str, delimiter: &'a str) -> RailOp<'a> {
     RailOp::new(name, &["string"], &["quot"], move |state| {
         let mut stack = state.stack.clone();
         let s = stack.pop_string(name);
-        let mut words = Stack::new();
-        s.split(delimiter)
-            .for_each(|word| words.push_string(word.to_string()));
-        stack.push_quotation(words);
+        stack.push_quotation(split(s, delimiter));
         state.update_stack(stack)
     })
 }
 
-pub fn string_joiner<'a>(name: &'a str, delimiter: &'a str) -> RailOp<'a> {
+fn split(s: String, delimiter:&str) -> Stack {
+    let mut words = Stack::new();
+    s.split(delimiter).map(|s| s.to_string()).for_each(|s| words.push_string(s));
+    words
+}
+
+fn string_joiner<'a>(name: &'a str, delimiter: &'a str) -> RailOp<'a> {
     RailOp::new(name, &["string"], &["quot"], move |state| {
         let mut stack = state.stack.clone();
-        let mut quot = stack.pop_quotation(name);
-        let mut s = vec![];
-        while !quot.is_empty() {
-            s.push(quot.pop_string(name));
-        }
-        s.reverse();
-        stack.push_string(s.join(delimiter));
+        let quot = stack.pop_quotation(name);
+        stack.push_string(join(name, quot, delimiter));
         state.update_stack(stack)
     })
+}
+
+fn join(context: &str, words: Stack, delimiter: &str) -> String {
+    let mut s = vec![];
+    let mut words = words.clone();
+    while !words.is_empty() {
+        s.push(words.pop_string(context));
+    }
+    s.reverse();
+    s.join(delimiter)
 }
