@@ -1,7 +1,7 @@
 use crate::rail_machine::{run_quot, RailOp, Stack};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
-    vec![RailOp::new("opt", &["seq"], &[], |state| {
+    vec![RailOp::on_state("opt", &["seq"], &[], |state| {
         // TODO: All conditions and all actions must have the same stack effect.
         let (mut options, stack) = state.stack.clone().pop_quotation("opt");
         let state = state.replace_stack(stack);

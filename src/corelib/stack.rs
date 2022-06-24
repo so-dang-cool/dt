@@ -3,14 +3,14 @@ use crate::rail_machine::{run_quot, RailOp, Stack};
 // TODO: Should all these work for a String too? Should String also be a stack?
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
-        RailOp::new("len", &["quot"], &["i64"], |state| {
+        RailOp::on_state("len", &["quot"], &["i64"], |state| {
             state.update_stack(|stack| {
                 let (quot, stack) = stack.pop_quotation("len");
                 let len: i64 = quot.len().try_into().unwrap();
                 stack.push_i64(len)
             })
         }),
-        RailOp::new("push", &["quot", "a"], &["quot"], |state| {
+        RailOp::on_state("push", &["quot", "a"], &["quot"], |state| {
             state.update_stack(|stack| {
                 let (a, stack) = stack.pop();
                 let (quot, stack) = stack.pop_quotation("push");
@@ -18,21 +18,21 @@ pub fn builtins() -> Vec<RailOp<'static>> {
                 stack.push_quotation(quot)
             })
         }),
-        RailOp::new("pop", &["quot"], &["quot", "a"], |state| {
+        RailOp::on_state("pop", &["quot"], &["quot", "a"], |state| {
             state.update_stack(|stack| {
                 let (quot, stack) = stack.pop_quotation("pop");
                 let (a, quot) = quot.pop();
                 stack.push_quotation(quot).push(a)
             })
         }),
-        RailOp::new("rev", &["quot"], &["quot"], |state| {
+        RailOp::on_state("rev", &["quot"], &["quot"], |state| {
             state.update_stack(|stack| {
                 let (mut quot, stack) = stack.pop_quotation("rev");
                 quot.terms.reverse();
                 stack.push_quotation(quot)
             })
         }),
-        RailOp::new("concat", &["quot", "quot"], &["quot"], |state| {
+        RailOp::on_state("concat", &["quot", "quot"], &["quot"], |state| {
             state.update_stack(|stack| {
                 let (quot_b, stack) = stack.pop_quotation("concat");
                 let (quot_a, stack) = stack.pop_quotation("concat");
@@ -43,7 +43,7 @@ pub fn builtins() -> Vec<RailOp<'static>> {
                 stack.push_quotation(quot)
             })
         }),
-        RailOp::new("filter", &["quot", "quot"], &["quot"], |state| {
+        RailOp::on_state("filter", &["quot", "quot"], &["quot"], |state| {
             let (predicate, stack) = state.stack.clone().pop_quotation("filter");
             let (supply_stack, stack) = stack.pop_quotation("filter");
             let mut result_stack = Stack::new();
@@ -61,7 +61,7 @@ pub fn builtins() -> Vec<RailOp<'static>> {
 
             state.replace_stack(stack)
         }),
-        RailOp::new("map", &["quot", "quot"], &["quot"], |state| {
+        RailOp::on_state("map", &["quot", "quot"], &["quot"], |state| {
             state.clone().update_stack(move |stack| {
                 let (transform, stack) = stack.pop_quotation("map");
                 let (supply_stack, stack) = stack.pop_quotation("map");

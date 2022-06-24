@@ -17,11 +17,9 @@ fn unary_i64_op<'a, F>(name: &'a str, op: F) -> RailOp<'a>
 where
     F: Fn(i64) -> i64 + Sized + 'a,
 {
-    RailOp::new(name, &["i64"], &["i64"], move |state| {
-        state.update_stack(|stack| {
-            let (a, stack) = stack.pop_i64(name);
-            stack.push_i64(op(a))
-        })
+    RailOp::on_stack(name, &["i64"], &["i64"], move |stack| {
+        let (a, stack) = stack.pop_i64(name);
+        stack.push_i64(op(a))
     })
 }
 
@@ -29,11 +27,9 @@ fn binary_i64_op<'a, F>(name: &'a str, op: F) -> RailOp<'a>
 where
     F: Fn(i64, i64) -> i64 + Sized + 'a,
 {
-    RailOp::new(name, &["i64", "i64"], &["i64"], move |state| {
-        state.update_stack(|stack| {
-            let (b, stack) = stack.pop_i64(name);
-            let (a, stack) = stack.pop_i64(name);
-            stack.push_i64(op(a, b))
-        })
+    RailOp::on_stack(name, &["i64", "i64"], &["i64"], move |stack| {
+        let (b, stack) = stack.pop_i64(name);
+        let (a, stack) = stack.pop_i64(name);
+        stack.push_i64(op(a, b))
     })
 }

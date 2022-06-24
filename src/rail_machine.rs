@@ -268,7 +268,7 @@ pub enum RailAction<'a> {
 }
 
 impl RailOp<'_> {
-    pub fn new<'a, F>(
+    pub fn on_state<'a, F>(
         name: &str,
         consumes: &'a [&'a str],
         produces: &'a [&'a str],
@@ -283,6 +283,20 @@ impl RailOp<'_> {
             produces,
             action: RailAction::Builtin(Arc::new(op)),
         }
+    }
+
+    pub fn on_stack<'a, F>(
+        name: &str,
+        consumes: &'a [&'a str],
+        produces: &'a [&'a str],
+        op: F,
+    ) -> RailOp<'a>
+    where
+        F: Fn(Stack) -> Stack + 'a,
+    {
+        RailOp::on_state(name, consumes, produces, move |state| {
+            state.update_stack(&op)
+        })
     }
 
     pub fn from_quot<'a>(name: &str, quot: Stack) -> RailOp<'a> {

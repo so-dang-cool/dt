@@ -1,7 +1,7 @@
 use crate::rail_machine::{run_quot, RailOp};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
-    vec![RailOp::new("times", &["quot", "i64"], &[], |state| {
+    vec![RailOp::on_state("times", &["quot", "i64"], &[], |state| {
         let (n, stack) = state.stack.clone().pop_i64("times");
         let (quot, stack) = stack.pop_quotation("times");
         let state = state.replace_stack(stack);
