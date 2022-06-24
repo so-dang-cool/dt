@@ -365,9 +365,12 @@ pub fn run_quot(quot: &Stack, state: RailState) -> RailState {
         .iter()
         .fold(state, |state, rail_val| match rail_val {
             RailVal::Operator(op_name) => {
-                let op = state.dictionary.get(&op_name.clone()).unwrap_or_else(|| panic!("Tried to do \"{}\" but it was undefined", op_name));
+                let op = state
+                    .dictionary
+                    .get(&op_name.clone())
+                    .unwrap_or_else(|| panic!("Tried to do \"{}\" but it was undefined", op_name));
                 op.clone().act(state)
-            },
+            }
             _ => state.update_stack(|stack| stack.push(rail_val.clone())),
         })
 }
