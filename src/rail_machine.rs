@@ -208,7 +208,7 @@ impl Stack {
     pub fn pop_bool(mut self, context: &str) -> (bool, Stack) {
         match self.values.pop().unwrap() {
             RailVal::Boolean(b) => (b, self),
-            rail_val => panic!("{}", type_panic_msg(context, "boolean", rail_val)),
+            rail_val => panic!("{}", type_panic_msg(context, "bool", rail_val)),
         }
     }
 
