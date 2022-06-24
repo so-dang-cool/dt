@@ -1,5 +1,5 @@
 use crate::corelib::run_quot;
-use crate::{RailOp, RailState, Stack};
+use crate::{RailOp, RailState};
 
 pub fn builtins() -> Vec<RailOp<'static>> {
     vec![
@@ -51,29 +51,6 @@ pub fn builtins() -> Vec<RailOp<'static>> {
                 dictionary,
                 context: state.context,
             }
-        }),
-        RailOp::new("filter", &["quot", "quot"], &["quot"], |state| {
-            let mut stack = state.stack.clone();
-
-            let predicate = stack.pop_quotation("filter");
-            let supply_stack = stack.pop_quotation("filter");
-            let mut result_stack = Stack::new();
-
-            for term in supply_stack.terms {
-                let mut working_stack = Stack::new();
-                working_stack.push(term.clone());
-                let substate = state.contextless_child(working_stack);
-                let substate = run_quot(&predicate, substate);
-                let mut working_stack = substate.stack;
-                let keep = working_stack.pop_bool("filter");
-                if keep {
-                    result_stack.push(term);
-                }
-            }
-
-            stack.push_quotation(result_stack);
-
-            state.update_stack(stack)
         }),
     ]
 }
