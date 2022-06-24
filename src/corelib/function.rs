@@ -33,6 +33,12 @@ pub fn builtins() -> Vec<RailOp<'static>> {
                 context: state.context,
             }
         }),
+        RailOp::new("def?", &["s"], &["bool"], |state| {
+            let mut stack = state.stack.clone();
+            let name = stack.pop_string("def?");
+            stack.push_bool(state.dictionary.contains_key(&name));
+            state.update_stack(stack)
+        }),
         RailOp::new("undef", &["s"], &[], |state| {
             let mut stack = state.stack;
             let name = stack.pop_string("undef");
