@@ -115,7 +115,7 @@ pub enum RailVal {
     Boolean(bool),
     // TODO: Make a "Numeric" typeclass. (And floating-point/rational numbers)
     I64(i64),
-    Operator(RailDef<'static>),
+    Operator(String),
     Quotation(Stack),
     String(String),
 }
@@ -140,7 +140,7 @@ impl std::fmt::Display for RailVal {
         match self {
             Boolean(b) => write!(fmt, "{}", if *b { "true" } else { "false" }),
             I64(n) => write!(fmt, "{}", n),
-            Operator(o) => write!(fmt, "{}", o.name),
+            Operator(o) => write!(fmt, "{}", o),
             Quotation(q) => write!(fmt, "{}", q),
             String(s) => write!(fmt, "\"{}\"", s.replace('\n', "\\n")),
         }
@@ -180,8 +180,8 @@ impl Stack {
         self
     }
 
-    pub fn push_operator(mut self, op: RailDef<'static>) -> Stack {
-        self.values.push(RailVal::Operator(op));
+    pub fn push_operator(mut self, op_name: &str) -> Stack {
+        self.values.push(RailVal::Operator(op_name.to_owned()));
         self
     }
 
@@ -219,7 +219,7 @@ impl Stack {
         }
     }
 
-    fn _pop_operator(mut self, context: &str) -> (RailDef<'static>, Stack) {
+    fn _pop_operator(mut self, context: &str) -> (String, Stack) {
         match self.values.pop().unwrap() {
             RailVal::Operator(op) => (op, self),
             rail_val => panic!("{}", type_panic_msg(context, "operator", rail_val)),
@@ -364,7 +364,10 @@ pub fn run_quot(quot: &Stack, state: RailState) -> RailState {
     quot.values
         .iter()
         .fold(state, |state, rail_val| match rail_val {
-            RailVal::Operator(op) => op.clone().act(state),
+            RailVal::Operator(op_name) => {
+                let op = state.dictionary.get(&op_name.clone()).unwrap_or_else(|| panic!("Tried to do \"{}\" but it was undefined", op_name));
+                op.clone().act(state)
+            },
             _ => state.update_stack(|stack| stack.push(rail_val.clone())),
         })
 }

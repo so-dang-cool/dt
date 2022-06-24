@@ -1,8 +1,8 @@
-# Define "is-string" and friends
+# Define "string?" and friends
 [ "string" "i64" "operator" "quotation" "bool" ] [
     dup
     [ type == ] swap push [ swap ] doin
     swap
-    [ "is" ] swap push "-" join
+    [ "?" ] swap push rev "" join
     def
 ] each
