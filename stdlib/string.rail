@@ -1,0 +1,5 @@
+[ " " split ] "words" def
+[ " " join ] "unwords" def
+[ "" split [ pop drop rev ] 2 times ] "chars" def
+[ "\n" split ] "lines" def
+[ "\n" join ] "unlines" def

@@ -77,5 +77,15 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 stack.push_quotation(result_stack)
             })
         }),
+        RailDef::on_state("each", &["quot", "quot"], &[], |state| {
+            let (action, stack) = state.stack.clone().pop_quotation("each");
+            let (supply_stack, stack) = stack.pop_quotation("each");
+            let state = state.replace_stack(stack);
+
+            supply_stack.values.into_iter().fold(state, |state, value| {
+                let state = state.update_stack(|stack| stack.push(value.clone()));
+                run_quot(&action, state)
+            })
+        }),
     ]
 }

@@ -7,6 +7,11 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             println!("{}", a);
             stack
         }),
+        RailDef::on_stack("print", &["string"], &[], |stack| {
+            let (a, stack) = stack.pop_string("print");
+            println!("{}", a);
+            stack
+        }),
         RailDef::on_state(".s", &[], &[], |state| {
             println!("{}", state.stack);
             state

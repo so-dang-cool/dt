@@ -4,11 +4,13 @@ pub fn tokenize(line: &str) -> Vec<String> {
     // TODO: Validate that a line does not contain unterminated strings.
     // TODO: Allow for string escapes for quotes, newlines, etc
     let re: Regex = Regex::new(r#"(".*?"|\S*)"#).unwrap();
-    re.captures_iter(line)
+    let line = line.replace('\n', " ");
+    re.captures_iter(&line)
         .flat_map(|cap| cap.iter().take(1).collect::<Vec<_>>())
         .filter_map(|res| res.map(|mat| mat.as_str()))
         .take_while(|s| !s.starts_with('#'))
-        .map(|s| s.to_string())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.replace("\\n", "\n"))
         .collect()
 }
 

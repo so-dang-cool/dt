@@ -76,7 +76,10 @@ impl RailState {
 
     pub fn higher(self) -> RailState {
         let (context, stack) = match self.context {
-            Context::Quotation { parent_context: context, parent_stack: parent } => (*context, *parent),
+            Context::Quotation {
+                parent_context: context,
+                parent_stack: parent,
+            } => (*context, *parent),
             Context::Main => panic!("Can't escape main"),
             Context::None => panic!("Can't escape"),
         };
@@ -115,6 +118,20 @@ pub enum RailVal {
     Operator(RailDef<'static>),
     Quotation(Stack),
     String(String),
+}
+
+impl RailVal {
+    pub fn type_name(&self) -> String {
+        use RailVal::*;
+        match self {
+            Boolean(_) => "bool",
+            I64(_) => "i64",
+            Operator(_) => "operator",
+            Quotation(_) => "quotation",
+            String(_) => "string",
+        }
+        .into()
+    }
 }
 
 impl std::fmt::Display for RailVal {

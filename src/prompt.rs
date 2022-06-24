@@ -32,7 +32,7 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
     }
     // Unknown
     else {
-        eprintln!("Derailed: unknown term {}", term);
+        eprintln!("Derailed: unknown term \"{}\"", term);
         std::process::exit(1);
     }
 

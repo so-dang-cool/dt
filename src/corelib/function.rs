@@ -9,8 +9,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         }),
         RailDef::on_state("doin", &["quot", "quot"], &["quot"], |state| {
             state.clone().update_stack(|stack| {
-                let (quot, stack) = stack.pop_quotation("call-in");
-                let (working_stack, stack) = stack.pop_quotation("call-in");
+                let (quot, stack) = stack.pop_quotation("doin");
+                let (working_stack, stack) = stack.pop_quotation("doin");
 
                 let substate = state.contextless_child(working_stack); // TODO: Really just need dictionary.
                 let substate = run_quot(&quot, substate);
