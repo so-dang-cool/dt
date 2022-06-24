@@ -1,0 +1,1 @@
+[ [ dup rot doin swap ] swap times drop ] "timesin" def

@@ -1,7 +1,7 @@
 use crate::rail_machine::{RailDef, Stack};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
-    vec![RailDef::on_stack("execute", &["s"], &["quot"], |stack| {
+    vec![RailDef::on_stack("exec", &["s"], &["quot"], |stack| {
         let (invocation, stack) = stack.pop_string("execute ");
         let invocation = invocation.trim();
         let (exe, args) = invocation.split_once(' ').unwrap_or((invocation, ""));

@@ -7,7 +7,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         binary_i64_op("-", |a, b| a - b),
         binary_i64_op("*", |a, b| a * b),
         binary_i64_op("/", |a, b| a / b),
-        binary_i64_op("%", |a, b| a % b),
+        binary_i64_op("mod", |a, b| a % b),
         binary_i64_op("max", |a, b| if a >= b { a } else { b }),
         binary_i64_op("min", |a, b| if a <= b { a } else { b }),
     ]

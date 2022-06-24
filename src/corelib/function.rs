@@ -2,12 +2,12 @@ use crate::rail_machine::{run_quot, RailDef};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_state("call", &["quot"], &["..."], |state| {
-            let (quot, stack) = state.stack.clone().pop_quotation("call");
+        RailDef::on_state("do", &["quot"], &["..."], |state| {
+            let (quot, stack) = state.stack.clone().pop_quotation("do");
             let state = state.replace_stack(stack);
             run_quot(&quot, state)
         }),
-        RailDef::on_state("call-in", &["quot", "quot"], &["quot"], |state| {
+        RailDef::on_state("doin", &["quot", "quot"], &["quot"], |state| {
             state.clone().update_stack(|stack| {
                 let (quot, stack) = stack.pop_quotation("call-in");
                 let (working_stack, stack) = stack.pop_quotation("call-in");

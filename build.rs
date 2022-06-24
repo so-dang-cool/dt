@@ -16,7 +16,7 @@ fn copy_rail_libs() {
         .expect("Could not find rail stdlib")
         .collect::<Vec<_>>();
 
-    assert_eq!(1, lib_files.len());
+    assert_ne!(0, lib_files.len());
 
     lib_files
         .into_iter()

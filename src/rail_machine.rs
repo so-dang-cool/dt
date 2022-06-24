@@ -60,8 +60,8 @@ impl RailState {
 
     pub fn deeper(self) -> RailState {
         let context = Context::Quotation {
-            context: Box::new(self.context),
-            parent: Box::new(self.stack),
+            parent_context: Box::new(self.context),
+            parent_stack: Box::new(self.stack),
         };
         RailState {
             stack: Stack::new(),
@@ -76,7 +76,7 @@ impl RailState {
 
     pub fn higher(self) -> RailState {
         let (context, stack) = match self.context {
-            Context::Quotation { context, parent } => (*context, *parent),
+            Context::Quotation { parent_context: context, parent_stack: parent } => (*context, *parent),
             Context::Main => panic!("Can't escape main"),
             Context::None => panic!("Can't escape"),
         };
@@ -101,8 +101,8 @@ impl Default for RailState {
 pub enum Context {
     Main,
     Quotation {
-        context: Box<Context>,
-        parent: Box<Stack>,
+        parent_context: Box<Context>,
+        parent_stack: Box<Stack>,
     },
     None,
 }

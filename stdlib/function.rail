@@ -1,1 +1,1 @@
-[ execute ] "exec" def
+[ exec [ drop ] doin pop swap drop ] "exec-stdout" def
