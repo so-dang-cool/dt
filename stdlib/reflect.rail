@@ -1,5 +1,8 @@
-# Define "string?" and friends
-[ "string" "i64" "operator" "quotation" "bool" ] [
+# Define "string?"
+[ type "string" == ] "string?" def
+
+# Define its friends
+[ "i64" "f64" "operator" "quotation" "bool" ] [
     dup
     [ type == ] swap push [ swap ] doin
     swap
