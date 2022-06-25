@@ -13,7 +13,7 @@ pub fn one_plus_one_is_two() {
 
 #[test]
 pub fn one_plus_one_is_still_two() {
-    let res = rail_interpret("1 1 [ + ] call\n");
+    let res = rail_interpret("1 1 [ + ] do\n");
 
     assert!(res.stdout.ends_with("[ 2 ]\n"));
     assert_eq!("Derailed: End of input\n", res.stderr);
@@ -21,7 +21,7 @@ pub fn one_plus_one_is_still_two() {
 
 #[test]
 pub fn one_plus_one_is_definitely_two() {
-    let res = rail_interpret("1 [ 1 + ] call\n");
+    let res = rail_interpret("1 [ 1 + ] do\n");
 
     assert!(res.stdout.ends_with("[ 2 ]\n"));
     assert_eq!("Derailed: End of input\n", res.stderr);
@@ -37,7 +37,7 @@ pub fn one_plus_one_is_positively_two() {
 
 #[test]
 pub fn one_plus_one_is_never_not_two() {
-    let res = rail_interpret("[ 1 ] [ 1 ] [ + ] [ concat ] 2 times call\n");
+    let res = rail_interpret("[ 1 ] [ 1 ] [ + ] [ concat ] 2 times do\n");
 
     assert!(res.stdout.ends_with("[ 2 ]\n"));
     assert_eq!("Derailed: End of input\n", res.stderr);
