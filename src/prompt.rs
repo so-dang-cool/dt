@@ -30,6 +30,10 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
     else if let Ok(i) = term.parse::<i64>() {
         stack = stack.push_i64(i);
     }
+    // Floating point numbers
+    else if let Ok(n) = term.parse::<f64>() {
+        stack = stack.push_f64(n);
+    }
     // Unknown
     else if !state.in_main() {
         stack = stack.push_operator(&term)

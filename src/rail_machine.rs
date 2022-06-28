@@ -115,6 +115,7 @@ pub enum RailVal {
     Boolean(bool),
     // TODO: Make a "Numeric" typeclass. (And floating-point/rational numbers)
     I64(i64),
+    F64(f64),
     Operator(String),
     Quotation(Stack),
     String(String),
@@ -126,6 +127,7 @@ impl RailVal {
         match self {
             Boolean(_) => "bool",
             I64(_) => "i64",
+            F64(_) => "f64",
             Operator(_) => "operator",
             Quotation(_) => "quotation",
             String(_) => "string",
@@ -140,6 +142,7 @@ impl std::fmt::Display for RailVal {
         match self {
             Boolean(b) => write!(fmt, "{}", if *b { "true" } else { "false" }),
             I64(n) => write!(fmt, "{}", n),
+            F64(n) => write!(fmt, "{}", n),
             Operator(o) => write!(fmt, "{}", o),
             Quotation(q) => write!(fmt, "{}", q),
             String(s) => write!(fmt, "\"{}\"", s.replace('\n', "\\n")),
@@ -180,6 +183,11 @@ impl Stack {
         self
     }
 
+    pub fn push_f64(mut self, n: f64) -> Stack {
+        self.values.push(RailVal::F64(n));
+        self
+    }
+
     pub fn push_operator(mut self, op_name: &str) -> Stack {
         self.values.push(RailVal::Operator(op_name.to_owned()));
         self
@@ -216,6 +224,13 @@ impl Stack {
         match self.values.pop().unwrap() {
             RailVal::I64(n) => (n, self),
             rail_val => panic!("{}", type_panic_msg(context, "i64", rail_val)),
+        }
+    }
+
+    pub fn pop_f64(mut self, context: &str) -> (f64, Stack) {
+        match self.values.pop().unwrap() {
+            RailVal::F64(n) => (n, self),
+            rail_val => panic!("{}", type_panic_msg(context, "f64", rail_val)),
         }
     }
 
@@ -261,7 +276,7 @@ impl std::fmt::Display for Stack {
     }
 }
 
-fn type_panic_msg(context: &str, expected: &str, actual: RailVal) -> String {
+pub fn type_panic_msg(context: &str, expected: &str, actual: RailVal) -> String {
     format!(
         "[Context: {}] Wanted {}, but got {}",
         context, expected, actual

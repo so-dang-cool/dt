@@ -7,6 +7,11 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (a, stack) = stack.pop();
             stack.push(a.clone()).push(a)
         }),
+        RailDef::on_stack("dup2", &["a", "b"], &["a", "b", "a", "b"], |stack| {
+            let (b, stack) = stack.pop();
+            let (a, stack) = stack.pop();
+            stack.push(a.clone()).push(b.clone()).push(a).push(b)
+        }),
         RailDef::on_stack("swap", &["b", "a"], &["a", "b"], |stack| {
             let (a, stack) = stack.pop();
             let (b, stack) = stack.pop();

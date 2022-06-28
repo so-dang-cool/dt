@@ -1,4 +1,4 @@
-use crate::rail_machine::{RailDef, RailVal};
+use crate::rail_machine::{type_panic_msg, RailDef, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -10,10 +10,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         }),
         equality("==", Equality::Equal),
         equality("!=", Equality::NotEqual),
-        binary_i64_pred(">", |a, b| a > b),
-        binary_i64_pred("<", |a, b| a < b),
-        binary_i64_pred(">=", |a, b| a >= b),
-        binary_i64_pred("<=", |a, b| a <= b),
+        binary_numeric_pred(">", |a, b| a > b, |a, b| a > b),
+        binary_numeric_pred("<", |a, b| a < b, |a, b| a < b),
+        binary_numeric_pred(">=", |a, b| a >= b, |a, b| a >= b),
+        binary_numeric_pred("<=", |a, b| a <= b, |a, b| a <= b),
     ]
 }
 
@@ -36,6 +36,9 @@ fn equality(name: &str, eq: Equality) -> RailDef<'_> {
         let res = match (a, b) {
             (Boolean(a), Boolean(b)) => a == b,
             (I64(a), I64(b)) => a == b,
+            (I64(a), F64(b)) => a as f64 == b,
+            (F64(a), I64(b)) => a == b as f64,
+            (F64(a), F64(b)) => a == b,
             (String(a), String(b)) => a == b,
             (a, b) => panic!("Cannot compare equality of {} and {}", a, b),
         };
@@ -49,13 +52,24 @@ fn equality(name: &str, eq: Equality) -> RailDef<'_> {
     })
 }
 
-fn binary_i64_pred<'a, F>(name: &'a str, op: F) -> RailDef<'a>
+fn binary_numeric_pred<'a, F, G>(name: &'a str, f64_op: F, i64_op: G) -> RailDef<'a>
 where
-    F: Fn(i64, i64) -> bool + Sized + 'a,
+    F: Fn(f64, f64) -> bool + Sized + 'a,
+    G: Fn(i64, i64) -> bool + Sized + 'a,
 {
-    RailDef::on_stack(name, &["i64", "i64"], &["bool"], move |stack| {
-        let (b, stack) = stack.pop_i64(name);
-        let (a, stack) = stack.pop_i64(name);
-        stack.push_bool(op(a, b))
+    RailDef::on_stack(name, &["num", "num"], &["bool"], move |stack| {
+        let (b, stack) = stack.pop();
+        let (a, stack) = stack.pop();
+
+        use RailVal::*;
+        match (a, b) {
+            (I64(a), I64(b)) => stack.push_bool(i64_op(a, b)),
+            (I64(a), F64(b)) => stack.push_bool(f64_op(a as f64, b)),
+            (F64(a), I64(b)) => stack.push_bool(f64_op(a, b as f64)),
+            (F64(a), F64(b)) => stack.push_bool(f64_op(a, b)),
+            (a, I64(_b)) => panic!("{}", type_panic_msg(name, "num", a)),
+            (a, F64(_b)) => panic!("{}", type_panic_msg(name, "num", a)),
+            (_a, b) => panic!("{}", type_panic_msg(name, "num", b)),
+        }
     })
 }

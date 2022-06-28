@@ -1,0 +1,2 @@
+[ [ [ dup2 >= ] [ ] [ true ] [ swap ] ] opt drop ] "max" def
+[ [ [ dup2 <= ] [ ] [ true ] [ swap ] ] opt drop ] "min" def
