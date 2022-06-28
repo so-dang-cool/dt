@@ -1,12 +1,16 @@
-use crate::rail_machine::{run_quot, RailDef, Stack};
+use crate::rail_machine::{run_quot, RailDef, Stack, RailVal, type_panic_msg};
 
 // TODO: Should all these work for a String too? Should String also be a stack?
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_state("len", &["quot"], &["i64"], |state| {
+        RailDef::on_state("len", &["quot|string"], &["i64"], |state| {
             state.update_stack(|stack| {
-                let (quot, stack) = stack.pop_quotation("len");
-                let len: i64 = quot.len().try_into().unwrap();
+                let (a, stack) = stack.pop();
+                let len: i64 = match a {
+                    RailVal::Quotation(quot) => quot.len(),
+                    RailVal::String(s) => s.len(),
+                    _ => panic!("{}", type_panic_msg("len", "quot|string", a))
+                }.try_into().unwrap();
                 stack.push_i64(len)
             })
         }),
