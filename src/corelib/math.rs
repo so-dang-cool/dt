@@ -10,12 +10,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         binary_i64_op("mod", |a, b| a % b),
         binary_i64_op("max", |a, b| if a >= b { a } else { b }),
         binary_i64_op("min", |a, b| if a <= b { a } else { b }),
-        RailDef::on_stack("int-max", &[], &["i64"], |stack| {
-            stack.push_i64(i64::MAX)
-        }),
-        RailDef::on_stack("int-min", &[], &["i64"], |stack| {
-            stack.push_i64(i64::MIN)
-        })
+        RailDef::on_stack("int-max", &[], &["i64"], |stack| stack.push_i64(i64::MAX)),
+        RailDef::on_stack("int-min", &[], &["i64"], |stack| stack.push_i64(i64::MIN)),
     ]
 }
 

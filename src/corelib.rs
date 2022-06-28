@@ -5,6 +5,7 @@ mod bool;
 mod choice;
 mod display;
 mod function;
+mod interact;
 mod math;
 mod process;
 mod reflect;
@@ -19,6 +20,7 @@ pub fn new_dictionary() -> Dictionary {
         .chain(choice::builtins())
         .chain(display::builtins())
         .chain(function::builtins())
+        .chain(interact::builtins())
         .chain(math::builtins())
         .chain(process::builtins())
         .chain(reflect::builtins())

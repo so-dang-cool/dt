@@ -316,6 +316,21 @@ impl RailDef<'_> {
         })
     }
 
+    pub fn contextless<'a, F>(
+        name: &str,
+        consumes: &'a [&'a str],
+        produces: &'a [&'a str],
+        contextless_action: F,
+    ) -> RailDef<'a>
+    where
+        F: Fn() + 'a,
+    {
+        RailDef::on_state(name, consumes, produces, move |state| {
+            contextless_action();
+            state
+        })
+    }
+
     pub fn from_quot<'a>(name: &str, quot: Stack) -> RailDef<'a> {
         // TODO: Infer stack effects
         RailDef {
