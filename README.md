@@ -10,7 +10,7 @@ programming language.
 
 ```
 $ rail
-rail 0.7.1
+rail 0.8.0
 > 1 1 + .s
 2
 > [ 1 + ] "inc" def
