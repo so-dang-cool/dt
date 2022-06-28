@@ -16,5 +16,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             println!("{}", state.stack);
             state
         }),
+        RailDef::contextless("clear", &[], &[], || {
+            clearscreen::clear().expect("Unable to clear screen")
+        }),
     ]
 }

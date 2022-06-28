@@ -4,8 +4,8 @@ use std::collections::HashMap;
 mod bool;
 mod choice;
 mod display;
+mod filesystem;
 mod function;
-mod interact;
 mod math;
 mod process;
 mod reflect;
@@ -19,8 +19,8 @@ pub fn new_dictionary() -> Dictionary {
         .into_iter()
         .chain(choice::builtins())
         .chain(display::builtins())
+        .chain(filesystem::builtins())
         .chain(function::builtins())
-        .chain(interact::builtins())
         .chain(math::builtins())
         .chain(process::builtins())
         .chain(reflect::builtins())
