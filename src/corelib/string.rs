@@ -1,4 +1,4 @@
-use crate::rail_machine::{RailDef, Stack};
+use crate::rail_machine::{Quote, RailDef};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -24,28 +24,28 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             state.update_stack(|stack| {
                 let (delimiter, stack) = stack.pop_string("split");
                 let (s, stack) = stack.pop_string("split");
-                stack.push_quotation(split(s, &delimiter))
+                stack.push_quote(split(s, &delimiter))
             })
         }),
         RailDef::on_state("join", &["quot", "string"], &["string"], |state| {
             state.update_stack(|stack| {
                 let (delimiter, stack) = stack.pop_string("join");
-                let (quot, stack) = stack.pop_quotation("join");
+                let (quot, stack) = stack.pop_quote("join");
                 stack.push_string(join("join", quot, &delimiter))
             })
         }),
     ]
 }
 
-fn split(s: String, delimiter: &str) -> Stack {
-    let mut words = Stack::new();
+fn split(s: String, delimiter: &str) -> Quote {
+    let mut words = Quote::new();
     for s in s.split(delimiter) {
         words = words.push_str(s);
     }
     words
 }
 
-fn join(context: &str, words: Stack, delimiter: &str) -> String {
+fn join(context: &str, words: Quote, delimiter: &str) -> String {
     let mut s = vec![];
     let mut words = words;
     while !words.is_empty() {

@@ -6,14 +6,14 @@ use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct RailState {
     // TODO: Provide update functions and make these private
-    pub stack: Stack,
+    pub stack: Quote,
     pub dictionary: Dictionary,
     pub context: Context,
 }
 
 impl RailState {
     pub fn new(context: Context) -> RailState {
-        let stack = Stack::new();
+        let stack = Quote::new();
         let dictionary = new_dictionary();
         RailState {
             stack,
@@ -22,7 +22,7 @@ impl RailState {
         }
     }
 
-    pub fn update_stack(self, update: impl Fn(Stack) -> Stack) -> RailState {
+    pub fn update_stack(self, update: impl Fn(Quote) -> Quote) -> RailState {
         RailState {
             stack: update(self.stack),
             dictionary: self.dictionary,
@@ -32,7 +32,7 @@ impl RailState {
 
     pub fn update_stack_and_dict(
         self,
-        update: impl Fn(Stack, Dictionary) -> (Stack, Dictionary),
+        update: impl Fn(Quote, Dictionary) -> (Quote, Dictionary),
     ) -> RailState {
         let (stack, dictionary) = update(self.stack, self.dictionary);
         RailState {
@@ -42,7 +42,7 @@ impl RailState {
         }
     }
 
-    pub fn replace_stack(self, stack: Stack) -> RailState {
+    pub fn replace_stack(self, stack: Quote) -> RailState {
         RailState {
             stack,
             dictionary: self.dictionary,
@@ -50,7 +50,7 @@ impl RailState {
         }
     }
 
-    pub fn contextless_child(&self, stack: Stack) -> RailState {
+    pub fn contextless_child(&self, stack: Quote) -> RailState {
         RailState {
             stack,
             dictionary: self.dictionary.clone(),
@@ -64,7 +64,7 @@ impl RailState {
             parent_stack: Box::new(self.stack),
         };
         RailState {
-            stack: Stack::new(),
+            stack: Quote::new(),
             dictionary: self.dictionary,
             context,
         }
@@ -84,7 +84,7 @@ impl RailState {
             Context::None => panic!("Can't escape"),
         };
 
-        let stack = stack.push_quotation(self.stack);
+        let stack = stack.push_quote(self.stack);
 
         RailState {
             stack,
@@ -105,7 +105,7 @@ pub enum Context {
     Main,
     Quotation {
         parent_context: Box<Context>,
-        parent_stack: Box<Stack>,
+        parent_stack: Box<Quote>,
     },
     None,
 }
@@ -116,8 +116,8 @@ pub enum RailVal {
     // TODO: Make a "Numeric" typeclass. (And floating-point/rational numbers)
     I64(i64),
     F64(f64),
-    Operator(String),
-    Quotation(Stack),
+    Function(String),
+    Quote(Quote),
     String(String),
 }
 
@@ -128,8 +128,8 @@ impl RailVal {
             Boolean(_) => "bool",
             I64(_) => "i64",
             F64(_) => "f64",
-            Operator(_) => "operator",
-            Quotation(_) => "quotation",
+            Function(_) => "function",
+            Quote(_) => "quote",
             String(_) => "string",
         }
         .into()
@@ -143,21 +143,21 @@ impl std::fmt::Display for RailVal {
             Boolean(b) => write!(fmt, "{}", if *b { "true" } else { "false" }),
             I64(n) => write!(fmt, "{}", n),
             F64(n) => write!(fmt, "{}", n),
-            Operator(o) => write!(fmt, "{}", o),
-            Quotation(q) => write!(fmt, "{}", q),
+            Function(o) => write!(fmt, "{}", o),
+            Quote(q) => write!(fmt, "{}", q),
             String(s) => write!(fmt, "\"{}\"", s.replace('\n', "\\n")),
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct Stack {
+pub struct Quote {
     pub values: Vec<RailVal>,
 }
 
-impl Stack {
+impl Quote {
     pub fn new() -> Self {
-        Stack { values: vec![] }
+        Quote { values: vec![] }
     }
 
     pub fn len(&self) -> usize {
@@ -168,87 +168,87 @@ impl Stack {
         self.values.is_empty()
     }
 
-    pub fn push(mut self, term: RailVal) -> Stack {
+    pub fn push(mut self, term: RailVal) -> Quote {
         self.values.push(term);
         self
     }
 
-    pub fn push_bool(mut self, b: bool) -> Stack {
+    pub fn push_bool(mut self, b: bool) -> Quote {
         self.values.push(RailVal::Boolean(b));
         self
     }
 
-    pub fn push_i64(mut self, i: i64) -> Stack {
+    pub fn push_i64(mut self, i: i64) -> Quote {
         self.values.push(RailVal::I64(i));
         self
     }
 
-    pub fn push_f64(mut self, n: f64) -> Stack {
+    pub fn push_f64(mut self, n: f64) -> Quote {
         self.values.push(RailVal::F64(n));
         self
     }
 
-    pub fn push_operator(mut self, op_name: &str) -> Stack {
-        self.values.push(RailVal::Operator(op_name.to_owned()));
+    pub fn push_function(mut self, op_name: &str) -> Quote {
+        self.values.push(RailVal::Function(op_name.to_owned()));
         self
     }
 
-    pub fn push_quotation(mut self, quot: Stack) -> Stack {
-        self.values.push(RailVal::Quotation(quot));
+    pub fn push_quote(mut self, quot: Quote) -> Quote {
+        self.values.push(RailVal::Quote(quot));
         self
     }
 
-    pub fn push_string(mut self, s: String) -> Stack {
+    pub fn push_string(mut self, s: String) -> Quote {
         self.values.push(RailVal::String(s));
         self
     }
 
-    pub fn push_str(mut self, s: &str) -> Stack {
+    pub fn push_str(mut self, s: &str) -> Quote {
         self.values.push(RailVal::String(s.to_owned()));
         self
     }
 
-    pub fn pop(mut self) -> (RailVal, Stack) {
+    pub fn pop(mut self) -> (RailVal, Quote) {
         let term = self.values.pop().unwrap();
         (term, self)
     }
 
-    pub fn pop_bool(mut self, context: &str) -> (bool, Stack) {
+    pub fn pop_bool(mut self, context: &str) -> (bool, Quote) {
         match self.values.pop().unwrap() {
             RailVal::Boolean(b) => (b, self),
             rail_val => panic!("{}", type_panic_msg(context, "bool", rail_val)),
         }
     }
 
-    pub fn pop_i64(mut self, context: &str) -> (i64, Stack) {
+    pub fn pop_i64(mut self, context: &str) -> (i64, Quote) {
         match self.values.pop().unwrap() {
             RailVal::I64(n) => (n, self),
             rail_val => panic!("{}", type_panic_msg(context, "i64", rail_val)),
         }
     }
 
-    pub fn pop_f64(mut self, context: &str) -> (f64, Stack) {
+    pub fn pop_f64(mut self, context: &str) -> (f64, Quote) {
         match self.values.pop().unwrap() {
             RailVal::F64(n) => (n, self),
             rail_val => panic!("{}", type_panic_msg(context, "f64", rail_val)),
         }
     }
 
-    fn _pop_operator(mut self, context: &str) -> (String, Stack) {
+    fn _pop_function(mut self, context: &str) -> (String, Quote) {
         match self.values.pop().unwrap() {
-            RailVal::Operator(op) => (op, self),
-            rail_val => panic!("{}", type_panic_msg(context, "operator", rail_val)),
+            RailVal::Function(op) => (op, self),
+            rail_val => panic!("{}", type_panic_msg(context, "function", rail_val)),
         }
     }
 
-    pub fn pop_quotation(mut self, context: &str) -> (Stack, Stack) {
+    pub fn pop_quote(mut self, context: &str) -> (Quote, Quote) {
         match self.values.pop().unwrap() {
-            RailVal::Quotation(quot) => (quot, self),
-            rail_val => panic!("{}", type_panic_msg(context, "quotation", rail_val)),
+            RailVal::Quote(quot) => (quot, self),
+            rail_val => panic!("{}", type_panic_msg(context, "quote", rail_val)),
         }
     }
 
-    pub fn pop_string(mut self, context: &str) -> (String, Stack) {
+    pub fn pop_string(mut self, context: &str) -> (String, Quote) {
         match self.values.pop().unwrap() {
             RailVal::String(s) => (s, self),
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
@@ -256,13 +256,13 @@ impl Stack {
     }
 }
 
-impl Default for Stack {
+impl Default for Quote {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl std::fmt::Display for Stack {
+impl std::fmt::Display for Quote {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "[ ").unwrap();
 
@@ -296,7 +296,7 @@ pub struct RailDef<'a> {
 #[derive(Clone)]
 pub enum RailAction<'a> {
     Builtin(Arc<dyn Fn(RailState) -> RailState + 'a>),
-    Quotation(Stack),
+    Quotation(Quote),
 }
 
 impl RailDef<'_> {
@@ -324,7 +324,7 @@ impl RailDef<'_> {
         stack_action: F,
     ) -> RailDef<'a>
     where
-        F: Fn(Stack) -> Stack + 'a,
+        F: Fn(Quote) -> Quote + 'a,
     {
         RailDef::on_state(name, consumes, produces, move |state| {
             state.update_stack(&stack_action)
@@ -346,7 +346,7 @@ impl RailDef<'_> {
         })
     }
 
-    pub fn from_quot<'a>(name: &str, quot: Stack) -> RailDef<'a> {
+    pub fn from_quot<'a>(name: &str, quot: Quote) -> RailDef<'a> {
         // TODO: Infer stack effects
         RailDef {
             name: name.to_string(),
@@ -390,11 +390,11 @@ impl Debug for RailDef<'_> {
     }
 }
 
-pub fn run_quot(quot: &Stack, state: RailState) -> RailState {
+pub fn run_quot(quot: &Quote, state: RailState) -> RailState {
     quot.values
         .iter()
         .fold(state, |state, rail_val| match rail_val {
-            RailVal::Operator(op_name) => {
+            RailVal::Function(op_name) => {
                 let op = state
                     .dictionary
                     .get(&op_name.clone())

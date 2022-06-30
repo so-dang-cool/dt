@@ -18,6 +18,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::contextless("clear", &[], &[], || {
             clearscreen::clear().expect("Unable to clear screen")
         }),
-        RailDef::on_stack("version", &[], &["string"], |stack| stack.push_str(RAIL_VERSION)),
+        RailDef::on_stack("version", &[], &["string"], |stack| {
+            stack.push_str(RAIL_VERSION)
+        }),
     ]
 }

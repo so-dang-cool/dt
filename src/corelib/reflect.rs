@@ -1,4 +1,4 @@
-use crate::rail_machine::{RailDef, Stack};
+use crate::rail_machine::{Quote, RailDef};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -12,8 +12,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 defs.sort();
                 let quot = defs
                     .iter()
-                    .fold(Stack::default(), |stack, def| stack.push_str(def));
-                let stack = stack.push_quotation(quot);
+                    .fold(Quote::default(), |stack, def| stack.push_str(def));
+                let stack = stack.push_quote(quot);
                 (stack, dictionary)
             })
         }),

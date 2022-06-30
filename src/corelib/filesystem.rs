@@ -2,8 +2,8 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+use crate::rail_machine::Quote;
 use crate::rail_machine::RailDef;
-use crate::rail_machine::Stack;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -16,13 +16,13 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_stack("ls", &[], &["quot"], |stack| {
             let path = env::current_dir().unwrap();
             let quot = fs::read_dir(path).unwrap().filter(|dir| dir.is_ok()).fold(
-                Stack::default(),
+                Quote::default(),
                 |quot, dir| {
                     let dir = dir.unwrap().file_name().to_string_lossy().to_string();
                     quot.push_string(dir)
                 },
             );
-            stack.push_quotation(quot)
+            stack.push_quote(quot)
         }),
         RailDef::on_stack("pwd", &[], &["string"], |stack| {
             let path = env::current_dir().unwrap().to_string_lossy().to_string();
