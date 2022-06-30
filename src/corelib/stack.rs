@@ -1,4 +1,4 @@
-use crate::rail_machine::{run_quot, RailDef, Stack, RailVal, type_panic_msg};
+use crate::rail_machine::{run_quot, type_panic_msg, RailDef, RailVal, Stack};
 
 // TODO: Should all these work for a String too? Should String also be a stack?
 pub fn builtins() -> Vec<RailDef<'static>> {
@@ -9,8 +9,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 let len: i64 = match a {
                     RailVal::Quotation(quot) => quot.len(),
                     RailVal::String(s) => s.len(),
-                    _ => panic!("{}", type_panic_msg("len", "quot|string", a))
-                }.try_into().unwrap();
+                    _ => panic!("{}", type_panic_msg("len", "quot|string", a)),
+                }
+                .try_into()
+                .unwrap();
                 stack.push_i64(len)
             })
         }),
