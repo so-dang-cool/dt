@@ -38,7 +38,7 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
     else if !state.in_main() {
         stack = stack.push_operator(&term)
     } else {
-        eprintln!("Derailed: unknown term \"{}\"", term);
+        eprintln!("Derailed: unknown term \"{}\"", term.replace('\n', "\\n"));
         std::process::exit(1);
     }
 
