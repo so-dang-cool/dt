@@ -1,6 +1,5 @@
 use rail::prompt::RailPrompt;
-
-pub const RAIL_VERSION: &str = std::env!("CARGO_PKG_VERSION");
+use rail:: RAIL_VERSION;
 
 fn main() {
     println!("rail {}", RAIL_VERSION);
