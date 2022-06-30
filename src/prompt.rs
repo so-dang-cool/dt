@@ -1,7 +1,11 @@
+mod rustyline_helper;
+
 use crate::rail_machine::RailState;
 use crate::tokens;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+
+use rustyline_helper::RailTracks;
 
 pub fn operate_term(state: RailState, term: String) -> RailState {
     let mut stack = state.stack.clone();
@@ -50,21 +54,31 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
 }
 
 pub struct RailPrompt {
-    editor: Editor<()>,
+    editor: Editor<RailTracks>,
     terms: Vec<String>,
 }
 
 impl RailPrompt {
     pub fn new() -> RailPrompt {
-        let editor = Editor::<()>::new();
+        let editor = Editor::<RailTracks>::new();
         let terms = vec![];
         RailPrompt { editor, terms }
     }
 
-    pub fn run(self) {
-        let end_state = self.fold(RailState::default(), operate_term);
+    pub fn run(&mut self) {
+        let mut state = RailState::default();
 
-        println!("{}", end_state.stack);
+        self.editor.set_helper(Some(RailTracks::for_state(&state)));
+
+        let mut maybe_term = self.next();
+
+        while let Some(term) = maybe_term {
+            state = operate_term(state, term);
+            self.editor.set_helper(Some(RailTracks::for_state(&state)));
+            maybe_term = self.next();
+        }
+
+        println!("{}", state.stack);
     }
 }
 
