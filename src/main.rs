@@ -1,8 +1,5 @@
-use rail::prompt::RailPrompt;
-use rail::RAIL_VERSION;
+use rail::cli;
 
 fn main() {
-    println!("rail {}", RAIL_VERSION);
-
-    RailPrompt::default().run()
+    cli::run()
 }

@@ -1,5 +1,5 @@
 use crate::rail_machine::RailState;
-use crate::tokens;
+use crate::{tokens, RAIL_VERSION};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -61,8 +61,10 @@ impl RailPrompt {
         RailPrompt { editor, terms }
     }
 
-    pub fn run(self) {
-        let end_state = self.fold(RailState::default(), operate_term);
+    pub fn run(self, state: RailState) {
+        println!("rail {}", RAIL_VERSION);
+
+        let end_state = self.fold(state, operate_term);
 
         println!("{}", end_state.quote);
     }

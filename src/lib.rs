@@ -1,3 +1,4 @@
+pub mod cli;
 pub mod corelib;
 pub mod prompt;
 pub mod rail_machine;

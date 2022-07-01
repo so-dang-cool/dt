@@ -1,3 +1,5 @@
+# TODO: This is not stdlib stuff. Move to another library
+
 [ print ] "." def
 [ status ] ".s" def
 [ == ] "=" def
