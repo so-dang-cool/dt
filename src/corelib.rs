@@ -3,9 +3,9 @@ use std::collections::HashMap;
 
 mod bool;
 mod choice;
+mod command;
 mod display;
 mod filesystem;
-mod function;
 mod math;
 mod process;
 mod reflect;
@@ -18,9 +18,9 @@ pub fn new_dictionary() -> Dictionary {
     let ops = bool::builtins()
         .into_iter()
         .chain(choice::builtins())
+        .chain(command::builtins())
         .chain(display::builtins())
         .chain(filesystem::builtins())
-        .chain(function::builtins())
         .chain(math::builtins())
         .chain(process::builtins())
         .chain(reflect::builtins())

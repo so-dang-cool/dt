@@ -20,18 +20,18 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 stack.push_string(s.trim().to_string())
             })
         }),
-        RailDef::on_state("split", &["string", "string"], &["quot"], |state| {
+        RailDef::on_state("split", &["string", "string"], &["quote"], |state| {
             state.update_stack(|stack| {
                 let (delimiter, stack) = stack.pop_string("split");
                 let (s, stack) = stack.pop_string("split");
                 stack.push_quote(split(s, &delimiter))
             })
         }),
-        RailDef::on_state("join", &["quot", "string"], &["string"], |state| {
+        RailDef::on_state("join", &["quote", "string"], &["string"], |state| {
             state.update_stack(|stack| {
                 let (delimiter, stack) = stack.pop_string("join");
-                let (quot, stack) = stack.pop_quote("join");
-                stack.push_string(join("join", quot, &delimiter))
+                let (quote, stack) = stack.pop_quote("join");
+                stack.push_string(join("join", quote, &delimiter))
             })
         }),
     ]

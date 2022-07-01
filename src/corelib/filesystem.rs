@@ -13,16 +13,16 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             env::set_current_dir(path).unwrap();
             stack
         }),
-        RailDef::on_stack("ls", &[], &["quot"], |stack| {
+        RailDef::on_stack("ls", &[], &["quote"], |stack| {
             let path = env::current_dir().unwrap();
-            let quot = fs::read_dir(path).unwrap().filter(|dir| dir.is_ok()).fold(
+            let quote = fs::read_dir(path).unwrap().filter(|dir| dir.is_ok()).fold(
                 Quote::default(),
-                |quot, dir| {
+                |quote, dir| {
                     let dir = dir.unwrap().file_name().to_string_lossy().to_string();
-                    quot.push_string(dir)
+                    quote.push_string(dir)
                 },
             );
-            stack.push_quote(quot)
+            stack.push_quote(quote)
         }),
         RailDef::on_stack("pwd", &[], &["string"], |stack| {
             let path = env::current_dir().unwrap().to_string_lossy().to_string();

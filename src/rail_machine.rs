@@ -116,7 +116,7 @@ pub enum RailVal {
     // TODO: Make a "Numeric" typeclass. (And floating-point/rational numbers)
     I64(i64),
     F64(f64),
-    Function(String),
+    Command(String),
     Quote(Quote),
     String(String),
 }
@@ -128,7 +128,7 @@ impl RailVal {
             Boolean(_) => "bool",
             I64(_) => "i64",
             F64(_) => "f64",
-            Function(_) => "function",
+            Command(_) => "command",
             Quote(_) => "quote",
             String(_) => "string",
         }
@@ -143,7 +143,7 @@ impl std::fmt::Display for RailVal {
             Boolean(b) => write!(fmt, "{}", if *b { "true" } else { "false" }),
             I64(n) => write!(fmt, "{}", n),
             F64(n) => write!(fmt, "{}", n),
-            Function(o) => write!(fmt, "{}", o),
+            Command(o) => write!(fmt, "{}", o),
             Quote(q) => write!(fmt, "{}", q),
             String(s) => write!(fmt, "\"{}\"", s.replace('\n', "\\n")),
         }
@@ -188,13 +188,13 @@ impl Quote {
         self
     }
 
-    pub fn push_function(mut self, op_name: &str) -> Quote {
-        self.values.push(RailVal::Function(op_name.to_owned()));
+    pub fn push_command(mut self, op_name: &str) -> Quote {
+        self.values.push(RailVal::Command(op_name.to_owned()));
         self
     }
 
-    pub fn push_quote(mut self, quot: Quote) -> Quote {
-        self.values.push(RailVal::Quote(quot));
+    pub fn push_quote(mut self, quote: Quote) -> Quote {
+        self.values.push(RailVal::Quote(quote));
         self
     }
 
@@ -234,16 +234,16 @@ impl Quote {
         }
     }
 
-    fn _pop_function(mut self, context: &str) -> (String, Quote) {
+    fn _pop_command(mut self, context: &str) -> (String, Quote) {
         match self.values.pop().unwrap() {
-            RailVal::Function(op) => (op, self),
-            rail_val => panic!("{}", type_panic_msg(context, "function", rail_val)),
+            RailVal::Command(op) => (op, self),
+            rail_val => panic!("{}", type_panic_msg(context, "command", rail_val)),
         }
     }
 
     pub fn pop_quote(mut self, context: &str) -> (Quote, Quote) {
         match self.values.pop().unwrap() {
-            RailVal::Quote(quot) => (quot, self),
+            RailVal::Quote(quote) => (quote, self),
             rail_val => panic!("{}", type_panic_msg(context, "quote", rail_val)),
         }
     }
@@ -346,13 +346,13 @@ impl RailDef<'_> {
         })
     }
 
-    pub fn from_quot<'a>(name: &str, quot: Quote) -> RailDef<'a> {
+    pub fn from_quote<'a>(name: &str, quote: Quote) -> RailDef<'a> {
         // TODO: Infer stack effects
         RailDef {
             name: name.to_string(),
             consumes: &[],
             produces: &[],
-            action: RailAction::Quotation(quot),
+            action: RailAction::Quotation(quote),
         }
     }
 
@@ -373,7 +373,7 @@ impl RailDef<'_> {
 
         match &self.action {
             RailAction::Builtin(action) => action(state),
-            RailAction::Quotation(quot) => run_quot(quot, state),
+            RailAction::Quotation(quote) => run_quote(quote, state),
         }
     }
 }
@@ -390,11 +390,12 @@ impl Debug for RailDef<'_> {
     }
 }
 
-pub fn run_quot(quot: &Quote, state: RailState) -> RailState {
-    quot.values
+pub fn run_quote(quote: &Quote, state: RailState) -> RailState {
+    quote
+        .values
         .iter()
         .fold(state, |state, rail_val| match rail_val {
-            RailVal::Function(op_name) => {
+            RailVal::Command(op_name) => {
                 let op = state
                     .dictionary
                     .get(&op_name.clone())

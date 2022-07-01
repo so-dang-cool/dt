@@ -18,7 +18,7 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
         if state.in_main() {
             return op.clone().act(state.clone());
         } else {
-            stack = stack.push_function(&op.name);
+            stack = stack.push_command(&op.name);
         }
     }
     // Strings
@@ -36,7 +36,7 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
     }
     // Unknown
     else if !state.in_main() {
-        stack = stack.push_function(&term)
+        stack = stack.push_command(&term)
     } else {
         eprintln!("Derailed: unknown term \"{}\"", term.replace('\n', "\\n"));
         std::process::exit(1);

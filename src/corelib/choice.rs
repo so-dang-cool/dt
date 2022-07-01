@@ -1,4 +1,4 @@
-use crate::rail_machine::{run_quot, RailDef};
+use crate::rail_machine::{run_quote, RailDef};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![RailDef::on_state("opt", &["seq"], &[], |state| {
@@ -14,12 +14,12 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             options = opts;
 
             // TODO: Should this be running in a way that can't alter the main stack?
-            state = run_quot(&condition, state);
+            state = run_quote(&condition, state);
             let (success, stack) = state.stack.clone().pop_bool("opt");
             state = state.replace_stack(stack);
 
             if success {
-                return run_quot(&action, state);
+                return run_quote(&action, state);
             }
         }
 
