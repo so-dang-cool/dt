@@ -3,35 +3,37 @@ use crate::rail_machine::{Quote, RailDef};
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
         RailDef::on_state("upcase", &["string"], &["string"], |state| {
-            state.update_quote(|stack| {
-                let (s, stack) = stack.pop_string("upcase");
-                stack.push_string(s.to_uppercase())
+            state.update_quote(|quote| {
+                let (s, quote) = quote.pop_string("upcase");
+                quote.push_string(s.to_uppercase())
             })
         }),
         RailDef::on_state("downcase", &["string"], &["string"], |state| {
-            state.update_quote(|stack| {
-                let (s, stack) = stack.pop_string("downcase");
-                stack.push_string(s.to_lowercase())
+            state.update_quote(|quote| {
+                let (s, quote) = quote.pop_string("downcase");
+                quote.push_string(s.to_lowercase())
             })
         }),
         RailDef::on_state("trim", &["string"], &["string"], |state| {
-            state.update_quote(|stack| {
-                let (s, stack) = stack.pop_string("trim");
-                stack.push_string(s.trim().to_string())
+            state.update_quote(|quote| {
+                let (s, quote) = quote.pop_string("trim");
+                quote.push_string(s.trim().to_string())
             })
         }),
+        // TODO: Should this also work on Quotes?
         RailDef::on_state("split", &["string", "string"], &["quote"], |state| {
-            state.update_quote(|stack| {
-                let (delimiter, stack) = stack.pop_string("split");
-                let (s, stack) = stack.pop_string("split");
-                stack.push_quote(split(s, &delimiter))
+            state.update_quote(|quote| {
+                let (delimiter, quote) = quote.pop_string("split");
+                let (s, quote) = quote.pop_string("split");
+                quote.push_quote(split(s, &delimiter))
             })
         }),
+        // TODO: Should this also work on Quotes?
         RailDef::on_state("join", &["quote", "string"], &["string"], |state| {
-            state.update_quote(|stack| {
-                let (delimiter, stack) = stack.pop_string("join");
-                let (quote, stack) = stack.pop_quote("join");
-                stack.push_string(join("join", quote, &delimiter))
+            state.update_quote(|quote| {
+                let (delimiter, quote) = quote.pop_string("join");
+                let (strings, quote) = quote.pop_quote("join");
+                quote.push_string(join("join", strings, &delimiter))
             })
         }),
     ]

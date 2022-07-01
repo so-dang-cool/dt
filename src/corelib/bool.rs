@@ -4,9 +4,9 @@ pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
         push_bool("true", true),
         push_bool("false", false),
-        RailDef::on_stack("not", &["bool"], &["bool"], |stack| {
-            let (b, stack) = stack.pop_bool("not");
-            stack.push_bool(!b)
+        RailDef::on_quote("not", &["bool"], &["bool"], |quote| {
+            let (b, quote) = quote.pop_bool("not");
+            quote.push_bool(!b)
         }),
         equality("==", Equality::Equal),
         equality("!=", Equality::NotEqual),
@@ -18,7 +18,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 }
 
 fn push_bool(name: &str, b: bool) -> RailDef<'_> {
-    RailDef::on_stack(name, &[], &["bool"], move |stack| stack.push_bool(b))
+    RailDef::on_quote(name, &[], &["bool"], move |quote| quote.push_bool(b))
 }
 
 enum Equality {
@@ -27,9 +27,9 @@ enum Equality {
 }
 
 fn equality(name: &str, eq: Equality) -> RailDef<'_> {
-    RailDef::on_stack(name, &["a", "a"], &["bool"], move |stack| {
-        let (b, stack) = stack.pop();
-        let (a, stack) = stack.pop();
+    RailDef::on_quote(name, &["a", "a"], &["bool"], move |quote| {
+        let (b, quote) = quote.pop();
+        let (a, quote) = quote.pop();
 
         use RailVal::*;
 
@@ -48,7 +48,7 @@ fn equality(name: &str, eq: Equality) -> RailDef<'_> {
             Equality::NotEqual => !res,
         };
 
-        stack.push_bool(res)
+        quote.push_bool(res)
     })
 }
 
@@ -57,16 +57,16 @@ where
     F: Fn(f64, f64) -> bool + Sized + 'a,
     G: Fn(i64, i64) -> bool + Sized + 'a,
 {
-    RailDef::on_stack(name, &["num", "num"], &["bool"], move |stack| {
-        let (b, stack) = stack.pop();
-        let (a, stack) = stack.pop();
+    RailDef::on_quote(name, &["num", "num"], &["bool"], move |quote| {
+        let (b, quote) = quote.pop();
+        let (a, quote) = quote.pop();
 
         use RailVal::*;
         match (a, b) {
-            (I64(a), I64(b)) => stack.push_bool(i64_op(a, b)),
-            (I64(a), F64(b)) => stack.push_bool(f64_op(a as f64, b)),
-            (F64(a), I64(b)) => stack.push_bool(f64_op(a, b as f64)),
-            (F64(a), F64(b)) => stack.push_bool(f64_op(a, b)),
+            (I64(a), I64(b)) => quote.push_bool(i64_op(a, b)),
+            (I64(a), F64(b)) => quote.push_bool(f64_op(a as f64, b)),
+            (F64(a), I64(b)) => quote.push_bool(f64_op(a, b as f64)),
+            (F64(a), F64(b)) => quote.push_bool(f64_op(a, b)),
             (a, I64(_b)) => panic!("{}", type_panic_msg(name, "num", a)),
             (a, F64(_b)) => panic!("{}", type_panic_msg(name, "num", a)),
             (_a, b) => panic!("{}", type_panic_msg(name, "num", b)),

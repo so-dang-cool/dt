@@ -30,7 +30,7 @@ impl RailState {
         }
     }
 
-    pub fn update_stack_and_dict(
+    pub fn update_quote_and_dict(
         self,
         update: impl Fn(Quote, Dictionary) -> (Quote, Dictionary),
     ) -> RailState {
@@ -305,17 +305,17 @@ impl RailDef<'_> {
         }
     }
 
-    pub fn on_stack<'a, F>(
+    pub fn on_quote<'a, F>(
         name: &str,
         consumes: &'a [&'a str],
         produces: &'a [&'a str],
-        stack_action: F,
+        quote_action: F,
     ) -> RailDef<'a>
     where
         F: Fn(Quote) -> Quote + 'a,
     {
         RailDef::on_state(name, consumes, produces, move |state| {
-            state.update_quote(&stack_action)
+            state.update_quote(&quote_action)
         })
     }
 
@@ -335,7 +335,7 @@ impl RailDef<'_> {
     }
 
     pub fn from_quote<'a>(name: &str, quote: Quote) -> RailDef<'a> {
-        // TODO: Infer stack effects
+        // TODO: Infer quote effects
         RailDef {
             name: name.to_string(),
             consumes: &[],
@@ -348,7 +348,7 @@ impl RailDef<'_> {
         if state.quote.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
             eprintln!(
-                "Derailed: stack underflow for \"{}\" ({} -> {}): stack only had {}",
+                "Derailed: quote underflow for \"{}\" ({} -> {}): quote only had {}",
                 self.name,
                 self.consumes.join(" "),
                 self.produces.join(" "),
@@ -390,7 +390,7 @@ pub fn run_quote(quote: &Quote, state: RailState) -> RailState {
                     .unwrap_or_else(|| panic!("Tried to do \"{}\" but it was undefined", op_name));
                 op.clone().act(state)
             }
-            _ => state.update_quote(|stack| stack.push(rail_val.clone())),
+            _ => state.update_quote(|quote| quote.push(rail_val.clone())),
         })
 }
 

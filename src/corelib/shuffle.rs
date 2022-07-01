@@ -2,26 +2,26 @@ use crate::rail_machine::RailDef;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_stack("drop", &["a"], &[], |stack| stack.pop().1),
-        RailDef::on_stack("dup", &["a"], &["a", "a"], |stack| {
-            let (a, stack) = stack.pop();
-            stack.push(a.clone()).push(a)
+        RailDef::on_quote("drop", &["a"], &[], |quote| quote.pop().1),
+        RailDef::on_quote("dup", &["a"], &["a", "a"], |quote| {
+            let (a, quote) = quote.pop();
+            quote.push(a.clone()).push(a)
         }),
-        RailDef::on_stack("dup2", &["a", "b"], &["a", "b", "a", "b"], |stack| {
-            let (b, stack) = stack.pop();
-            let (a, stack) = stack.pop();
-            stack.push(a.clone()).push(b.clone()).push(a).push(b)
+        RailDef::on_quote("dup2", &["a", "b"], &["a", "b", "a", "b"], |quote| {
+            let (b, quote) = quote.pop();
+            let (a, quote) = quote.pop();
+            quote.push(a.clone()).push(b.clone()).push(a).push(b)
         }),
-        RailDef::on_stack("swap", &["b", "a"], &["a", "b"], |stack| {
-            let (a, stack) = stack.pop();
-            let (b, stack) = stack.pop();
-            stack.push(a).push(b)
+        RailDef::on_quote("swap", &["b", "a"], &["a", "b"], |quote| {
+            let (a, quote) = quote.pop();
+            let (b, quote) = quote.pop();
+            quote.push(a).push(b)
         }),
-        RailDef::on_stack("rot", &["c", "b", "a"], &["a", "c", "b"], |stack| {
-            let (a, stack) = stack.pop();
-            let (b, stack) = stack.pop();
-            let (c, stack) = stack.pop();
-            stack.push(a).push(c).push(b)
+        RailDef::on_quote("rot", &["c", "b", "a"], &["a", "c", "b"], |quote| {
+            let (a, quote) = quote.pop();
+            let (b, quote) = quote.pop();
+            let (c, quote) = quote.pop();
+            quote.push(a).push(c).push(b)
         }),
     ]
 }

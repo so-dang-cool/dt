@@ -3,13 +3,13 @@ use crate::RAIL_VERSION;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_stack("print", &["a"], &[], |stack| {
-            let (a, stack) = stack.pop();
+        RailDef::on_quote("print", &["a"], &[], |quote| {
+            let (a, quote) = quote.pop();
             match a {
                 RailVal::String(a) => println!("{}", a),
                 _ => println!("{}", a),
             }
-            stack
+            quote
         }),
         RailDef::on_state("status", &[], &[], |state| {
             println!("{}", state.quote);
@@ -18,8 +18,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::contextless("clear", &[], &[], || {
             clearscreen::clear().expect("Unable to clear screen")
         }),
-        RailDef::on_stack("version", &[], &["string"], |stack| {
-            stack.push_str(RAIL_VERSION)
+        RailDef::on_quote("version", &[], &["string"], |quote| {
+            quote.push_str(RAIL_VERSION)
         }),
     ]
 }

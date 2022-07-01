@@ -4,7 +4,7 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 pub fn operate_term(state: RailState, term: String) -> RailState {
-    let mut stack = state.quote.clone();
+    let mut quote = state.quote.clone();
     let dictionary = state.dictionary.clone();
 
     // Quotations
@@ -18,32 +18,32 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
         if state.in_main() {
             return op.clone().act(state.clone());
         } else {
-            stack = stack.push_command(&op.name);
+            quote = quote.push_command(&op.name);
         }
     }
     // Strings
     else if term.starts_with('"') && term.ends_with('"') {
         let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-        stack = stack.push_string(term.to_string());
+        quote = quote.push_string(term.to_string());
     }
     // Integers
     else if let Ok(i) = term.parse::<i64>() {
-        stack = stack.push_i64(i);
+        quote = quote.push_i64(i);
     }
     // Floating point numbers
     else if let Ok(n) = term.parse::<f64>() {
-        stack = stack.push_f64(n);
+        quote = quote.push_f64(n);
     }
     // Unknown
     else if !state.in_main() {
-        stack = stack.push_command(&term)
+        quote = quote.push_command(&term)
     } else {
         eprintln!("Derailed: unknown term \"{}\"", term.replace('\n', "\\n"));
         std::process::exit(1);
     }
 
     RailState {
-        quote: stack,
+        quote,
         dictionary,
         context: state.context,
     }

@@ -1,11 +1,11 @@
 use crate::rail_machine::{run_quote, type_panic_msg, Quote, RailDef, RailVal};
 
-// TODO: Should all these work for a String too? Should String also be a stack?
+// TODO: These should all work for both String and Quote? Should String also be a Quote? Typeclasses?
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
         RailDef::on_state("len", &["quote|string"], &["i64"], |state| {
-            state.update_quote(|stack| {
-                let (a, stack) = stack.pop();
+            state.update_quote(|quote| {
+                let (a, quote) = quote.pop();
                 let len: i64 = match a {
                     RailVal::Quote(quote) => quote.len(),
                     RailVal::String(s) => s.len(),
@@ -13,84 +13,84 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 }
                 .try_into()
                 .unwrap();
-                stack.push_i64(len)
+                quote.push_i64(len)
             })
         }),
         RailDef::on_state("push", &["quote", "a"], &["quote"], |state| {
-            state.update_quote(|stack| {
-                let (a, stack) = stack.pop();
-                let (quote, stack) = stack.pop_quote("push");
-                let quote = quote.push(a);
-                stack.push_quote(quote)
+            state.update_quote(|quote| {
+                let (a, quote) = quote.pop();
+                let (sequence, quote) = quote.pop_quote("push");
+                let sequence = sequence.push(a);
+                quote.push_quote(sequence)
             })
         }),
         RailDef::on_state("pop", &["quote"], &["quote", "a"], |state| {
-            state.update_quote(|stack| {
-                let (quote, stack) = stack.pop_quote("pop");
-                let (a, quote) = quote.pop();
-                stack.push_quote(quote).push(a)
+            state.update_quote(|quote| {
+                let (sequence, quote) = quote.pop_quote("pop");
+                let (a, sequence) = sequence.pop();
+                quote.push_quote(sequence).push(a)
             })
         }),
         RailDef::on_state("rev", &["quote"], &["quote"], |state| {
-            state.update_quote(|stack| {
-                let (mut quote, stack) = stack.pop_quote("rev");
-                quote.values.reverse();
-                stack.push_quote(quote)
+            state.update_quote(|quote| {
+                let (mut sequence, quote) = quote.pop_quote("rev");
+                sequence.values.reverse();
+                quote.push_quote(sequence)
             })
         }),
         RailDef::on_state("concat", &["quote", "quote"], &["quote"], |state| {
-            state.update_quote(|stack| {
-                let (quote_b, stack) = stack.pop_quote("concat");
-                let (quote_a, stack) = stack.pop_quote("concat");
-                let mut quote = Quote::default();
-                for term in quote_a.values.into_iter().chain(quote_b.values) {
-                    quote = quote.push(term);
+            state.update_quote(|quote| {
+                let (suffix, quote) = quote.pop_quote("concat");
+                let (prefix, quote) = quote.pop_quote("concat");
+                let mut results = Quote::default();
+                for term in prefix.values.into_iter().chain(suffix.values) {
+                    results = results.push(term);
                 }
-                stack.push_quote(quote)
+                quote.push_quote(results)
             })
         }),
         RailDef::on_state("filter", &["quote", "quote"], &["quote"], |state| {
-            let (predicate, stack) = state.quote.clone().pop_quote("filter");
-            let (supply_stack, stack) = stack.pop_quote("filter");
-            let mut result_stack = Quote::default();
+            let (predicate, quote) = state.quote.clone().pop_quote("filter");
+            let (sequence, quote) = quote.pop_quote("filter");
+            let mut results = Quote::default();
 
-            for term in supply_stack.values {
+            for term in sequence.values {
                 let substate = state.contextless_child(Quote::default().push(term.clone()));
                 let substate = run_quote(&predicate, substate);
                 let (keep, _) = substate.quote.pop_bool("filter");
                 if keep {
-                    result_stack = result_stack.push(term);
+                    results = results.push(term);
                 }
             }
 
-            let stack = stack.push_quote(result_stack);
+            let quote = quote.push_quote(results);
 
-            state.replace_quote(stack)
+            state.replace_quote(quote)
         }),
         RailDef::on_state("map", &["quote", "quote"], &["quote"], |state| {
-            state.clone().update_quote(move |stack| {
-                let (transform, stack) = stack.pop_quote("map");
-                let (supply_stack, stack) = stack.pop_quote("map");
-                let mut result_stack = Quote::default();
+            state.clone().update_quote(move |quote| {
+                let (transform, quote) = quote.pop_quote("map");
+                let (sequence, quote) = quote.pop_quote("map");
+                let mut results = Quote::default();
 
-                for term in supply_stack.values {
-                    result_stack = result_stack.push(term.clone());
-                    let substate = state.contextless_child(result_stack);
+                for term in sequence.values {
+                    results = results.push(term.clone());
+                    let substate = state.contextless_child(results);
                     let substate = run_quote(&transform, substate);
-                    result_stack = substate.quote;
+                    results = substate.quote;
                 }
 
-                stack.push_quote(result_stack)
+                quote.push_quote(results)
             })
         }),
         RailDef::on_state("each", &["quote", "quote"], &[], |state| {
-            let (action, stack) = state.quote.clone().pop_quote("each");
-            let (supply_stack, stack) = stack.pop_quote("each");
-            let state = state.replace_quote(stack);
+            let (command, quote) = state.quote.clone().pop_quote("each");
+            let (sequence, quote) = quote.pop_quote("each");
+            let state = state.replace_quote(quote);
 
-            supply_stack.values.into_iter().fold(state, |state, value| {
-                let state = state.update_quote(|stack| stack.push(value.clone()));
-                run_quote(&action, state)
+            sequence.values.into_iter().fold(state, |state, value| {
+                let state = state.update_quote(|quote| quote.push(value.clone()));
+                run_quote(&command, state)
             })
         }),
     ]

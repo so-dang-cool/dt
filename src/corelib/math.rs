@@ -9,10 +9,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         binary_numeric_op("*", |a, b| a * b, |a, b| a * b),
         binary_numeric_op("/", |a, b| a / b, |a, b| a / b),
         binary_numeric_op("mod", |a, b| a % b, |a, b| a % b),
-        RailDef::on_stack("int-max", &[], &["i64"], |stack| stack.push_i64(i64::MAX)),
-        RailDef::on_stack("int-min", &[], &["i64"], |stack| stack.push_i64(i64::MIN)),
-        RailDef::on_stack("float-max", &[], &["f64"], |stack| stack.push_f64(f64::MAX)),
-        RailDef::on_stack("float-min", &[], &["f64"], |stack| stack.push_f64(f64::MIN)),
+        RailDef::on_quote("int-max", &[], &["i64"], |quote| quote.push_i64(i64::MAX)),
+        RailDef::on_quote("int-min", &[], &["i64"], |quote| quote.push_i64(i64::MIN)),
+        RailDef::on_quote("float-max", &[], &["f64"], |quote| quote.push_f64(f64::MAX)),
+        RailDef::on_quote("float-min", &[], &["f64"], |quote| quote.push_f64(f64::MIN)),
     ]
 }
 
@@ -21,11 +21,11 @@ where
     F: Fn(f64) -> f64 + Sized + 'a,
     G: Fn(i64) -> i64 + Sized + 'a,
 {
-    RailDef::on_stack(name, &["i64"], &["i64"], move |stack| {
-        let (n, stack) = stack.pop();
+    RailDef::on_quote(name, &["i64"], &["i64"], move |quote| {
+        let (n, quote) = quote.pop();
         match n {
-            RailVal::I64(n) => stack.push_i64(i64_op(n)),
-            RailVal::F64(n) => stack.push_f64(f64_op(n)),
+            RailVal::I64(n) => quote.push_i64(i64_op(n)),
+            RailVal::F64(n) => quote.push_f64(f64_op(n)),
             _ => panic!("{}", type_panic_msg(name, "num", n)),
         }
     })
@@ -36,16 +36,16 @@ where
     F: Fn(f64, f64) -> f64 + Sized + 'a,
     G: Fn(i64, i64) -> i64 + Sized + 'a,
 {
-    RailDef::on_stack(name, &["num", "num"], &["num"], move |stack| {
-        let (b, stack) = stack.pop();
-        let (a, stack) = stack.pop();
+    RailDef::on_quote(name, &["num", "num"], &["num"], move |quote| {
+        let (b, quote) = quote.pop();
+        let (a, quote) = quote.pop();
 
         use RailVal::*;
         match (a, b) {
-            (I64(a), I64(b)) => stack.push_i64(i64_op(a, b)),
-            (I64(a), F64(b)) => stack.push_f64(f64_op(a as f64, b)),
-            (F64(a), I64(b)) => stack.push_f64(f64_op(a, b as f64)),
-            (F64(a), F64(b)) => stack.push_f64(f64_op(a, b)),
+            (I64(a), I64(b)) => quote.push_i64(i64_op(a, b)),
+            (I64(a), F64(b)) => quote.push_f64(f64_op(a as f64, b)),
+            (F64(a), I64(b)) => quote.push_f64(f64_op(a, b as f64)),
+            (F64(a), F64(b)) => quote.push_f64(f64_op(a, b)),
             (a, I64(_b)) => panic!("{}", type_panic_msg(name, "num", a)),
             (a, F64(_b)) => panic!("{}", type_panic_msg(name, "num", a)),
             (_a, b) => panic!("{}", type_panic_msg(name, "num", b)),

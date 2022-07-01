@@ -1,0 +1,3 @@
+[ print ] "." def
+[ status ] ".s" def
+[ == ] "=" def
