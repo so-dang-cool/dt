@@ -11,8 +11,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             }
             stack
         }),
-        RailDef::on_state("show", &[], &[], |state| {
-            println!("{}", state.stack);
+        RailDef::on_state("status", &[], &[], |state| {
+            println!("{}", state.quote);
             state
         }),
         RailDef::contextless("clear", &[], &[], || {

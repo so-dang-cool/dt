@@ -2,28 +2,28 @@ use crate::rail_machine::{run_quote, RailDef, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_state("do", &["quote|function"], &["..."], |state| {
-            let (a, stack) = state.stack.clone().pop();
-            let state = state.replace_stack(stack);
+        RailDef::on_state("do", &["quote|command"], &["..."], |state| {
+            let (a, stack) = state.quote.clone().pop();
+            let state = state.replace_quote(stack);
 
             match a {
                 RailVal::Quote(quote) => run_quote(&quote, state),
-                RailVal::Command(function) => {
-                    let action = state.dictionary.get(&function).unwrap();
+                RailVal::Command(command) => {
+                    let action = state.dictionary.get(&command).unwrap();
                     action.clone().act(state)
                 }
                 _ => panic!("oops"),
             }
         }),
         RailDef::on_state("doin", &["quote", "quote"], &["quote"], |state| {
-            state.clone().update_stack(|stack| {
+            state.clone().update_quote(|stack| {
                 let (quote, stack) = stack.pop_quote("doin");
                 let (working_stack, stack) = stack.pop_quote("doin");
 
                 let substate = state.contextless_child(working_stack); // TODO: Really just need dictionary.
                 let substate = run_quote(&quote, substate);
 
-                stack.push_quote(substate.stack)
+                stack.push_quote(substate.quote)
             })
         }),
         RailDef::on_state("def", &["quote", "string"], &[], |state| {
@@ -36,7 +36,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
         RailDef::on_state("def?", &["string"], &["bool"], |state| {
-            state.clone().update_stack(|stack| {
+            state.clone().update_quote(|stack| {
                 let (name, stack) = stack.pop_string("def?");
                 stack.push_bool(state.dictionary.contains_key(&name))
             })

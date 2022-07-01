@@ -4,7 +4,7 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 pub fn operate_term(state: RailState, term: String) -> RailState {
-    let mut stack = state.stack.clone();
+    let mut stack = state.quote.clone();
     let dictionary = state.dictionary.clone();
 
     // Quotations
@@ -43,7 +43,7 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
     }
 
     RailState {
-        stack,
+        quote: stack,
         dictionary,
         context: state.context,
     }
@@ -64,7 +64,7 @@ impl RailPrompt {
     pub fn run(self) {
         let end_state = self.fold(RailState::default(), operate_term);
 
-        println!("{}", end_state.stack);
+        println!("{}", end_state.quote);
     }
 }
 

@@ -10,8 +10,8 @@ mod math;
 mod process;
 mod reflect;
 mod repeat;
+mod sequence;
 mod shuffle;
-mod stack;
 mod string;
 
 pub fn new_dictionary() -> Dictionary {
@@ -26,7 +26,7 @@ pub fn new_dictionary() -> Dictionary {
         .chain(reflect::builtins())
         .chain(repeat::builtins())
         .chain(shuffle::builtins())
-        .chain(stack::builtins())
+        .chain(sequence::builtins())
         .chain(string::builtins())
         .map(|op| (op.name.clone(), op));
 

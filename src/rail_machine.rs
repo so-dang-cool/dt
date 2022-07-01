@@ -6,25 +6,25 @@ use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct RailState {
     // TODO: Provide update functions and make these private
-    pub stack: Quote,
+    pub quote: Quote,
     pub dictionary: Dictionary,
     pub context: Context,
 }
 
 impl RailState {
     pub fn new(context: Context) -> RailState {
-        let stack = Quote::new();
+        let quote = Quote::default();
         let dictionary = new_dictionary();
         RailState {
-            stack,
+            quote,
             dictionary,
             context,
         }
     }
 
-    pub fn update_stack(self, update: impl Fn(Quote) -> Quote) -> RailState {
+    pub fn update_quote(self, update: impl Fn(Quote) -> Quote) -> RailState {
         RailState {
-            stack: update(self.stack),
+            quote: update(self.quote),
             dictionary: self.dictionary,
             context: self.context,
         }
@@ -34,39 +34,37 @@ impl RailState {
         self,
         update: impl Fn(Quote, Dictionary) -> (Quote, Dictionary),
     ) -> RailState {
-        let (stack, dictionary) = update(self.stack, self.dictionary);
+        let (quote, dictionary) = update(self.quote, self.dictionary);
         RailState {
-            stack,
+            quote,
             dictionary,
             context: self.context,
         }
     }
 
-    pub fn replace_stack(self, stack: Quote) -> RailState {
+    pub fn replace_quote(self, quote: Quote) -> RailState {
         RailState {
-            stack,
+            quote,
             dictionary: self.dictionary,
             context: self.context,
         }
     }
 
-    pub fn contextless_child(&self, stack: Quote) -> RailState {
+    pub fn contextless_child(&self, quote: Quote) -> RailState {
         RailState {
-            stack,
+            quote,
             dictionary: self.dictionary.clone(),
             context: Context::None,
         }
     }
 
     pub fn deeper(self) -> RailState {
-        let context = Context::Quotation {
-            parent_context: Box::new(self.context),
-            parent_stack: Box::new(self.stack),
-        };
         RailState {
-            stack: Quote::new(),
-            dictionary: self.dictionary,
-            context,
+            quote: Quote::default(),
+            dictionary: empty_dictionary(),
+            context: Context::Quotation {
+                parent_state: Box::new(self),
+            },
         }
     }
 
@@ -75,22 +73,14 @@ impl RailState {
     }
 
     pub fn higher(self) -> RailState {
-        let (context, stack) = match self.context {
-            Context::Quotation {
-                parent_context: context,
-                parent_stack: parent,
-            } => (*context, *parent),
+        let state = match self.context {
+            Context::Quotation { parent_state } => *parent_state,
             Context::Main => panic!("Can't escape main"),
             Context::None => panic!("Can't escape"),
         };
 
-        let stack = stack.push_quote(self.stack);
-
-        RailState {
-            stack,
-            dictionary: self.dictionary,
-            context,
-        }
+        let quote = state.quote.clone().push_quote(self.quote);
+        state.replace_quote(quote)
     }
 }
 
@@ -103,10 +93,7 @@ impl Default for RailState {
 #[derive(Clone, Debug)]
 pub enum Context {
     Main,
-    Quotation {
-        parent_context: Box<Context>,
-        parent_stack: Box<Quote>,
-    },
+    Quotation { parent_state: Box<RailState> },
     None,
 }
 
@@ -156,8 +143,8 @@ pub struct Quote {
 }
 
 impl Quote {
-    pub fn new() -> Self {
-        Quote { values: vec![] }
+    pub fn new(values: Vec<RailVal>) -> Self {
+        Quote { values }
     }
 
     pub fn len(&self) -> usize {
@@ -258,7 +245,8 @@ impl Quote {
 
 impl Default for Quote {
     fn default() -> Self {
-        Self::new()
+        let values = vec![];
+        Self::new(values)
     }
 }
 
@@ -327,7 +315,7 @@ impl RailDef<'_> {
         F: Fn(Quote) -> Quote + 'a,
     {
         RailDef::on_state(name, consumes, produces, move |state| {
-            state.update_stack(&stack_action)
+            state.update_quote(&stack_action)
         })
     }
 
@@ -357,14 +345,14 @@ impl RailDef<'_> {
     }
 
     pub fn act(&mut self, state: RailState) -> RailState {
-        if state.stack.len() < self.consumes.len() {
+        if state.quote.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
             eprintln!(
                 "Derailed: stack underflow for \"{}\" ({} -> {}): stack only had {}",
                 self.name,
                 self.consumes.join(" "),
                 self.produces.join(" "),
-                state.stack.len()
+                state.quote.len()
             );
             std::process::exit(1);
         }
@@ -402,6 +390,10 @@ pub fn run_quote(quote: &Quote, state: RailState) -> RailState {
                     .unwrap_or_else(|| panic!("Tried to do \"{}\" but it was undefined", op_name));
                 op.clone().act(state)
             }
-            _ => state.update_stack(|stack| stack.push(rail_val.clone())),
+            _ => state.update_quote(|stack| stack.push(rail_val.clone())),
         })
+}
+
+pub fn empty_dictionary() -> Dictionary {
+    HashMap::new()
 }

@@ -1,10 +1,10 @@
 use crate::rail_machine::{run_quote, RailDef};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
-    vec![RailDef::on_state("opt", &["seq"], &[], |state| {
+    vec![RailDef::on_state("opt", &["quote"], &[], |state| {
         // TODO: All conditions and all actions must have the same stack effect.
-        let (mut options, stack) = state.stack.clone().pop_quote("opt");
-        let mut state = state.replace_stack(stack);
+        let (mut options, stack) = state.quote.clone().pop_quote("opt");
+        let mut state = state.replace_quote(stack);
 
         options.values.reverse();
 
@@ -15,8 +15,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             // TODO: Should this be running in a way that can't alter the main stack?
             state = run_quote(&condition, state);
-            let (success, stack) = state.stack.clone().pop_bool("opt");
-            state = state.replace_stack(stack);
+            let (success, stack) = state.quote.clone().pop_bool("opt");
+            state = state.replace_quote(stack);
 
             if success {
                 return run_quote(&action, state);
