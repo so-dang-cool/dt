@@ -3,6 +3,7 @@ use crate::rail_machine::{type_panic_msg, RailDef, RailVal};
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
         unary_numeric_op("abs", |a| a.abs(), |a| a.abs()),
+        unary_numeric_op("negate", |a| -a, |a| -a),
         binary_numeric_op("+", |a, b| a + b, |a, b| a + b),
         binary_numeric_op("-", |a, b| a - b, |a, b| a - b),
         binary_numeric_op("*", |a, b| a * b, |a, b| a * b),
