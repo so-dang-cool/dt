@@ -1,8 +1,10 @@
-use clap::{Parser, Subcommand};
+use std::fs;
+
 use crate::prompt::{operate_term, RailPrompt};
 use crate::rail_machine::RailState;
 use crate::tokens::tokenize;
 use crate::RAIL_VERSION;
+use clap::{Parser, Subcommand};
 
 pub fn run() {
     let args = Cli::parse();
@@ -64,12 +66,18 @@ enum Mode {
 }
 
 fn load_rail_stdlib() -> RailState {
-    let stdlibs = std::fs::read_dir("stdlib").expect("Did not find stdlib in current directory!");
+    let stdlibs = fs::read_dir("stdlib").expect("Did not find stdlib in current directory!");
 
     stdlibs
         .filter_map(|f| f.ok())
         .map(|entry| entry.path())
-        .map(|path| std::fs::read_to_string(path).expect("Error reading file"))
-        .flat_map(|contents| tokenize(&contents))
+        .map(|path| fs::read_to_string(path).expect("Error reading file"))
+        .flat_map(|contents| {
+            contents
+                .split('\n')
+                .map(|line| line.to_string())
+                .collect::<Vec<String>>()
+        })
+        .flat_map(|line| tokenize(&line))
         .fold(RailState::default(), operate_term)
 }

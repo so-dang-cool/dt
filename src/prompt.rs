@@ -1,5 +1,8 @@
+use std::fmt::Display;
+
 use crate::rail_machine::RailState;
 use crate::{tokens, RAIL_VERSION};
+use colored::{ColoredString, Colorize};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -38,8 +41,15 @@ pub fn operate_term(state: RailState, term: String) -> RailState {
     else if !state.in_main() {
         quote = quote.push_command(&term)
     } else {
-        eprintln!("Derailed: unknown term \"{}\"", term.replace('\n', "\\n"));
-        std::process::exit(1);
+        // TODO: Use a logging library? Log levels? Exit in a strict mode?
+        // TODO: Have/get details on filename/source, line number, character number
+        let message = format!(
+            "WARN: Skipping unknown term: \"{}\"",
+            term.replace('\n', "\\n")
+        )
+        .dimmed()
+        .red();
+        eprintln!("{}", message);
     }
 
     RailState {
@@ -62,11 +72,13 @@ impl RailPrompt {
     }
 
     pub fn run(self, state: RailState) {
-        println!("rail {}", RAIL_VERSION);
+        let name_and_version = format!("rail {}", RAIL_VERSION);
+        eprintln!("{}", name_and_version.dimmed().red());
 
         let end_state = self.fold(state, operate_term);
 
-        println!("{}", end_state.quote);
+        let end_state_msg = format!("State dump: {}", end_state.quote);
+        eprintln!("{}", end_state_msg.dimmed().red());
     }
 }
 
@@ -86,14 +98,14 @@ impl Iterator for RailPrompt {
             if let Err(e) = input {
                 // ^D and ^C are not error cases.
                 if let ReadlineError::Eof = e {
-                    eprintln!("Derailed: End of input");
+                    eprintln!("{}", derail_msg("End of input"));
                     return None;
                 } else if let ReadlineError::Interrupted = e {
-                    eprintln!("Derailed: Process interrupt");
+                    eprintln!("{}", derail_msg("Process interrupt"));
                     return None;
                 }
 
-                eprintln!("Derailed: {}", e);
+                eprintln!("{}", derail_msg(e));
                 std::process::exit(1);
             }
 
@@ -107,4 +119,8 @@ impl Iterator for RailPrompt {
 
         self.terms.pop()
     }
+}
+
+fn derail_msg(msg: impl Display) -> ColoredString {
+    format!("Derailed: {}", msg).dimmed().red()
 }

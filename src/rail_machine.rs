@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::corelib::new_dictionary;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -347,13 +349,14 @@ impl RailDef<'_> {
     pub fn act(&mut self, state: RailState) -> RailState {
         if state.quote.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
-            eprintln!(
+            let message = format!(
                 "Derailed: quote underflow for \"{}\" ({} -> {}): quote only had {}",
                 self.name,
                 self.consumes.join(" "),
                 self.produces.join(" "),
                 state.quote.len()
             );
+            eprintln!("{}", message.red());
             std::process::exit(1);
         }
 
