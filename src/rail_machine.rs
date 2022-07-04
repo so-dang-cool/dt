@@ -243,6 +243,16 @@ impl Quote {
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
         }
     }
+
+    pub fn enqueue(mut self, value: RailVal) -> Quote {
+        self.values.insert(0, value);
+        self
+    }
+
+    pub fn dequeue(mut self) -> (RailVal, Quote) {
+        let value = self.values.remove(0);
+        (value, self)
+    }
 }
 
 impl Default for Quote {

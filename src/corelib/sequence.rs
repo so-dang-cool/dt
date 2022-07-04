@@ -31,6 +31,21 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 quote.push_quote(sequence).push(a)
             })
         }),
+        RailDef::on_state("enq", &["a", "quote"], &["quote"], |state| {
+            state.update_quote(|quote| {
+                let (sequence, quote) = quote.pop_quote("push");
+                let (a, quote) = quote.pop();
+                let sequence = sequence.enqueue(a);
+                quote.push_quote(sequence)
+            })
+        }),
+        RailDef::on_state("deq", &["quote"], &["a", "quote"], |state| {
+            state.update_quote(|quote| {
+                let (sequence, quote) = quote.pop_quote("pop");
+                let (a, sequence) = sequence.dequeue();
+                quote.push(a).push_quote(sequence)
+            })
+        }),
         RailDef::on_state("rev", &["quote"], &["quote"], |state| {
             state.update_quote(|quote| {
                 let (mut sequence, quote) = quote.pop_quote("rev");

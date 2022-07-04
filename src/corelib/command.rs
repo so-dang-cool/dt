@@ -34,7 +34,9 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 let (name, quote) = quote.pop_string("def");
                 let (commands, quote) = quote.pop_quote("def");
                 if dictionary.contains_key(&name) {
-                    let msg = format!("ERROR: {} was already defined.", name).dimmed().red();
+                    let msg = format!("ERROR: {} was already defined.", name)
+                        .dimmed()
+                        .red();
                     eprintln!("{}", msg);
                     return (quote, dictionary);
                 }
