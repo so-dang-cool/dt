@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::rail_machine::{run_quote, RailDef, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
@@ -31,6 +33,11 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 let mut dictionary = dictionary;
                 let (name, quote) = quote.pop_string("def");
                 let (commands, quote) = quote.pop_quote("def");
+                if dictionary.contains_key(&name) {
+                    let msg = format!("ERROR: {} was already defined.", name).dimmed().red();
+                    eprintln!("{}", msg);
+                    return (quote, dictionary);
+                }
                 dictionary.insert(name.clone(), RailDef::from_quote(&name, commands));
                 (quote, dictionary)
             })
@@ -39,16 +46,6 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             state.clone().update_quote(|quote| {
                 let (name, quote) = quote.pop_string("def?");
                 quote.push_bool(state.dictionary.contains_key(&name))
-            })
-        }),
-        RailDef::on_state("undef", &["string"], &[], |state| {
-            state.update_quote_and_dict(|quote, dictionary| {
-                let mut dictionary = dictionary;
-                let (name, quote) = quote.pop_string("undef");
-                dictionary.remove(&name).unwrap_or_else(|| {
-                    panic!("Cannot undef \"{}\", it was already undefined", name)
-                });
-                (quote, dictionary)
             })
         }),
     ]
