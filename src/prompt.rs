@@ -6,7 +6,11 @@ use colored::{ColoredString, Colorize};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-pub fn operate_term(state: RailState, term: String) -> RailState {
+pub fn operate_term<S>(state: RailState, term: S) -> RailState
+where
+    S: Into<String>,
+{
+    let term: String = term.into();
     let mut quote = state.quote.clone();
     let dictionary = state.dictionary.clone();
 

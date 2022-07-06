@@ -2,5 +2,6 @@
 
 set -eu
 
-cargo run -- "$@"
-
+cargo run -- \
+    --lib-list libs/all-libs.txt \
+    "$@"

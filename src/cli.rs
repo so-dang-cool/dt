@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::prompt::{operate_term, RailPrompt};
+use crate::prompt::RailPrompt;
 use crate::rail_machine::RailState;
 use crate::tokens::tokenize;
 use crate::RAIL_VERSION;
@@ -9,15 +9,21 @@ use clap::{Parser, Subcommand};
 pub fn run() {
     let args = Cli::parse();
 
-    let state = if args.no_stdlib {
-        RailState::default()
-    } else {
-        load_rail_stdlib()
+    let state = match args.no_stdlib {
+        true => RailState::default(),
+        false => {
+            let tokens = load_rail_files_to_tokens("stdlib");
+            RailState::default().run_tokens(tokens)
+        }
     };
 
-    if let Some(_lib_list) = args.lib_list {
-        unimplemented!("I don't know how to load library lists yet")
-    }
+    let state = match args.lib_list {
+        Some(lib_list_file) => {
+            let tokens = load_lib_list_files_to_tokens(&lib_list_file);
+            state.run_tokens(tokens)
+        }
+        None => state,
+    };
 
     match args.mode {
         Mode::Compile { output: _ } => unimplemented!("I don't know how to compile yet"),
@@ -65,19 +71,39 @@ enum Mode {
     RunStdin,
 }
 
-fn load_rail_stdlib() -> RailState {
-    let stdlibs = fs::read_dir("stdlib").expect("Did not find stdlib in current directory!");
+fn load_rail_source_to_tokens(contents: String) -> Vec<String> {
+    contents.split('\n').flat_map(tokenize).collect::<Vec<_>>()
+}
+
+// TODO: Update this to only be lib lists, no nondeterministic order dir globbing
+fn load_rail_files_to_tokens(path: &str) -> Vec<String> {
+    let stdlibs = fs::read_dir(path).unwrap_or_else(|_| {
+        panic!(
+            "Did not find {} in current directory {:?}",
+            path,
+            std::env::current_dir()
+        )
+    });
 
     stdlibs
         .filter_map(|f| f.ok())
         .map(|entry| entry.path())
         .map(|path| fs::read_to_string(path).expect("Error reading file"))
-        .flat_map(|contents| {
-            contents
-                .split('\n')
-                .map(|line| line.to_string())
-                .collect::<Vec<String>>()
+        .flat_map(load_rail_source_to_tokens)
+        .collect::<Vec<_>>()
+}
+
+fn load_lib_list_files_to_tokens(path: &str) -> Vec<String> {
+    fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("Unable to load library list file {}", path))
+        .split('\n')
+        .filter(|s| !s.is_empty())
+        .flat_map(|path| {
+            if path.ends_with(".rail") {
+                load_rail_source_to_tokens(fs::read_to_string(path).expect("Error reading file"))
+            } else {
+                load_rail_files_to_tokens(path)
+            }
         })
-        .flat_map(|line| tokenize(&line))
-        .fold(RailState::default(), operate_term)
+        .collect::<Vec<_>>()
 }

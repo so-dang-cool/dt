@@ -1,6 +1,7 @@
 use colored::Colorize;
 
 use crate::corelib::new_dictionary;
+use crate::prompt::operate_term;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -22,6 +23,10 @@ impl RailState {
             dictionary,
             context,
         }
+    }
+
+    pub fn run_tokens(self, tokens: Vec<String>) -> RailState {
+        tokens.iter().fold(self, operate_term)
     }
 
     pub fn update_quote(self, update: impl Fn(Quote) -> Quote) -> RailState {
