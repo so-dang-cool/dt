@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fmt::Debug, fs, path::Path};
 
 use crate::prompt::RailPrompt;
 use crate::rail_machine::RailState;
@@ -28,7 +28,10 @@ pub fn run() {
     match args.mode {
         Mode::Compile { output: _ } => unimplemented!("I don't know how to compile yet"),
         Mode::Interactive => RailPrompt::default().run(state),
-        Mode::Run { file: _ } => unimplemented!("I don't know how to run files yet"),
+        Mode::Run { file } => {
+            let tokens = load_rail_file_to_tokens(file);
+            state.run_tokens(tokens);
+        }
         Mode::RunStdin => unimplemented!("I don't know how to run stdin yet"),
     }
 }
@@ -63,7 +66,7 @@ enum Mode {
     },
 
     #[clap(visible_alias = "r")]
-    /// Execute a file with a defined "main" command.
+    /// Execute a file.
     Run { file: String },
 
     #[clap(name = "-")]
@@ -73,6 +76,15 @@ enum Mode {
 
 fn load_rail_source_to_tokens(contents: String) -> Vec<String> {
     contents.split('\n').flat_map(tokenize).collect::<Vec<_>>()
+}
+
+fn load_rail_file_to_tokens<P>(path: P) -> Vec<String>
+where
+    P: AsRef<Path> + Debug,
+{
+    let error_msg = format!("Error reading file {:?}", path);
+    let contents = fs::read_to_string(path).expect(&error_msg);
+    load_rail_source_to_tokens(contents)
 }
 
 // TODO: Update this to only be lib lists, no nondeterministic order dir globbing
@@ -88,8 +100,7 @@ fn load_rail_files_to_tokens(path: &str) -> Vec<String> {
     stdlibs
         .filter_map(|f| f.ok())
         .map(|entry| entry.path())
-        .map(|path| fs::read_to_string(path).expect("Error reading file"))
-        .flat_map(load_rail_source_to_tokens)
+        .flat_map(load_rail_file_to_tokens)
         .collect::<Vec<_>>()
 }
 
@@ -100,7 +111,7 @@ fn load_lib_list_files_to_tokens(path: &str) -> Vec<String> {
         .filter(|s| !s.is_empty())
         .flat_map(|path| {
             if path.ends_with(".rail") {
-                load_rail_source_to_tokens(fs::read_to_string(path).expect("Error reading file"))
+                load_rail_file_to_tokens(path)
             } else {
                 load_rail_files_to_tokens(path)
             }
