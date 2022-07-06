@@ -5,11 +5,14 @@
 
 # Rail
 
-A very experimental [concatenative](https://concatenative.org/wiki/view/Concatenative%20language)
-programming language.
+A straightforward programming language.
+
+Rail is an experimental [concatenative](https://concatenative.org/wiki/view/Concatenative%20language)
+programming language. It is under wild development and zero stability between
+versions is guaranteed.
 
 ```
-$ rail
+$ rail i
 rail 0.11.2
 > 1 1 + .s
 2

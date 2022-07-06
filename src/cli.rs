@@ -36,7 +36,7 @@ pub fn run() {
 
 #[derive(Parser)]
 #[clap(name = "rail", version = RAIL_VERSION)]
-/// An organizing tool for terminal lovers who hate organizing
+/// A straightforward programming language
 struct Cli {
     #[clap(subcommand)]
     mode: Mode,
