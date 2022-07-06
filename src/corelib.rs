@@ -7,8 +7,8 @@ mod command;
 mod display;
 mod filesystem;
 mod math;
+mod meta;
 mod process;
-mod reflect;
 mod repeat;
 mod sequence;
 mod shuffle;
@@ -22,8 +22,8 @@ pub fn new_dictionary() -> Dictionary {
         .chain(display::builtins())
         .chain(filesystem::builtins())
         .chain(math::builtins())
+        .chain(meta::builtins())
         .chain(process::builtins())
-        .chain(reflect::builtins())
         .chain(repeat::builtins())
         .chain(shuffle::builtins())
         .chain(sequence::builtins())
