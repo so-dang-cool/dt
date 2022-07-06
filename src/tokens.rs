@@ -1,3 +1,5 @@
+use std::{fmt::Debug, fs, path::Path};
+
 use regex::Regex;
 
 pub fn tokenize(line: &str) -> Vec<String> {
@@ -12,6 +14,32 @@ pub fn tokenize(line: &str) -> Vec<String> {
         .filter(|s| !s.is_empty())
         .map(|s| s.replace("\\n", "\n"))
         .collect()
+}
+
+pub fn tokens_from_rail_source<P>(path: P) -> Vec<String>
+where
+    P: AsRef<Path> + Debug,
+{
+    let error_msg = format!("Error reading file {:?}", path);
+    fs::read_to_string(path)
+        .expect(&error_msg)
+        .split('\n')
+        .flat_map(tokenize)
+        .collect::<Vec<_>>()
+}
+
+pub fn tokens_from_lib_list(path: &str) -> Vec<String> {
+    let path = Path::new(path);
+
+    let base_dir = path.parent().unwrap();
+
+    fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("Unable to load library list file {:?}", path))
+        .split('\n')
+        .filter(|s| !s.is_empty() && !s.starts_with('#'))
+        .map(|filepath| base_dir.join(filepath))
+        .flat_map(tokens_from_rail_source)
+        .collect::<Vec<_>>()
 }
 
 #[test]

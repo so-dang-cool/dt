@@ -3,5 +3,5 @@
 set -eu
 
 cargo run -- \
-    --lib-list libs/all-libs.txt \
+    --lib-list libs/libs.txt \
     "$@"
