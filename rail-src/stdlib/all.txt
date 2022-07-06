@@ -1,4 +1,4 @@
-function.rail
+command.rail
 math.rail
 reflect.rail
 sequence.rail
