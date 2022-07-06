@@ -1,0 +1,37 @@
+[ ] "ab" def # TODO: Require stack size of 2
+[ swap ] "ba" def
+
+[ ] "abc" def # TODO: Require stack size of 3
+[ swap ] "acb" def # TODO: Require stack size of 3
+[ rot rot swap ] "bac" def
+[ rot rot ] "bca" def
+[ rot ] "cab" def
+[ rot swap ] "cba" def
+
+# TODO: Define these too
+[
+    "abcd"
+    "abdc"
+    "acbd"
+    "acdb"
+    "adbc"
+    "adcb"
+    "bacd"
+    "badc"
+    "bcad"
+    "bcda"
+    "bdac"
+    "bdca"
+    "cabd"
+    "cadb"
+    "cbad"
+    "cbda"
+    "cdab"
+    "cdba"
+    "dabc"
+    "dacb"
+    "dbac"
+    "dbca"
+    "dcab"
+    "dcba"
+] drop
