@@ -3,5 +3,5 @@
 set -eu
 
 cargo run -- \
-    --lib-list libs/libs.txt \
+    --lib-list rail-src/extras.txt \
     "$@"

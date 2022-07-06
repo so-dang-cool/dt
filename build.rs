@@ -7,7 +7,9 @@ fn main() {
 }
 
 fn copy_rail_libs() {
-    let from = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("stdlib");
+    let from = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap())
+        .join("rail-src")
+        .join("stdlib");
     let to = Path::new(&env::var("OUT_DIR").unwrap()).join("stdlib");
 
     fs::create_dir(to.clone()).unwrap_or(());

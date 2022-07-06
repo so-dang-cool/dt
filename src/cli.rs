@@ -10,7 +10,7 @@ pub fn run() {
     let state = match args.no_stdlib {
         true => RailState::default(),
         false => {
-            let tokens = tokens_from_lib_list("stdlib/all.txt");
+            let tokens = tokens_from_lib_list("rail-src/stdlib/all.txt");
             RailState::default().run_tokens(tokens)
         }
     };
