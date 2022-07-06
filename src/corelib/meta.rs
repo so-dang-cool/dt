@@ -17,23 +17,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 (quote, dictionary)
             })
         }),
-        RailDef::on_quote("quote", &["a"], &["quote"], |quote| {
-            let (a, quote) = quote.pop();
-            let wrapper = Quote::default();
-            let wrapper = wrapper.push(a);
-            quote.push_quote(wrapper)
-        }),
         // TODO: In typing, consumes of 'quote-all' should be something that means 0-to-many
         RailDef::on_quote("quote-all", &[], &["quote"], |quote| {
             let wrapper = Quote::default();
             wrapper.push_quote(quote)
-        }),
-        RailDef::on_quote("unquote", &["quote"], &["..."], |quote| {
-            let (wrapper, mut quote) = quote.pop_quote("unquote");
-            for value in wrapper.values {
-                quote = quote.push(value);
-            }
-            quote
         }),
     ]
 }

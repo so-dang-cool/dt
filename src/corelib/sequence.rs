@@ -16,6 +16,19 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 quote.push_i64(len)
             })
         }),
+        RailDef::on_quote("quote", &["a"], &["quote"], |quote| {
+            let (a, quote) = quote.pop();
+            let wrapper = Quote::default();
+            let wrapper = wrapper.push(a);
+            quote.push_quote(wrapper)
+        }),
+        RailDef::on_quote("unquote", &["quote"], &["..."], |quote| {
+            let (wrapper, mut quote) = quote.pop_quote("unquote");
+            for value in wrapper.values {
+                quote = quote.push(value);
+            }
+            quote
+        }),
         RailDef::on_state("push", &["quote", "a"], &["quote"], |state| {
             state.update_quote(|quote| {
                 let (a, quote) = quote.pop();
