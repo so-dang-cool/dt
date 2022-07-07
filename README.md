@@ -17,12 +17,12 @@ rail 0.11.2
 > 1 1 + .s
 2
 > [ 1 + ] "inc" def
-> 1 .s [ inc .s ] 3 times
+> 1 .s [ inc .s ] 3 times drop
 1
 2
 3
 4
-> drop [ [ false ] [ "goodbye" ] [ true ] [ "hello" ] ] opt .s
+> [ [ false ] [ "goodbye" ] [ true ] [ "hello" ] ] opt .s
 "hello"
 ```
 
