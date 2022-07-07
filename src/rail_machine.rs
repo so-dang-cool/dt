@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-use crate::corelib::new_dictionary;
+use crate::corelib::corelib_dictionary;
 use crate::prompt::operate_term;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -17,7 +17,7 @@ pub struct RailState {
 impl RailState {
     pub fn new(context: Context) -> RailState {
         let quote = Quote::default();
-        let dictionary = new_dictionary();
+        let dictionary = corelib_dictionary();
         RailState {
             quote,
             dictionary,

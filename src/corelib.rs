@@ -14,7 +14,7 @@ mod sequence;
 mod shuffle;
 mod string;
 
-pub fn new_dictionary() -> Dictionary {
+pub fn corelib_dictionary() -> Dictionary {
     let ops = bool::builtins()
         .into_iter()
         .chain(choice::builtins())
