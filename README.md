@@ -22,7 +22,7 @@ rail 0.11.2
 2
 3
 4
-> drop [ [ 0 ] [ "goodbye" ] [ 1 ] [ "hello" ] ] opt .s
+> drop [ [ false ] [ "goodbye" ] [ true ] [ "hello" ] ] opt .s
 "hello"
 ```
 
