@@ -16,20 +16,25 @@ pub fn tokenize(line: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn tokens_from_rail_source<P>(path: P) -> Vec<String>
+pub fn from_rail_source(source: String) -> Vec<String> {
+    source.split('\n').flat_map(tokenize).collect()
+}
+
+pub fn from_rail_source_file<P>(path: P) -> Vec<String>
 where
     P: AsRef<Path> + Debug,
 {
     let error_msg = format!("Error reading file {:?}", path);
-    fs::read_to_string(path)
-        .expect(&error_msg)
-        .split('\n')
-        .flat_map(tokenize)
-        .collect::<Vec<_>>()
+    let source = fs::read_to_string(path).expect(&error_msg);
+
+    from_rail_source(source)
 }
 
-pub fn tokens_from_lib_list(path: &str) -> Vec<String> {
-    let path = Path::new(path);
+pub fn from_lib_list<P>(path: P) -> Vec<String>
+where
+    P: AsRef<Path> + Debug,
+{
+    let path: &Path = path.as_ref();
 
     let base_dir = path.parent().unwrap();
 
@@ -38,7 +43,17 @@ pub fn tokens_from_lib_list(path: &str) -> Vec<String> {
         .split('\n')
         .filter(|s| !s.is_empty() && !s.starts_with('#'))
         .map(|filepath| base_dir.join(filepath))
-        .flat_map(tokens_from_rail_source)
+        .map(|file| {
+            if file.ends_with(".rail") {
+                Some(from_rail_source_file(file))
+            } else if file.ends_with(".txt") {
+                Some(from_lib_list(file))
+            } else {
+                None
+            }
+        })
+        .filter(|list| list.is_some())
+        .flat_map(|list| list.unwrap())
         .collect::<Vec<_>>()
 }
 

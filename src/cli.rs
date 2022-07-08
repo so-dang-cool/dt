@@ -1,6 +1,6 @@
 use crate::prompt::RailPrompt;
 use crate::rail_machine::RailState;
-use crate::tokens::{tokens_from_lib_list, tokens_from_rail_source};
+use crate::tokens;
 use crate::RAIL_VERSION;
 use clap::{Parser, Subcommand};
 
@@ -10,14 +10,14 @@ pub fn run() {
     let state = match args.no_stdlib {
         true => RailState::default(),
         false => {
-            let tokens = tokens_from_lib_list("rail-src/stdlib/all.txt");
+            let tokens = tokens::from_lib_list("rail-src/stdlib/all.txt");
             RailState::default().run_tokens(tokens)
         }
     };
 
     let state = match args.lib_list {
         Some(lib_list_file) => {
-            let tokens = tokens_from_lib_list(&lib_list_file);
+            let tokens = tokens::from_lib_list(&lib_list_file);
             state.run_tokens(tokens)
         }
         None => state,
@@ -25,9 +25,13 @@ pub fn run() {
 
     match args.mode {
         Mode::Compile { output: _ } => unimplemented!("I don't know how to compile yet"),
+        Mode::Evaluate { rail_code } => {
+            let tokens = tokens::from_rail_source(rail_code.join(" "));
+            state.run_tokens(tokens);
+        }
         Mode::Interactive => RailPrompt::default().run(state),
         Mode::Run { file } => {
-            let tokens = tokens_from_rail_source(file);
+            let tokens = tokens::from_rail_source_file(file);
             state.run_tokens(tokens);
         }
         Mode::RunStdin => unimplemented!("I don't know how to run stdin yet"),
@@ -52,16 +56,20 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Mode {
-    #[clap(visible_alias = "i")]
-    /// Start an interactive session.
-    Interactive,
-
-    #[clap(visible_alias = "c")]
+    #[clap(visible_aliases = &["comp", "c"])]
     /// Compile to native.
     Compile {
         #[clap(short = 'o')]
         output: Option<String>,
     },
+
+    #[clap(visible_aliases = &["eval", "e"])]
+    // Evaluate rail commands.
+    Evaluate { rail_code: Vec<String> },
+
+    #[clap(visible_alias = "i")]
+    /// Start an interactive session.
+    Interactive,
 
     #[clap(visible_alias = "r")]
     /// Execute a file.
