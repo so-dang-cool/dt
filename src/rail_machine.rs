@@ -57,7 +57,9 @@ impl RailState {
         }
     }
 
-    pub fn contextless_child(&self, quote: Quote) -> RailState {
+    /// A substate that will take a parent dictionary, but never leak its own
+    /// dictionary to parent contexts.
+    pub fn jail_state(&self, quote: Quote) -> RailState {
         RailState {
             quote,
             dictionary: self.dictionary.clone(),

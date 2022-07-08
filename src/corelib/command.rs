@@ -22,7 +22,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 let (commands, quote) = quote.pop_quote("doin");
                 let (targets, quote) = quote.pop_quote("doin");
 
-                let substate = state.contextless_child(targets); // TODO: Really just need dictionaries.
+                let substate = state.jail_state(targets); // TODO: Really just need dictionaries.
                 let substate = run_quote(&commands, substate);
 
                 quote.push_quote(substate.quote)

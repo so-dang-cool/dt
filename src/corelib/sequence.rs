@@ -83,7 +83,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let mut results = Quote::default();
 
             for term in sequence.values {
-                let substate = state.contextless_child(Quote::default().push(term.clone()));
+                let substate = state.jail_state(Quote::default().push(term.clone()));
                 let substate = run_quote(&predicate, substate);
                 let (keep, _) = substate.quote.pop_bool("filter");
                 if keep {
@@ -103,7 +103,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
                 for term in sequence.values {
                     results = results.push(term.clone());
-                    let substate = state.contextless_child(results);
+                    let substate = state.jail_state(results);
                     let substate = run_quote(&transform, substate);
                     results = substate.quote;
                 }
