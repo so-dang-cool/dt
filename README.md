@@ -13,7 +13,7 @@ versions is guaranteed.
 
 ```
 $ rail i
-rail 0.11.2
+rail 0.12.0
 > 1 1 + .s
 2
 > [ 1 + ] "inc" def
@@ -31,6 +31,10 @@ rail 0.11.2
 ```shell
 $ cargo install rail-lang
 ```
+
+Currently you'll need to check out at least the `rail-src` directory of this
+repository, and execute `rail` in the same directory. (Or run with
+`rail --no-stdlib ETC`)
 
 ## Credits
 
