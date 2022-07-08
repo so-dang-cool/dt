@@ -106,7 +106,7 @@ pub enum Context {
     None,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum RailVal {
     Boolean(bool),
     // TODO: Make a "Numeric" typeclass. (And floating-point/rational numbers)
@@ -146,7 +146,7 @@ impl std::fmt::Display for RailVal {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Quote {
     pub values: Vec<RailVal>,
 }

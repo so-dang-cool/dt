@@ -40,7 +40,9 @@ fn equality(name: &str, eq: Equality) -> RailDef<'_> {
             (F64(a), I64(b)) => a == b as f64,
             (F64(a), F64(b)) => a == b,
             (String(a), String(b)) => a == b,
-            (a, b) => panic!("Cannot compare equality of {} and {}", a, b),
+            (Command(a), Command(b)) => a == b,
+            (Quote(a), Quote(b)) => a == b,
+            _ => false,
         };
 
         let res = match eq {
