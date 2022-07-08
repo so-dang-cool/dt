@@ -28,6 +28,8 @@ rail 0.12.1
 
 ## Installation
 
+For now...
+
 ```shell
 $ cargo install rail-lang
 ```

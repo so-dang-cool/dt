@@ -2,7 +2,7 @@ use std::{fmt::Debug, fs, path::Path};
 
 use regex::Regex;
 
-pub fn tokenize(line: &str) -> Vec<String> {
+fn tokenize(line: &str) -> Vec<String> {
     // TODO: Validate that a line does not contain unterminated strings.
     // TODO: Allow for string escapes for quotes, newlines, etc
     let re: Regex = Regex::new(r#"(".*?"|\S*)"#).unwrap();

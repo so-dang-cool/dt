@@ -117,7 +117,7 @@ impl Iterator for RailPrompt {
 
             self.editor.add_history_entry(&input);
 
-            self.terms = tokens::tokenize(&input);
+            self.terms = tokens::from_rail_source(input);
             self.terms.reverse();
         }
 
