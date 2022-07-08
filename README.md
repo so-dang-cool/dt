@@ -13,17 +13,17 @@ versions is guaranteed.
 
 ```
 $ rail i
-rail 0.12.0
-> 1 1 + .s
+rail 0.12.1
+> 1 1 + print
 2
 > [ 1 + ] "inc" def
-> 1 .s [ inc .s ] 3 times drop
+> [ dup print ] "p" def
+> 1 [ p inc ] 2 times print
 1
 2
 3
-4
-> [ [ false ] [ "goodbye" ] [ true ] [ "hello" ] ] opt .s
-"hello"
+> [ [ false ] [ "bye" ] [ true ] [ "hi" ] ] opt print
+"hi"
 ```
 
 ## Installation
@@ -31,6 +31,8 @@ rail 0.12.0
 ```shell
 $ cargo install rail-lang
 ```
+
+## Usage
 
 Currently you'll need to check out at least the `rail-src` directory of this
 repository, and execute `rail` in the same directory. (Or run with
