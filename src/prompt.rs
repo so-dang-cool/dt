@@ -46,7 +46,7 @@ where
         // TODO: Use a logging library? Log levels? Exit in a strict mode?
         // TODO: Have/get details on filename/source, line number, character number
         rail_machine::log_warn(format!(
-            "WARN: Skipping unknown term: \"{}\"",
+            "Skipping unknown term: \"{}\"",
             term.replace('\n', "\\n")
         ));
     }
@@ -76,8 +76,10 @@ impl RailPrompt {
 
         let end_state = self.fold(state, operate_term);
 
-        let end_state_msg = format!("State dump: {}", end_state.quote);
-        eprintln!("{}", end_state_msg.dimmed().red());
+        if !end_state.quote.is_empty() {
+            let end_state_msg = format!("State dump: {}", end_state.quote);
+            eprintln!("{}", end_state_msg.dimmed().red());
+        }
     }
 }
 

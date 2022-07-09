@@ -16,13 +16,6 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-name = "rail"
-
-[[bin]]
-name = "rail"
-path = "src/main.rs"
-
 [dependencies]
 clap = { version = "3.2", features = [ "derive" ] }
 clearscreen = "1.0"

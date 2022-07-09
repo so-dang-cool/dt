@@ -1,11 +1,8 @@
-use crate::prompt::RailPrompt;
-use crate::rail_machine::RailState;
-use crate::tokens;
-use crate::RAIL_VERSION;
 use clap::{Parser, Subcommand};
+use rail_lang::{prompt::RailPrompt, rail_machine::RailState, tokens, RAIL_VERSION};
 
-pub fn run() {
-    let args = Cli::parse();
+pub fn main() {
+    let args = RailShell::parse();
 
     let state = match args.no_stdlib {
         true => RailState::default(),
@@ -24,26 +21,21 @@ pub fn run() {
     };
 
     match args.mode {
-        Mode::Compile { output: _ } => unimplemented!("I don't know how to compile yet"),
-        Mode::Evaluate { rail_code } => {
-            let tokens = tokens::from_rail_source(rail_code.join(" "));
-            state.run_tokens(tokens);
-        }
-        Mode::Interactive => RailPrompt::default().run(state),
-        Mode::Run { file } => {
+        Some(Mode::Interactive) | None => RailPrompt::default().run(state),
+        Some(Mode::Run { file }) => {
             let tokens = tokens::from_rail_source_file(file);
             state.run_tokens(tokens);
         }
-        Mode::RunStdin => unimplemented!("I don't know how to run stdin yet"),
+        Some(Mode::RunStdin) => unimplemented!("I don't know how to run stdin yet"),
     }
 }
 
 #[derive(Parser)]
 #[clap(name = "rail", version = RAIL_VERSION)]
 /// A straightforward programming language
-struct Cli {
+struct RailShell {
     #[clap(subcommand)]
-    mode: Mode,
+    mode: Option<Mode>,
 
     #[clap(long)]
     /// Disable loading the Rail standard library.
@@ -56,19 +48,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Mode {
-    #[clap(visible_aliases = &["comp", "c"])]
-    /// Compile to native.
-    Compile {
-        #[clap(short = 'o')]
-        output: Option<String>,
-    },
-
-    #[clap(visible_aliases = &["eval", "e"])]
-    // Evaluate rail commands.
-    Evaluate { rail_code: Vec<String> },
-
     #[clap(visible_alias = "i")]
-    /// Start an interactive session.
+    /// Start an interactive session. (Default when no subcommand specified)
     Interactive,
 
     #[clap(visible_alias = "r")]

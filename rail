@@ -2,6 +2,7 @@
 
 set -eu
 
-cargo run -- \
+cargo run --bin "$(basename "$0")" \
+    -- \
     --lib-list rail-src/extras.txt \
     "$@"
