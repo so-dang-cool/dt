@@ -359,14 +359,14 @@ impl RailDef<'_> {
     pub fn act(&mut self, state: RailState) -> RailState {
         if state.quote.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
-            log_derail(format!(
-                "Derailed: quote underflow for \"{}\" ({} -> {}): quote only had {}",
+            log_warn(format!(
+                "Underflow for \"{}\" (takes: {}, gives: {}). State: {}",
                 self.name,
                 self.consumes.join(" "),
                 self.produces.join(" "),
-                state.quote.len()
+                state.quote
             ));
-            std::process::exit(1);
+            return state;
         }
 
         // TODO: Type checks
