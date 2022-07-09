@@ -1,6 +1,4 @@
-use colored::Colorize;
-
-use crate::rail_machine::{run_quote, RailDef, RailVal};
+use crate::rail_machine::{self, run_quote, RailDef, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -34,10 +32,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 let (name, quote) = quote.pop_string("def");
                 let (commands, quote) = quote.pop_quote("def");
                 if dictionary.contains_key(&name) {
-                    let msg = format!("ERROR: {} was already defined.", name)
-                        .dimmed()
-                        .red();
-                    eprintln!("{}", msg);
+                    rail_machine::log_warn(format!("{} was already defined.", name));
                     return (quote, dictionary);
                 }
                 dictionary.insert(name.clone(), RailDef::from_quote(&name, commands));

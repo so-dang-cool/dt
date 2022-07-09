@@ -1,8 +1,6 @@
-use std::fmt::Display;
-
-use crate::rail_machine::RailState;
+use crate::rail_machine::{self, RailState};
 use crate::{tokens, RAIL_VERSION};
-use colored::{ColoredString, Colorize};
+use colored::Colorize;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -47,13 +45,10 @@ where
     } else {
         // TODO: Use a logging library? Log levels? Exit in a strict mode?
         // TODO: Have/get details on filename/source, line number, character number
-        let message = format!(
+        rail_machine::log_warn(format!(
             "WARN: Skipping unknown term: \"{}\"",
             term.replace('\n', "\\n")
-        )
-        .dimmed()
-        .red();
-        eprintln!("{}", message);
+        ));
     }
 
     RailState {
@@ -102,14 +97,14 @@ impl Iterator for RailPrompt {
             if let Err(e) = input {
                 // ^D and ^C are not error cases.
                 if let ReadlineError::Eof = e {
-                    eprintln!("{}", derail_msg("End of input"));
+                    rail_machine::log_derail("End of input");
                     return None;
                 } else if let ReadlineError::Interrupted = e {
-                    eprintln!("{}", derail_msg("Process interrupt"));
+                    rail_machine::log_derail("Process interrupt");
                     return None;
                 }
 
-                eprintln!("{}", derail_msg(e));
+                rail_machine::log_derail(e);
                 std::process::exit(1);
             }
 
@@ -123,8 +118,4 @@ impl Iterator for RailPrompt {
 
         self.terms.pop()
     }
-}
-
-fn derail_msg(msg: impl Display) -> ColoredString {
-    format!("Derailed: {}", msg).dimmed().red()
 }

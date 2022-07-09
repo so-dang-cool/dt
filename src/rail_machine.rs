@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::corelib::corelib_dictionary;
 use crate::prompt::operate_term;
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -283,13 +283,6 @@ impl std::fmt::Display for Quote {
     }
 }
 
-pub fn type_panic_msg(context: &str, expected: &str, actual: RailVal) -> String {
-    format!(
-        "[Context: {}] Wanted {}, but got {}",
-        context, expected, actual
-    )
-}
-
 pub type Dictionary = HashMap<String, RailDef<'static>>;
 
 #[derive(Clone)]
@@ -366,14 +359,13 @@ impl RailDef<'_> {
     pub fn act(&mut self, state: RailState) -> RailState {
         if state.quote.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
-            let message = format!(
+            log_derail(format!(
                 "Derailed: quote underflow for \"{}\" ({} -> {}): quote only had {}",
                 self.name,
                 self.consumes.join(" "),
                 self.produces.join(" "),
                 state.quote.len()
-            );
-            eprintln!("{}", message.red());
+            ));
             std::process::exit(1);
         }
 
@@ -404,11 +396,12 @@ pub fn run_quote(quote: &Quote, state: RailState) -> RailState {
         .iter()
         .fold(state, |state, rail_val| match rail_val {
             RailVal::Command(op_name) => {
-                let op = state
-                    .dictionary
-                    .get(&op_name.clone())
-                    .unwrap_or_else(|| panic!("Tried to do \"{}\" but it was undefined", op_name));
-                op.clone().act(state)
+                if let Some(op) = state.dictionary.get(&op_name.clone()) {
+                    op.clone().act(state)
+                } else {
+                    log_warn(format!("Skipping undefined term: {}", op_name));
+                    state
+                }
             }
             _ => state.update_quote(|quote| quote.push(rail_val.clone())),
         })
@@ -416,4 +409,24 @@ pub fn run_quote(quote: &Quote, state: RailState) -> RailState {
 
 pub fn empty_dictionary() -> Dictionary {
     HashMap::new()
+}
+
+// The following are all formatting things for errors/warnings/panics.
+// TODO: Update places these are referenced to return Result.
+
+pub fn type_panic_msg(context: &str, expected: &str, actual: RailVal) -> String {
+    format!(
+        "[Context: {}] Wanted {}, but got {}",
+        context, expected, actual
+    )
+}
+
+pub fn log_warn(thing: impl Display) {
+    let msg = format!("WARN: {}", thing).dimmed().red();
+    eprintln!("{}", msg);
+}
+
+pub fn log_derail(thing: impl Display) {
+    let msg = format!("Derailed: {}", thing).dimmed().red();
+    eprintln!("{}", msg);
 }
