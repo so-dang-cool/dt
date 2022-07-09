@@ -1,4 +1,4 @@
-use crate::rail_machine::{run_quote, type_panic_msg, Quote, RailDef, RailVal};
+use crate::rail_machine::{self, run_quote, Quote, RailDef, RailVal};
 
 // TODO: These should all work for both String and Quote? Should String also be a Quote? Typeclasses?
 pub fn builtins() -> Vec<RailDef<'static>> {
@@ -9,7 +9,13 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 let len: i64 = match a {
                     RailVal::Quote(quote) => quote.len(),
                     RailVal::String(s) => s.len(),
-                    _ => panic!("{}", type_panic_msg("len", "quote|string", a)),
+                    _ => {
+                        rail_machine::log_warn(format!(
+                            "Can only perform len on quote or string but got {}",
+                            a
+                        ));
+                        return quote.push(a);
+                    }
                 }
                 .try_into()
                 .unwrap();

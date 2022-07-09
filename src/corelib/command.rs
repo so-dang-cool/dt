@@ -12,7 +12,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                     let action = state.dictionary.get(&command).unwrap();
                     action.clone().act(state)
                 }
-                _ => panic!("oops"),
+                _ => {
+                    rail_machine::log_warn(format!("{} is not a quote or command", a));
+                    state
+                }
             }
         }),
         RailDef::on_state("doin", &["quote", "quote"], &["quote"], |state| {

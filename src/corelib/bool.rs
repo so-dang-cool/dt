@@ -1,4 +1,4 @@
-use crate::rail_machine::{type_panic_msg, RailDef, RailVal};
+use crate::rail_machine::{self, RailDef, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -69,9 +69,13 @@ where
             (I64(a), F64(b)) => quote.push_bool(f64_op(a as f64, b)),
             (F64(a), I64(b)) => quote.push_bool(f64_op(a, b as f64)),
             (F64(a), F64(b)) => quote.push_bool(f64_op(a, b)),
-            (a, I64(_b)) => panic!("{}", type_panic_msg(name, "num", a)),
-            (a, F64(_b)) => panic!("{}", type_panic_msg(name, "num", a)),
-            (_a, b) => panic!("{}", type_panic_msg(name, "num", b)),
+            (a, b) => {
+                rail_machine::log_warn(format!(
+                    "Can only perform {} on numeric values but got {} and {}",
+                    name, a, b
+                ));
+                quote.push(a).push(b)
+            }
         }
     })
 }
