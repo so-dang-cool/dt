@@ -19,7 +19,7 @@ where
         return state.higher();
     }
     // Defined operations
-    else if let Some(op) = dictionary.get(&term) {
+    else if let Some(op) = state.get_def(&term) {
         if state.in_main() {
             return op.clone().act(state.clone());
         } else {
@@ -54,6 +54,7 @@ where
     RailState {
         quote,
         dictionary,
+        temp_dictionary: state.temp_dictionary,
         context: state.context,
     }
 }

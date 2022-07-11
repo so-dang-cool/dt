@@ -9,8 +9,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             match a {
                 RailVal::Quote(quote) => run_quote(&quote, state),
                 RailVal::Command(command) => {
-                    let action = state.dictionary.get(&command).unwrap();
-                    action.clone().act(state)
+                    let state = state.clone().get_def(&command).unwrap().clone().act(state);
+                    state
                 }
                 _ => {
                     rail_machine::log_warn(format!("{} is not a quote or command", a));
@@ -46,6 +46,23 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             state.clone().update_quote(|quote| {
                 let (name, quote) = quote.pop_string("def?");
                 quote.push_bool(state.dictionary.contains_key(&name))
+            })
+        }),
+        RailDef::on_state("tmp-def", &["quote", "string"], &[], |state| {
+            state.update_quote_and_temp(|quote, temp_dictionary| {
+                let mut temp_dictionary = temp_dictionary;
+                let (name, quote) = quote.pop_string("tmp-def");
+                let (commands, quote) = quote.pop_quote("tmp-def");
+                temp_dictionary.insert(name.clone(), RailDef::from_quote(&name, commands));
+                (quote, temp_dictionary)
+            })
+        }),
+        RailDef::on_state("tmp-undef", &["string"], &[], |state| {
+            state.update_quote_and_temp(|quote, temp_dictionary| {
+                let mut temp_dictionary = temp_dictionary;
+                let (name, quote) = quote.pop_string("tmp-def");
+                temp_dictionary.remove(&name);
+                (quote, temp_dictionary)
             })
         }),
     ]

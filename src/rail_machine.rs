@@ -30,6 +30,7 @@ pub struct RailState {
     // TODO: Provide update functions and make these private
     pub quote: Quote,
     pub dictionary: Dictionary,
+    pub temp_dictionary: Dictionary,
     pub context: Context,
 }
 
@@ -40,6 +41,7 @@ impl RailState {
         RailState {
             quote,
             dictionary,
+            temp_dictionary: empty_dictionary(),
             context,
         }
     }
@@ -52,6 +54,7 @@ impl RailState {
         RailState {
             quote: update(self.quote),
             dictionary: self.dictionary,
+            temp_dictionary: self.temp_dictionary,
             context: self.context,
         }
     }
@@ -64,6 +67,20 @@ impl RailState {
         RailState {
             quote,
             dictionary,
+            temp_dictionary: self.temp_dictionary,
+            context: self.context,
+        }
+    }
+
+    pub fn update_quote_and_temp(
+        self,
+        update: impl Fn(Quote, Dictionary) -> (Quote, Dictionary),
+    ) -> RailState {
+        let (quote, temp_dictionary) = update(self.quote, self.temp_dictionary);
+        RailState {
+            quote,
+            dictionary: self.dictionary,
+            temp_dictionary,
             context: self.context,
         }
     }
@@ -72,6 +89,7 @@ impl RailState {
         RailState {
             quote,
             dictionary: self.dictionary,
+            temp_dictionary: self.temp_dictionary,
             context: self.context,
         }
     }
@@ -82,6 +100,7 @@ impl RailState {
         RailState {
             quote,
             dictionary: self.dictionary.clone(),
+            temp_dictionary: self.temp_dictionary.clone(),
             context: Context::None,
         }
     }
@@ -90,6 +109,7 @@ impl RailState {
         RailState {
             quote: Quote::default(),
             dictionary: empty_dictionary(),
+            temp_dictionary: empty_dictionary(),
             context: Context::Quotation {
                 parent_state: Box::new(self),
             },
@@ -109,6 +129,13 @@ impl RailState {
 
         let quote = state.quote.clone().push_quote(self.quote);
         state.replace_quote(quote)
+    }
+
+    pub fn get_def(&self, name: &str) -> Option<RailDef> {
+        self.temp_dictionary
+            .get(name)
+            .or_else(|| self.dictionary.get(name))
+            .cloned()
     }
 }
 
@@ -415,7 +442,9 @@ pub fn run_quote(quote: &Quote, state: RailState) -> RailState {
         .iter()
         .fold(state, |state, rail_val| match rail_val {
             RailVal::Command(op_name) => {
-                if let Some(op) = state.dictionary.get(&op_name.clone()) {
+                let state_ = state.clone();
+                let op = state_.get_def(&op_name.clone());
+                if let Some(op) = op {
                     op.clone().act(state)
                 } else {
                     log_warn(format!("Skipping undefined term: {}", op_name));
