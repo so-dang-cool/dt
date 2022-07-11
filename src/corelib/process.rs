@@ -36,5 +36,12 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             env::set_var(key, var);
             quote
         }),
+        RailDef::on_quote("stdin", &[], &["quote"], |quote| {
+            let lines = std::io::stdin()
+                .lines()
+                .filter_map(|line| line.ok())
+                .fold(Quote::default(), |quote, line| quote.push_string(line));
+            quote.push_quote(lines)
+        }),
     ]
 }

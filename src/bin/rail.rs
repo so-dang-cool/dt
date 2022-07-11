@@ -5,11 +5,13 @@ use rail_lang::{tokens, RAIL_VERSION};
 pub fn main() {
     let args = RailEvaluator::parse();
 
+    let state = RailState::default();
+
     let state = match args.no_stdlib {
         true => RailState::default(),
         false => {
             let tokens = tokens::from_lib_list("rail-src/stdlib/all.txt");
-            RailState::default().run_tokens(tokens)
+            state.run_tokens(tokens)
         }
     };
 

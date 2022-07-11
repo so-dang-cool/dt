@@ -42,7 +42,7 @@ where
         .unwrap_or_else(|_| panic!("Unable to load library list file {:?}", path))
         .split('\n')
         .filter(|s| !s.is_empty() && !s.starts_with('#'))
-        .map(|filepath| base_dir.join(filepath))
+        .map(|filepath| base_dir.join(filepath).to_string_lossy().to_string())
         .map(|file| {
             if file.ends_with(".rail") {
                 Some(from_rail_source_file(file))
