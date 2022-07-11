@@ -1,2 +1,2 @@
-[ exec [ drop ] doin pop swap drop ] "exec-stdout" def
 [ def? not ] "undef?" def
+[ quote-all pop doin unquote ] "do" def

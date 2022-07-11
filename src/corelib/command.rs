@@ -2,7 +2,7 @@ use crate::rail_machine::{self, run_quote, RailDef, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_state("do", &["quote|command"], &["..."], |state| {
+        RailDef::on_state("do!", &["quote|command"], &["..."], |state| {
             let (a, quote) = state.quote.clone().pop();
             let state = state.replace_quote(quote);
 

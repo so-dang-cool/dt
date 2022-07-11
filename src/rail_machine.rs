@@ -89,7 +89,7 @@ impl RailState {
     pub fn deeper(self) -> RailState {
         RailState {
             quote: Quote::default(),
-            dictionary: empty_dictionary(),
+            dictionary: self.dictionary.clone(),
             context: Context::Quotation {
                 parent_state: Box::new(self),
             },
