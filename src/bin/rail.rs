@@ -1,27 +1,11 @@
 use clap::Parser;
-use rail_lang::rail_machine::RailState;
+use rail_lang::rail_machine;
 use rail_lang::{tokens, RAIL_VERSION};
 
 pub fn main() {
     let args = RailEvaluator::parse();
 
-    let state = RailState::default();
-
-    let state = match args.no_stdlib {
-        true => RailState::default(),
-        false => {
-            let tokens = tokens::from_lib_list("rail-src/stdlib/all.txt");
-            state.run_tokens(tokens)
-        }
-    };
-
-    let state = match args.lib_list {
-        Some(lib_list_file) => {
-            let tokens = tokens::from_lib_list(&lib_list_file);
-            state.run_tokens(tokens)
-        }
-        None => state,
-    };
+    let state = rail_machine::state_with_libs(args.no_stdlib, args.lib_list);
 
     let tokens = tokens::from_rail_source(args.rail_code.join(" "));
     state.run_tokens(tokens);

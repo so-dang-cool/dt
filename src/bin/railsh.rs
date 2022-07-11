@@ -1,24 +1,10 @@
 use clap::{Parser, Subcommand};
-use rail_lang::{prompt::RailPrompt, rail_machine::RailState, tokens, RAIL_VERSION};
+use rail_lang::{prompt::RailPrompt, rail_machine, tokens, RAIL_VERSION};
 
 pub fn main() {
     let args = RailShell::parse();
 
-    let state = match args.no_stdlib {
-        true => RailState::default(),
-        false => {
-            let tokens = tokens::from_lib_list("rail-src/stdlib/all.txt");
-            RailState::default().run_tokens(tokens)
-        }
-    };
-
-    let state = match args.lib_list {
-        Some(lib_list_file) => {
-            let tokens = tokens::from_lib_list(&lib_list_file);
-            state.run_tokens(tokens)
-        }
-        None => state,
-    };
+    let state = rail_machine::state_with_libs(args.no_stdlib, args.lib_list);
 
     match args.mode {
         Some(Mode::Interactive) | None => RailPrompt::default().run(state),

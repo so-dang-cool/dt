@@ -2,9 +2,28 @@ use colored::Colorize;
 
 use crate::corelib::corelib_dictionary;
 use crate::prompt::operate_term;
+use crate::tokens;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
+
+pub fn state_with_libs(skip_stdlib: bool, lib_list: Option<String>) -> RailState {
+    let state = RailState::default();
+
+    let state = if skip_stdlib {
+        state
+    } else {
+        let tokens = tokens::from_lib_list("rail-src/stdlib/all.txt");
+        state.run_tokens(tokens)
+    };
+
+    if let Some(lib_list) = lib_list {
+        let tokens = tokens::from_lib_list(&lib_list);
+        state.run_tokens(tokens)
+    } else {
+        state
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct RailState {

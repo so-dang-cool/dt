@@ -1,8 +1,10 @@
 use clap::Parser;
-use rail_lang::RAIL_VERSION;
+use rail_lang::{rail_machine, RAIL_VERSION};
 
 pub fn main() {
-    let _args = RailCompiler::parse();
+    let args = RailCompiler::parse();
+
+    let _state = rail_machine::state_with_libs(args.no_stdlib, args.lib_list);
 
     eprintln!("I'm not implemented yet.");
     std::process::exit(1);
