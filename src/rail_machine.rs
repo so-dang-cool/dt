@@ -134,6 +134,7 @@ pub enum RailVal {
     Command(String),
     Quote(Quote),
     String(String),
+    Stab(Stab),
 }
 
 impl RailVal {
@@ -146,6 +147,7 @@ impl RailVal {
             Command(_) => "command",
             Quote(_) => "quote",
             String(_) => "string",
+            Stab(_) => "stab",
         }
         .into()
     }
@@ -161,6 +163,15 @@ impl std::fmt::Display for RailVal {
             Command(o) => write!(fmt, "{}", o),
             Quote(q) => write!(fmt, "{}", q),
             String(s) => write!(fmt, "\"{}\"", s.replace('\n', "\\n")),
+            Stab(t) => {
+                write!(fmt, "[ ").unwrap();
+
+                for (k, v) in t.iter() {
+                    write!(fmt, "[ \"{}\" {} ] ", k, v).unwrap();
+                }
+
+                write!(fmt, "]")
+            }
         }
     }
 }
@@ -173,6 +184,12 @@ pub struct Quote {
 impl Quote {
     pub fn new(values: Vec<RailVal>) -> Self {
         Quote { values }
+    }
+
+    pub fn of(value: RailVal) -> Self {
+        Quote {
+            values: vec![value],
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -210,6 +227,11 @@ impl Quote {
 
     pub fn push_quote(mut self, quote: Quote) -> Quote {
         self.values.push(RailVal::Quote(quote));
+        self
+    }
+
+    pub fn push_stab(mut self, st: Stab) -> Quote {
+        self.values.push(RailVal::Stab(st));
         self
     }
 
@@ -263,6 +285,24 @@ impl Quote {
         }
     }
 
+    pub fn pop_stab(mut self, context: &str) -> (Stab, Quote) {
+        match self.values.pop().unwrap() {
+            RailVal::Stab(s) => (s, self),
+            rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
+        }
+    }
+
+    pub fn pop_stab_entry(mut self, context: &str) -> (String, RailVal, Quote) {
+        let rail_val = self.values.pop().unwrap();
+        match rail_val.clone() {
+            RailVal::Quote(q) => match &q.values[..] {
+                [RailVal::String(k), v] => (k.to_string(), v.clone(), self),
+                _ => panic!("{}", type_panic_msg(context, "quote[string, a]", rail_val)),
+            },
+            _ => panic!("{}", type_panic_msg(context, "quote[string, a]", rail_val)),
+        }
+    }
+
     pub fn pop_string(mut self, context: &str) -> (String, Quote) {
         match self.values.pop().unwrap() {
             RailVal::String(s) => (s, self),
@@ -303,6 +343,12 @@ impl std::fmt::Display for Quote {
 }
 
 pub type Dictionary = HashMap<String, RailDef<'static>>;
+
+pub type Stab = HashMap<String, RailVal>;
+
+pub fn new_stab() -> Stab {
+    HashMap::new()
+}
 
 #[derive(Clone)]
 pub struct RailDef<'a> {

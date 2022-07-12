@@ -2,7 +2,7 @@
 [ type "string" == ] "string?" def
 
 # Define its friends
-[ "i64" "f64" "command" "quote" "bool" ] [
+[ "i64" "f64" "command" "quote" "bool" "stab" ] [
     dup
     [ type == ] swap push [ swap ] doin
     swap

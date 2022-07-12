@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::rail_machine::{Quote, RailDef};
+use crate::rail_machine::{self, Quote, RailDef, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -12,18 +12,38 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             let res = std::process::Command::new(exe).args(args).output().unwrap();
 
-            let result = Quote::default()
-                .push_i64(res.status.code().unwrap_or(-1).into())
-                .push_str(String::from_utf8(res.stdout).unwrap().trim_end())
-                .push_str(String::from_utf8(res.stderr).unwrap().trim_end());
+            let mut result = rail_machine::new_stab();
+            result.insert(
+                "status".to_string(),
+                RailVal::I64(res.status.code().unwrap_or(-1).into()),
+            );
+            result.insert(
+                "stdout".to_string(),
+                RailVal::String(
+                    String::from_utf8(res.stdout)
+                        .unwrap()
+                        .trim_end()
+                        .to_string(),
+                ),
+            );
+            result.insert(
+                "stderr".to_string(),
+                RailVal::String(
+                    String::from_utf8(res.stderr)
+                        .unwrap()
+                        .trim_end()
+                        .to_string(),
+                ),
+            );
 
-            quote.push_quote(result)
+            quote.push_stab(result)
         }),
         RailDef::on_quote("env", &[], &["string"], |quote| {
-            let vars = env::vars()
-                .map(|(k, v)| Quote::default().push_string(k).push_string(v))
-                .fold(Quote::default(), |q, kv| q.push_quote(kv));
-            quote.push_quote(vars)
+            let vars = env::vars().fold(rail_machine::new_stab(), |mut stab, (k, v)| {
+                stab.insert(k, RailVal::String(v));
+                stab
+            });
+            quote.push_stab(vars)
         }),
         RailDef::on_quote("envget", &["string"], &["string"], |quote| {
             let (key, quote) = quote.pop_string("envget");

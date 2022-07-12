@@ -12,6 +12,7 @@ mod process;
 mod repeat;
 mod sequence;
 mod shuffle;
+mod stab;
 mod string;
 
 pub fn corelib_dictionary() -> Dictionary {
@@ -27,6 +28,7 @@ pub fn corelib_dictionary() -> Dictionary {
         .chain(repeat::builtins())
         .chain(shuffle::builtins())
         .chain(sequence::builtins())
+        .chain(stab::builtins())
         .chain(string::builtins())
         .map(|op| (op.name.clone(), op));
 
