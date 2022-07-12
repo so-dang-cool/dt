@@ -1,5 +1,7 @@
 # TODO
 
+1. Consistent `def` rules for what is global vs what is local
+
 1. Streams (e.g. stdin; large files)
   - lazy lists?
   - generators?
