@@ -1,7 +1,7 @@
 # TODO: This is not stdlib stuff. Move to another library
 
-[ exec [ drop ] doin pop swap drop ] "exec-stdout" def
-
-[ [ dup rot doin swap ] swap times drop ] "timesin" def
-
 [ rev [ swap quote swap def ] each ] "->" def
+
+[ exec "stdout" extract pop ] "exec-stdout" def
+
+[ [ "q" "n" ] -> [ q doin ] n times ] "timesin" def
