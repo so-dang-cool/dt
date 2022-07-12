@@ -29,6 +29,8 @@
 1. Other data structures
   - Maps, Sets, Heaps
   - Allow anything as arbitrary as JSON?
+  - Algebraic data types
+    - Especially like Haskell or Rust, but they bring alignment problems to low-level use cases. (Can I just optimize packing?)
 
 1. "Green thread" processes
   - Erlang's `spawn`, `receive`, and PIDs are the way to go
