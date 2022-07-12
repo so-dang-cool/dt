@@ -32,9 +32,28 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_state("def", &["quote", "string"], &[], |state| {
             state.update_quote_and_dict(|quote, dictionary| {
                 let mut dictionary = dictionary;
-                let (name, quote) = quote.pop_string("def");
+                let (name, quote) = quote.pop();
+
+                use RailVal::*;
+
+                let name = match &name {
+                    String(s) => s,
+                    Command(c) => c,
+                    Quote(q) => match &q.values[..] {
+                        [String(s)] => s,
+                        [Command(c)] => c,
+                        _ => {
+                            rail_machine::log_warn(format!("{} is not a valid word.", name));
+                            return (quote, dictionary);
+                        }
+                    },
+                    _ => {
+                        rail_machine::log_warn(format!("{} is not a valid word.", name));
+                        return (quote, dictionary);
+                    }
+                };
                 let (commands, quote) = quote.pop_quote("def");
-                if dictionary.contains_key(&name) {
+                if dictionary.contains_key(name) {
                     rail_machine::log_warn(format!("{} was already defined.", name));
                     return (quote, dictionary);
                 }
