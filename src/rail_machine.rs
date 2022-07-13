@@ -281,6 +281,7 @@ impl Quote {
     pub fn pop_quote(mut self, context: &str) -> (Quote, Quote) {
         match self.values.pop().unwrap() {
             RailVal::Quote(quote) => (quote, self),
+            RailVal::Stab(s) => (stab_to_quote(s), self),
             rail_val => panic!("{}", type_panic_msg(context, "quote", rail_val)),
         }
     }
@@ -288,6 +289,7 @@ impl Quote {
     pub fn pop_stab(mut self, context: &str) -> (Stab, Quote) {
         match self.values.pop().unwrap() {
             RailVal::Stab(s) => (s, self),
+            RailVal::Quote(q) => (quote_to_stab(q), self),
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
         }
     }
@@ -474,6 +476,25 @@ pub fn run_quote(quote: &Quote, state: RailState) -> RailState {
 
 pub fn empty_dictionary() -> Dictionary {
     HashMap::new()
+}
+
+fn stab_to_quote(stab: Stab) -> Quote {
+    stab.into_iter()
+        .map(|(k, v)| Quote::default().push_string(k).push(v))
+        .fold(Quote::default(), |quote, entry| quote.push_quote(entry))
+}
+
+fn quote_to_stab(quote: Quote) -> Stab {
+    let mut quote = quote;
+    let mut stab = new_stab();
+
+    while !quote.is_empty() {
+        let (k, v, new_quote) = quote.pop_stab_entry("<coersion: quote to stab>");
+        quote = new_quote;
+        stab.insert(k, v);
+    }
+
+    stab
 }
 
 // The following are all formatting things for errors/warnings/panics.

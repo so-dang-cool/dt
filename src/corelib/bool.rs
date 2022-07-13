@@ -42,6 +42,7 @@ fn equality(name: &str, eq: Equality) -> RailDef<'_> {
             (String(a), String(b)) => a == b,
             (Command(a), Command(b)) => a == b,
             (Quote(a), Quote(b)) => a == b,
+            // TODO: Stab equality?
             _ => false,
         };
 
