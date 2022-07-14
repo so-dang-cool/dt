@@ -1,5 +1,6 @@
 # TODO: This is not stdlib stuff. Move to another library
 
-[ print ] "." def
+[ " " print ] "space" def
+[ print space ] "." def
 [ status ] ".s" def
 [ == ] "=" def
