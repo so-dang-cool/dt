@@ -14,6 +14,7 @@ mod sequence;
 mod shuffle;
 mod stab;
 mod string;
+mod test;
 
 pub fn corelib_dictionary() -> Dictionary {
     let ops = bool::builtins()
@@ -30,6 +31,7 @@ pub fn corelib_dictionary() -> Dictionary {
         .chain(sequence::builtins())
         .chain(stab::builtins())
         .chain(string::builtins())
+        .chain(test::builtins())
         .map(|op| (op.name.clone(), op));
 
     HashMap::from_iter(ops)

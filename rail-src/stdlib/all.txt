@@ -1,3 +1,4 @@
+bool.rail
 command.rail
 display.rail
 math.rail
