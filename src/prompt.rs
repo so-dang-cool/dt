@@ -59,15 +59,17 @@ where
 }
 
 pub struct RailPrompt {
+    is_tty: bool,
     editor: Editor<()>,
     terms: Vec<String>,
 }
 
 impl RailPrompt {
     pub fn new() -> RailPrompt {
-        let editor = Editor::<()>::new();
+        let mut editor = Editor::<()>::new();
+        let is_tty = editor.dimensions().is_some();
         let terms = vec![];
-        RailPrompt { editor, terms }
+        RailPrompt { is_tty, editor, terms }
     }
 
     pub fn run(self, state: RailState) {
@@ -94,6 +96,13 @@ impl Iterator for RailPrompt {
 
     fn next(&mut self) -> Option<String> {
         while self.terms.is_empty() {
+            // If we're interactive with a human (at a TTY and not piped stdin),
+            // we pad with a newline in case the user uses print without newline.
+            // (Otherwise, the prompt will rewrite the line with output.)
+            if self.is_tty {
+                println!();
+            }
+
             let input = self.editor.readline("> ");
 
             if let Err(e) = input {
