@@ -1,8 +1,9 @@
-bool.rail
+# Must be first, as it provides "def"
 command.rail
+
+bool.rail
 display.rail
 math.rail
 reflect.rail
 sequence.rail
-shuffle.rail
 string.rail

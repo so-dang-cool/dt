@@ -1,2 +1,3 @@
 [ 2 mod 0 == ] "even?" def
 [ 2 mod 1 == ] "odd?" def
+[ true ] "otherwise" def

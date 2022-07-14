@@ -1,6 +1,5 @@
 # https://docs.factorcode.org/content/article-cleave-combinators.html
 
-[ [ "x" "quotes" ] -> quotes [ [ "q" ] -> x q do ] map unquote ] "cleave" def
-
+[ [ "x'" "quotes" ] -> quotes [ [ "q" ] -> x' q do ] map unquote ] "cleave" def
 [ [ "x" "q1" "q2" ] -> x [ q1 q2 ] cleave ] "bi" def
 [ [ "x" "q1" "q2" "q3" ] -> x [ q1 q2 q3 ] cleave ] "tri" def

@@ -3,3 +3,5 @@
 [ "" split [ pop drop rev ] 2 times ] "chars" def
 [ "\n" split ] "lines" def
 [ "\n" join ] "unlines" def
+[ [ "s" ] -> s upcase s == ] "upcase?" def
+[ [ "s" ] -> s downcase s == ] "downcase?" def
