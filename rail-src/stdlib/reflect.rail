@@ -2,12 +2,12 @@
 [ type "string" == ] "string?" def
 
 # Define its friends
-[ "i64" "f64" "command" "quote" "bool" "stab" ] [
-    dup
-    [ type == ] swap push [ swap ] doin
-    swap
-    [ "?" ] swap push rev "" join
-    def
-] each
+[ "i64" "f64" "command" "quote" "bool" "stab" ]
+[ [ "name" ] ->
+    [ type ] name push [ == ] concat  # [ type "i64" == ]
+    name [ "?" ] enq "" join          # "i64?"
+    quote enq
+] map
+[ [ def ] concat do! ] each!
 
 [ unquote ] "..." def

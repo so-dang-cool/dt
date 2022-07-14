@@ -117,13 +117,29 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 quote.push_quote(results)
             })
         }),
-        RailDef::on_state("each", &["quote", "quote"], &[], |state| {
+        RailDef::on_state("each!", &["quote", "quote"], &[], |state| {
             let (command, quote) = state.quote.clone().pop_quote("each");
             let (sequence, quote) = quote.pop_quote("each");
+
             let state = state.replace_quote(quote);
 
             sequence.values.into_iter().fold(state, |state, value| {
                 let state = state.update_quote(|quote| quote.push(value.clone()));
+                run_quote(&command, state)
+            })
+        }),
+        RailDef::on_jailed_state("each", &["quote", "quote"], &[], |state| {
+            let (command, quote) = state.quote.clone().pop_quote("each");
+            let (sequence, quote) = quote.pop_quote("each");
+
+            let state = state.replace_quote(quote);
+
+            let dictionary = state.dictionary.clone();
+
+            sequence.values.into_iter().fold(state, |state, value| {
+                let state = state
+                    .update_quote(|quote| quote.push(value.clone()))
+                    .replace_dictionary(dictionary.clone());
                 run_quote(&command, state)
             })
         }),

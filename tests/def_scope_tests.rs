@@ -13,6 +13,30 @@ fn basic_def() {
 }
 
 #[test]
+fn basic_do_bang_def() {
+    let source = r#"
+        [ [ ] "empty-quote" def ] do!
+
+        "empty-quote" def? "do! should define in parent context" assert-true
+    "#;
+
+    assert_eq!("", rail(&[source]).stderr);
+    assert_eq!("", rail(&[source]).stdout);
+}
+
+#[test]
+fn basic_do_def() {
+    let source = r#"
+        [ [ ] "empty-quote" def ] do
+
+        "empty-quote" undef? "do should NOT define in parent context" assert-true
+    "#;
+
+    assert_eq!("", rail(&[source]).stderr);
+    assert_eq!("", rail(&[source]).stdout);
+}
+
+#[test]
 fn basic_arrow_do() {
     let source = r#"
         3 "banana"
@@ -32,7 +56,6 @@ fn basic_arrow_do() {
 }
 
 #[test]
-#[ignore = "FIXME"]
 fn arrow_in_each() {
     let source = r#"
         [ 1 2 3 4 5 ]
@@ -45,10 +68,7 @@ fn arrow_in_each() {
 
     assert_eq!("", res.stderr);
 
-    assert_eq!(
-        ["1", "4", "9", "16", "25", "false", ""].join("\n"),
-        res.stdout
-    );
+    assert_eq!(["1", "4", "9", "16", "25", ""].join("\n"), res.stdout);
 }
 
 #[test]

@@ -76,6 +76,14 @@ impl RailState {
         }
     }
 
+    pub fn replace_dictionary(self, dictionary: Dictionary) -> RailState {
+        RailState {
+            quote: self.quote,
+            dictionary,
+            context: self.context,
+        }
+    }
+
     /// A substate that will take a parent dictionary, but never leak its own
     /// dictionary to parent contexts.
     pub fn jail_state(&self, quote: Quote) -> RailState {
@@ -381,6 +389,27 @@ impl RailDef<'_> {
             consumes,
             produces,
             action: RailAction::Builtin(Arc::new(state_action)),
+        }
+    }
+
+    pub fn on_jailed_state<'a, F>(
+        name: &str,
+        consumes: &'a [&'a str],
+        produces: &'a [&'a str],
+        state_action: F,
+    ) -> RailDef<'a>
+    where
+        F: Fn(RailState) -> RailState + 'a,
+    {
+        RailDef {
+            name: name.to_string(),
+            consumes,
+            produces,
+            action: RailAction::Builtin(Arc::new(move |state| {
+                let dictionary = state.dictionary.clone();
+                let substate = state_action(state);
+                substate.replace_dictionary(dictionary)
+            })),
         }
     }
 

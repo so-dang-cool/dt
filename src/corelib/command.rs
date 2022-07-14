@@ -1,34 +1,9 @@
-use crate::rail_machine::{self, run_quote, RailDef, RailVal};
+use crate::rail_machine::{self, run_quote, RailDef, RailState, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_state("do!", &["quote|command"], &["..."], |state| {
-            let (a, quote) = state.quote.clone().pop();
-            let state = state.replace_quote(quote);
-
-            match a {
-                RailVal::Quote(quote) => run_quote(&quote, state),
-                RailVal::Command(command) => {
-                    let action = state.dictionary.get(&command).unwrap();
-                    action.clone().act(state)
-                }
-                _ => {
-                    rail_machine::log_warn(format!("{} is not a quote or command", a));
-                    state
-                }
-            }
-        }),
-        RailDef::on_state("doin", &["quote", "quote"], &["quote"], |state| {
-            state.clone().update_quote(|quote| {
-                let (commands, quote) = quote.pop_quote("doin");
-                let (targets, quote) = quote.pop_quote("doin");
-
-                let substate = state.jail_state(targets); // TODO: Really just need dictionaries.
-                let substate = run_quote(&commands, substate);
-
-                quote.push_quote(substate.quote)
-            })
-        }),
+        RailDef::on_state("do!", &["quote|command"], &["..."], do_it()),
+        RailDef::on_jailed_state("do", &["quote|command"], &["..."], do_it()),
         RailDef::on_state("def", &["quote", "string"], &[], |state| {
             state.update_quote_and_dict(|quote, dictionary| {
                 let mut dictionary = dictionary;
@@ -49,4 +24,23 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
     ]
+}
+
+fn do_it() -> impl Fn(RailState) -> RailState {
+    |state| {
+        let (a, quote) = state.quote.clone().pop();
+        let state = state.replace_quote(quote);
+
+        match a {
+            RailVal::Quote(quote) => run_quote(&quote, state),
+            RailVal::Command(command) => {
+                let action = state.dictionary.get(&command).unwrap();
+                action.clone().act(state)
+            }
+            _ => {
+                rail_machine::log_warn(format!("{} is not a quote or command", a));
+                state
+            }
+        }
+    }
 }
