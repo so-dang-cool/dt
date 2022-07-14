@@ -1,7 +1,7 @@
 mod rail_runner;
-use rail_runner::{railsh, RailRunResult};
+use rail_runner::{railsh, RailPipedResult};
 
-fn assert_two(result: RailRunResult) {
+fn assert_two(result: RailPipedResult) {
     assert_eq!("", result.stdout);
 
     let stderr_lines = result.stderr.split('\n').collect::<Vec<_>>();

@@ -6,11 +6,12 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_quote("print", &["a"], &[], |quote| {
             let (a, quote) = quote.pop();
             match a {
-                RailVal::String(a) => println!("{}", a),
-                _ => println!("{}", a),
+                RailVal::String(a) => print!("{}", a),
+                _ => print!("{}", a),
             }
             quote
         }),
+        RailDef::contextless("endl", &[], &[], || print!("\n")),
         RailDef::on_state("status", &[], &[], |state| {
             println!("{}", state.quote);
             state

@@ -1,7 +1,5 @@
 # TODO: This is not stdlib stuff. Move to another library
 
-[ rev [ swap quote swap def ] each ] "->" def
-
 [ exec "stdout" extract pop ] "exec-stdout" def
 
 [ [ "q" "n" ] -> [ q doin ] n times ] "timesin" def

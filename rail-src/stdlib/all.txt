@@ -1,4 +1,5 @@
 command.rail
+display.rail
 math.rail
 reflect.rail
 sequence.rail

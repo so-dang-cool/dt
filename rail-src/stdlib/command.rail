@@ -1,2 +1,3 @@
 [ def? not ] "undef?" def
 [ quote-all pop doin unquote ] "do" def
+[ rev [ swap quote swap def ] each ] "->" def
