@@ -1,7 +1,6 @@
 use colored::Colorize;
 
 use crate::corelib::corelib_dictionary;
-use crate::prompt::operate_term;
 use crate::tokens;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
@@ -44,8 +43,66 @@ impl RailState {
         }
     }
 
+    pub fn in_main(&self) -> bool {
+        matches!(self.context, Context::Main)
+    }
+
     pub fn run_tokens(self, tokens: Vec<String>) -> RailState {
-        tokens.iter().fold(self, operate_term)
+        tokens.iter().fold(self, |state, term| state.run_term(term))
+    }
+
+    pub fn run_term<S>(self, term: S) -> RailState
+    where
+        S: Into<String>,
+    {
+        let term: String = term.into();
+        let mut quote = self.quote.clone();
+        let dictionary = self.dictionary.clone();
+
+        // Quotations
+        if term == "[" {
+            return self.deeper();
+        } else if term == "]" {
+            return self.higher();
+        }
+        // Defined operations
+        else if let Some(op) = dictionary.get(&term) {
+            if self.in_main() {
+                return op.clone().act(self.clone());
+            } else {
+                quote = quote.push_command(&op.name);
+            }
+        }
+        // Strings
+        else if term.starts_with('"') && term.ends_with('"') {
+            let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
+            quote = quote.push_string(term.to_string());
+        }
+        // Integers
+        else if let Ok(i) = term.parse::<i64>() {
+            quote = quote.push_i64(i);
+        }
+        // Floating point numbers
+        else if let Ok(n) = term.parse::<f64>() {
+            quote = quote.push_f64(n);
+        }
+        // Unknown
+        else if !self.in_main() {
+            quote = quote.push_command(&term)
+        } else {
+            // TODO: Use a logging library? Log levels? Exit in a strict mode?
+            // TODO: Have/get details on filename/source, line number, character number
+            log_warn(format!(
+                "Skipping unknown term: \"{}\"",
+                term.replace('\n', "\\n")
+            ));
+        }
+
+        RailState {
+            quote,
+            dictionary,
+            context: self.context,
+        }
     }
 
     pub fn update_quote(self, update: impl Fn(Quote) -> Quote) -> RailState {
@@ -102,10 +159,6 @@ impl RailState {
                 parent_state: Box::new(self),
             },
         }
-    }
-
-    pub fn in_main(&self) -> bool {
-        matches!(self.context, Context::Main)
     }
 
     pub fn higher(self) -> RailState {

@@ -4,60 +4,6 @@ use colored::Colorize;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-pub fn operate_term<S>(state: RailState, term: S) -> RailState
-where
-    S: Into<String>,
-{
-    let term: String = term.into();
-    let mut quote = state.quote.clone();
-    let dictionary = state.dictionary.clone();
-
-    // Quotations
-    if term == "[" {
-        return state.deeper();
-    } else if term == "]" {
-        return state.higher();
-    }
-    // Defined operations
-    else if let Some(op) = dictionary.get(&term) {
-        if state.in_main() {
-            return op.clone().act(state.clone());
-        } else {
-            quote = quote.push_command(&op.name);
-        }
-    }
-    // Strings
-    else if term.starts_with('"') && term.ends_with('"') {
-        let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-        quote = quote.push_string(term.to_string());
-    }
-    // Integers
-    else if let Ok(i) = term.parse::<i64>() {
-        quote = quote.push_i64(i);
-    }
-    // Floating point numbers
-    else if let Ok(n) = term.parse::<f64>() {
-        quote = quote.push_f64(n);
-    }
-    // Unknown
-    else if !state.in_main() {
-        quote = quote.push_command(&term)
-    } else {
-        // TODO: Use a logging library? Log levels? Exit in a strict mode?
-        // TODO: Have/get details on filename/source, line number, character number
-        rail_machine::log_warn(format!(
-            "Skipping unknown term: \"{}\"",
-            term.replace('\n', "\\n")
-        ));
-    }
-
-    RailState {
-        quote,
-        dictionary,
-        context: state.context,
-    }
-}
-
 pub struct RailPrompt {
     is_tty: bool,
     editor: Editor<()>,
@@ -69,14 +15,18 @@ impl RailPrompt {
         let mut editor = Editor::<()>::new();
         let is_tty = editor.dimensions().is_some();
         let terms = vec![];
-        RailPrompt { is_tty, editor, terms }
+        RailPrompt {
+            is_tty,
+            editor,
+            terms,
+        }
     }
 
     pub fn run(self, state: RailState) {
         let name_and_version = format!("rail {}", RAIL_VERSION);
         eprintln!("{}", name_and_version.dimmed().red());
 
-        let end_state = self.fold(state, operate_term);
+        let end_state = self.fold(state, |state, term| state.run_term(term));
 
         if !end_state.quote.is_empty() {
             let end_state_msg = format!("State dump: {}", end_state.quote);
