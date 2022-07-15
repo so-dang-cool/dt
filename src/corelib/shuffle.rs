@@ -12,12 +12,12 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (a, quote) = quote.pop();
             quote.push(a.clone()).push(b.clone()).push(a).push(b)
         }),
-        RailDef::on_quote("swap", &["b", "a"], &["a", "b"], |quote| {
+        RailDef::on_quote("swap", &["a", "b"], &["b", "a"], |quote| {
             let (a, quote) = quote.pop();
             let (b, quote) = quote.pop();
             quote.push(a).push(b)
         }),
-        RailDef::on_quote("rot", &["c", "b", "a"], &["a", "c", "b"], |quote| {
+        RailDef::on_quote("rot", &["a", "b", "c"], &["c", "a", "b"], |quote| {
             let (a, quote) = quote.pop();
             let (b, quote) = quote.pop();
             let (c, quote) = quote.pop();
