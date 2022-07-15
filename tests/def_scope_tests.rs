@@ -59,9 +59,9 @@ fn basic_arrow_do() {
 fn arrow_in_each() {
     let source = r#"
         [ 1 2 3 4 5 ]
-        [ [ "n" ] -> n n * println ] each
+        [ [ n ] -> n n * println ] each
 
-        "n" undef? "each must not leak definitions, but n was defined" assert-true
+        [ n ] undef? "each must not leak definitions, but n was defined" assert-true
     "#;
 
     let res = rail(&[source]);
@@ -75,7 +75,7 @@ fn arrow_in_each() {
 fn arrow_in_map() {
     let source = r#"
         [ "apple" "banana" "cereal" ]
-        [ [ "food" ] -> food upcase ] map print
+        [ [ food ] -> food upcase ] map print
 
         "food" undef? "map must not leak definitions, but food was defined" assert-true
     "#;
@@ -91,7 +91,7 @@ fn arrow_in_map() {
 fn arrow_in_filter() {
     let source = r#"
         [ [ 1 "banana" ] [ 2 "banana" ] [ 3 "banana" ] [ 4 "bananas make a bunch!" ] ]
-        [ unquote [ "n" "str" ] -> n even? str len odd? ] filter unquote print
+        [ ... [ n str ] -> n even? str len odd? ] filter unquote print
 
         "n" undef? "filter must not leak definitions, but n was defined" assert-true
         "str" undef? "filter must not leak definitions, but str was defined" assert-true

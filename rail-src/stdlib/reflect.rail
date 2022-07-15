@@ -3,7 +3,7 @@
 
 # Define its friends
 [ "i64" "f64" "command" "quote" "bool" "stab" ]
-[ [ "name" ] ->
+[ [ name ] ->
     [ type ] name push [ == ] concat  # [ type "i64" == ]
     name [ "?" ] enq "" join          # "i64?"
     quote enq
