@@ -1,0 +1,19 @@
+# Find the sum of all the multiples of 3 or 5 below 1000.
+# https://projecteuler.net/problem=1
+
+# TODO: Builtin for range? [ lower upper step ] -> etc...
+[ [ 1 ] [ [ dup 1 + ] doin ] 998 times ] "range" def
+
+# TODO: Builtin for fold?
+[ [ [ swap dup rot len 1 > ]
+    [ dup rot doin swap fold ] ] opt
+] "fold" def
+
+range
+
+[ [ n ] ->
+    n 3 divisor?
+    n 5 divisor? or
+] filter
+
+[ + ] fold drop unquote pl

@@ -2,5 +2,3 @@
 [ rev [ swap quote swap def ] each! ] "->" def!
 
 [ def? not ] "undef?" def
-[ concat do! ] "doin!" def
-[ concat do ] "doin" def

@@ -8,6 +8,16 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (b, quote) = quote.pop_bool("not");
             quote.push_bool(!b)
         }),
+        RailDef::on_quote("or", &["bool", "bool"], &["bool"], |quote| {
+            let (b2, quote) = quote.pop_bool("or");
+            let (b1, quote) = quote.pop_bool("or");
+            quote.push_bool(b1 || b2)
+        }),
+        RailDef::on_quote("and", &["bool", "bool"], &["bool"], |quote| {
+            let (b2, quote) = quote.pop_bool("and");
+            let (b1, quote) = quote.pop_bool("and");
+            quote.push_bool(b1 && b2)
+        }),
         equality("==", Equality::Equal),
         equality("!=", Equality::NotEqual),
         binary_numeric_pred(">", |a, b| a > b, |a, b| a > b),
