@@ -1,6 +1,6 @@
 [package]
 name = "rail-lang"
-version = "0.16.1"
+version = "0.17.0"
 authors = ["J.R. Hill <hiljusti@so.dang.cool>"]
 description = "A straightforward programming language. Rail is currently experimental and subject to drastic breaking changes."
 license = "GPL-2.0-only"
