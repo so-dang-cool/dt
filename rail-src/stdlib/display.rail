@@ -1,1 +1,2 @@
-[ print endl ] "println" def
+[ p ] "print" def
+[ pl ] "println" def
