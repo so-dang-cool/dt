@@ -77,11 +77,14 @@ fn get_command_name(name: &RailVal) -> Option<String> {
     match name.clone() {
         RailVal::String(s) => Some(s),
         RailVal::Command(c) => Some(c),
-        RailVal::Quote(q) => match &q.values[..] {
-            [RailVal::String(s)] => Some(s.to_string()),
-            [RailVal::Command(c)] => Some(c.to_string()),
-            _ => None,
-        },
+        RailVal::Quote(q) => {
+            let (v, q) = q.pop();
+            match (v, q.len()) {
+                (RailVal::String(s), 0) => Some(s),
+                (RailVal::Command(c), 0) => Some(c),
+                _ => None,
+            }
+        }
         _ => None,
     }
 }

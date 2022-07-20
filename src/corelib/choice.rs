@@ -6,7 +6,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         let (mut options, quote) = state.quote.clone().pop_quote("opt");
         let mut state = state.replace_quote(quote);
 
-        options.values.reverse();
+        options.reverse();
 
         while !options.is_empty() {
             let (condition, opts) = options.pop_quote("opt");

@@ -56,8 +56,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             quote.push(a).push_quote(sequence)
         }),
         RailDef::on_quote("rev", &["quote"], &["quote"], |quote| {
-            let (mut sequence, quote) = quote.pop_quote("rev");
-            sequence.values.reverse();
+            let (sequence, quote) = quote.pop_quote("rev");
+            let sequence = sequence.reverse();
             quote.push_quote(sequence)
         }),
         RailDef::on_quote("concat", &["quote", "quote"], &["quote"], |quote| {

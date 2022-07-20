@@ -2,7 +2,7 @@ use colored::Colorize;
 
 use crate::corelib::corelib_dictionary;
 use crate::tokens;
-use im::HashMap;
+use im::{HashMap, Vector};
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
@@ -239,18 +239,18 @@ impl std::fmt::Display for RailVal {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Quote {
-    pub values: Vec<RailVal>,
+    pub values: Vector<RailVal>,
 }
 
 impl Quote {
-    pub fn new(values: Vec<RailVal>) -> Self {
+    pub fn new(values: Vector<RailVal>) -> Self {
         Quote { values }
     }
 
     pub fn of(value: RailVal) -> Self {
-        Quote {
-            values: vec![value],
-        }
+        let mut values = Vector::default();
+        values.push_back(value);
+        Quote { values }
     }
 
     pub fn len(&self) -> usize {
@@ -261,132 +261,140 @@ impl Quote {
         self.values.is_empty()
     }
 
+    pub fn reverse(&self) -> Quote {
+        let values = self.values.iter().rev().cloned().collect();
+        Quote::new(values)
+    }
+
     pub fn push(mut self, term: RailVal) -> Quote {
-        self.values.push(term);
+        self.values.push_back(term);
         self
     }
 
-    pub fn push_bool(mut self, b: bool) -> Quote {
-        self.values.push(RailVal::Boolean(b));
-        self
+    pub fn push_bool(self, b: bool) -> Quote {
+        self.push(RailVal::Boolean(b))
     }
 
-    pub fn push_i64(mut self, i: i64) -> Quote {
-        self.values.push(RailVal::I64(i));
-        self
+    pub fn push_i64(self, i: i64) -> Quote {
+        self.push(RailVal::I64(i))
     }
 
-    pub fn push_f64(mut self, n: f64) -> Quote {
-        self.values.push(RailVal::F64(n));
-        self
+    pub fn push_f64(self, n: f64) -> Quote {
+        self.push(RailVal::F64(n))
     }
 
-    pub fn push_command(mut self, op_name: &str) -> Quote {
-        self.values.push(RailVal::Command(op_name.to_owned()));
-        self
+    pub fn push_command(self, op_name: &str) -> Quote {
+        self.push(RailVal::Command(op_name.to_owned()))
     }
 
-    pub fn push_quote(mut self, quote: Quote) -> Quote {
-        self.values.push(RailVal::Quote(quote));
-        self
+    pub fn push_quote(self, quote: Quote) -> Quote {
+        self.push(RailVal::Quote(quote))
     }
 
-    pub fn push_stab(mut self, st: Stab) -> Quote {
-        self.values.push(RailVal::Stab(st));
-        self
+    pub fn push_stab(self, st: Stab) -> Quote {
+        self.push(RailVal::Stab(st))
     }
 
-    pub fn push_string(mut self, s: String) -> Quote {
-        self.values.push(RailVal::String(s));
-        self
+    pub fn push_string(self, s: String) -> Quote {
+        self.push(RailVal::String(s))
     }
 
-    pub fn push_str(mut self, s: &str) -> Quote {
-        self.values.push(RailVal::String(s.to_owned()));
-        self
+    pub fn push_str(self, s: &str) -> Quote {
+        self.push(RailVal::String(s.to_owned()))
     }
 
     pub fn pop(mut self) -> (RailVal, Quote) {
-        let term = self.values.pop().unwrap();
+        let term = self.values.pop_back().unwrap();
         (term, self)
     }
 
-    pub fn pop_bool(mut self, context: &str) -> (bool, Quote) {
-        match self.values.pop().unwrap() {
-            RailVal::Boolean(b) => (b, self),
-            rail_val => panic!("{}", type_panic_msg(context, "bool", rail_val)),
+    pub fn pop_bool(self, context: &str) -> (bool, Quote) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::Boolean(b) => (b, quote),
+            _ => panic!("{}", type_panic_msg(context, "bool", value)),
         }
     }
 
-    pub fn pop_i64(mut self, context: &str) -> (i64, Quote) {
-        match self.values.pop().unwrap() {
-            RailVal::I64(n) => (n, self),
+    pub fn pop_i64(self, context: &str) -> (i64, Quote) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::I64(n) => (n, quote),
             rail_val => panic!("{}", type_panic_msg(context, "i64", rail_val)),
         }
     }
 
-    pub fn pop_f64(mut self, context: &str) -> (f64, Quote) {
-        match self.values.pop().unwrap() {
-            RailVal::F64(n) => (n, self),
+    pub fn pop_f64(self, context: &str) -> (f64, Quote) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::F64(n) => (n, quote),
             rail_val => panic!("{}", type_panic_msg(context, "f64", rail_val)),
         }
     }
 
-    fn _pop_command(mut self, context: &str) -> (String, Quote) {
-        match self.values.pop().unwrap() {
-            RailVal::Command(op) => (op, self),
+    fn _pop_command(self, context: &str) -> (String, Quote) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::Command(op) => (op, quote),
             rail_val => panic!("{}", type_panic_msg(context, "command", rail_val)),
         }
     }
 
-    pub fn pop_quote(mut self, context: &str) -> (Quote, Quote) {
-        match self.values.pop().unwrap() {
-            RailVal::Quote(quote) => (quote, self),
-            RailVal::Stab(s) => (stab_to_quote(s), self),
+    pub fn pop_quote(self, context: &str) -> (Quote, Quote) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::Quote(subquote) => (subquote, quote),
+            RailVal::Stab(s) => (stab_to_quote(s), quote),
             rail_val => panic!("{}", type_panic_msg(context, "quote", rail_val)),
         }
     }
 
-    pub fn pop_stab(mut self, context: &str) -> (Stab, Quote) {
-        match self.values.pop().unwrap() {
-            RailVal::Stab(s) => (s, self),
-            RailVal::Quote(q) => (quote_to_stab(q), self),
+    pub fn pop_stab(self, context: &str) -> (Stab, Quote) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::Stab(s) => (s, quote),
+            RailVal::Quote(q) => (quote_to_stab(q), quote),
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
         }
     }
 
-    pub fn pop_stab_entry(mut self, context: &str) -> (String, RailVal, Quote) {
-        let rail_val = self.values.pop().unwrap();
-        match rail_val.clone() {
-            RailVal::Quote(q) => match &q.values[..] {
-                [RailVal::String(k), v] => (k.to_string(), v.clone(), self),
-                _ => panic!("{}", type_panic_msg(context, "quote[string, a]", rail_val)),
-            },
-            _ => panic!("{}", type_panic_msg(context, "quote[string, a]", rail_val)),
+    pub fn pop_stab_entry(self, context: &str) -> (String, RailVal, Quote) {
+        let (original_entry, quote) = self.pop_quote(context);
+        let (value, entry) = original_entry.clone().pop();
+        let (key, entry) = entry.pop_string(context);
+
+        if !entry.is_empty() {
+            panic!(
+                "{}",
+                type_panic_msg(context, "[ string a ]", RailVal::Quote(original_entry))
+            );
         }
+
+        (key, value, quote)
     }
 
-    pub fn pop_string(mut self, context: &str) -> (String, Quote) {
-        match self.values.pop().unwrap() {
-            RailVal::String(s) => (s, self),
+    pub fn pop_string(self, context: &str) -> (String, Quote) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::String(s) => (s, quote),
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
         }
     }
 
     pub fn enqueue(mut self, value: RailVal) -> Quote {
-        self.values.insert(0, value);
+        self.values.push_front(value);
         self
     }
 
     pub fn dequeue(mut self) -> (RailVal, Quote) {
-        let value = self.values.remove(0);
+        let value = self.values.pop_front().unwrap();
         (value, self)
     }
 }
 
 impl Default for Quote {
     fn default() -> Self {
-        let values = vec![];
+        let values = Vector::default();
         Self::new(values)
     }
 }

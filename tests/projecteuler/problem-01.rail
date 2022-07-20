@@ -4,11 +4,6 @@
 # TODO: Builtin for range? [ lower upper step ] -> etc...
 [ [ 1 ] [ [ dup 1 + ] doin ] 998 times ] "range" def
 
-# TODO: Builtin for fold?
-[ [ [ swap dup rot len 1 > ]
-    [ dup rot doin swap fold ] ] opt
-] "fold" def
-
 range
 
 [ [ n ] ->
@@ -16,4 +11,8 @@ range
     n 5 divisor? or
 ] filter
 
-[ + ] fold drop unquote pl
+dup len 1 - [ k ] ->
+
+[ [ + ] doin ] k times
+
+pop println
