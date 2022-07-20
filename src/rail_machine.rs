@@ -2,7 +2,7 @@ use colored::Colorize;
 
 use crate::corelib::corelib_dictionary;
 use crate::tokens;
-use std::collections::HashMap;
+use im::HashMap;
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
 

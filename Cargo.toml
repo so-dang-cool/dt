@@ -20,5 +20,6 @@ edition = "2021"
 clap = { version = "3.2", features = [ "derive" ] }
 clearscreen = "1.0"
 colored = "2.0"
+im = "15.1"
 regex = "1.5"
 rustyline = "10.0"

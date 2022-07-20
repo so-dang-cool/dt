@@ -1,5 +1,5 @@
 use crate::rail_machine::Dictionary;
-use std::collections::HashMap;
+use im::HashMap;
 
 mod bool;
 mod choice;
