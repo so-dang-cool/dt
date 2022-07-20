@@ -97,7 +97,7 @@ version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c969a6b6dadff9f3349b1f783f553e2411104763ca4789e1c6ca6a41f46a57b0"
 dependencies = [
- "nix 0.24.1",
+ "nix",
  "terminfo",
  "thiserror",
  "which",
@@ -321,34 +321,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
-name = "memoffset"
-version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
-dependencies = [
- "autocfg",
-]
-
-[[package]]
 name = "nibble_vec"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77a5d83df9f36fe23f0c3648c6bbb8b0298bb5f1939c8f2704431371f4b84d43"
 dependencies = [
  "smallvec",
-]
-
-[[package]]
-name = "nix"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f866317acbd3a240710c63f065ffb1e4fd466259045ccb504130b7f668f35c6"
-dependencies = [
- "bitflags",
- "cc",
- "cfg-if 1.0.0",
- "libc",
- "memoffset",
 ]
 
 [[package]]
@@ -595,9 +573,9 @@ dependencies = [
 
 [[package]]
 name = "rustyline"
-version = "9.1.2"
+version = "10.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db7826789c0e25614b03e5a54a0717a86f9ff6e6e5247f92b369472869320039"
+checksum = "1d1cd5ae51d3f7bf65d7969d579d502168ef578f289452bd8ccc91de28fda20e"
 dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
@@ -607,10 +585,9 @@ dependencies = [
  "libc",
  "log",
  "memchr",
- "nix 0.23.1",
+ "nix",
  "radix_trie",
  "scopeguard",
- "smallvec",
  "unicode-segmentation",
  "unicode-width",
  "utf8parse",

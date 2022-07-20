@@ -12,7 +12,7 @@ pub struct RailPrompt {
 
 impl RailPrompt {
     pub fn new() -> RailPrompt {
-        let mut editor = Editor::<()>::new();
+        let mut editor = Editor::<()>::new().expect("Unable to boot editor");
         let is_tty = editor.dimensions().is_some();
         let terms = vec![];
         RailPrompt {
