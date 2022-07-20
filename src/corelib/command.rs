@@ -48,8 +48,8 @@ fn do_it() -> impl Fn(RailState) -> RailState {
         match commands {
             RailVal::Quote(quote) => run_quote(&quote, state),
             RailVal::Command(command) => {
-                let action = state.dictionary.get(&command).unwrap();
-                action.clone().act(state)
+                let action = state.get_def(&command).unwrap();
+                action.clone().act(state.clone())
             }
             _ => {
                 rail_machine::log_warn(format!("{} is not a quote or command", commands));

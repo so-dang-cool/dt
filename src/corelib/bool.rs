@@ -41,20 +41,7 @@ fn equality(name: &str, eq: Equality) -> RailDef<'_> {
         let (b, quote) = quote.pop();
         let (a, quote) = quote.pop();
 
-        use RailVal::*;
-
-        let res = match (a, b) {
-            (Boolean(a), Boolean(b)) => a == b,
-            (I64(a), I64(b)) => a == b,
-            (I64(a), F64(b)) => a as f64 == b,
-            (F64(a), I64(b)) => a == b as f64,
-            (F64(a), F64(b)) => a == b,
-            (String(a), String(b)) => a == b,
-            (Command(a), Command(b)) => a == b,
-            (Quote(a), Quote(b)) => a == b,
-            // TODO: Stab equality?
-            _ => false,
-        };
+        let res = a == b;
 
         let res = match eq {
             Equality::Equal => res,

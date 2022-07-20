@@ -47,6 +47,14 @@ impl RailState {
         matches!(self.context, Context::Main)
     }
 
+    pub fn get_def(&self, name: &str) -> Option<RailDef> {
+        self.quote
+            .shadows
+            .get(name)
+            .or_else(|| self.dictionary.get(name))
+            .cloned()
+    }
+
     pub fn run_tokens(self, tokens: Vec<String>) -> RailState {
         tokens.iter().fold(self, |state, term| state.run_term(term))
     }
@@ -66,7 +74,7 @@ impl RailState {
             return self.higher();
         }
         // Defined operations
-        else if let Some(op) = dictionary.get(&term) {
+        else if let Some(op) = self.get_def(&term) {
             if self.in_main() {
                 return op.clone().act(self.clone());
             } else {
@@ -186,7 +194,7 @@ pub enum Context {
     None,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum RailVal {
     Boolean(bool),
     // TODO: Make a "Numeric" typeclass. (And floating-point/rational numbers)
@@ -196,6 +204,24 @@ pub enum RailVal {
     Quote(Quote),
     String(String),
     Stab(Stab),
+}
+
+impl PartialEq for RailVal {
+    fn eq(&self, other: &Self) -> bool {
+        use RailVal::*;
+        match (self, other) {
+            (Boolean(a), Boolean(b)) => a == b,
+            (I64(a), I64(b)) => a == b,
+            (I64(a), F64(b)) => *a as f64 == *b,
+            (F64(a), I64(b)) => *a == *b as f64,
+            (F64(a), F64(b)) => a == b,
+            (String(a), String(b)) => a == b,
+            (Command(a), Command(b)) => a == b,
+            (Quote(a), Quote(b)) => a == b,
+            (Stab(a), Stab(b)) => a == b,
+            _ => false,
+        }
+    }
 }
 
 impl RailVal {
@@ -237,20 +263,35 @@ impl std::fmt::Display for RailVal {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Quote {
     pub values: Vector<RailVal>,
+    pub shadows: Dictionary,
+}
+
+impl PartialEq for Quote {
+    // FIXME: Not equal if inequal shadows (same name, diff binding) exist in the values
+    fn eq(&self, other: &Self) -> bool {
+        self.values
+            .clone()
+            .into_iter()
+            .zip(other.values.clone())
+            .all(|(a, b)| a == b)
+    }
 }
 
 impl Quote {
-    pub fn new(values: Vector<RailVal>) -> Self {
-        Quote { values }
+    pub fn new(values: Vector<RailVal>, shadows: Dictionary) -> Self {
+        Quote { values, shadows }
     }
 
     pub fn of(value: RailVal) -> Self {
         let mut values = Vector::default();
         values.push_back(value);
-        Quote { values }
+        Quote {
+            values,
+            shadows: empty_dictionary(),
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -263,7 +304,7 @@ impl Quote {
 
     pub fn reverse(&self) -> Quote {
         let values = self.values.iter().rev().cloned().collect();
-        Quote::new(values)
+        Quote::new(values, self.shadows.clone())
     }
 
     pub fn push(mut self, term: RailVal) -> Quote {
@@ -394,8 +435,7 @@ impl Quote {
 
 impl Default for Quote {
     fn default() -> Self {
-        let values = Vector::default();
-        Self::new(values)
+        Self::new(Vector::default(), empty_dictionary())
     }
 }
 
@@ -553,11 +593,11 @@ pub fn run_quote(quote: &Quote, state: RailState) -> RailState {
         .iter()
         .fold(state, |state, rail_val| match rail_val {
             RailVal::Command(op_name) => {
-                if let Some(op) = state.dictionary.get(&op_name.clone()) {
-                    op.clone().act(state)
+                if let Some(op) = state.get_def(&op_name.clone()) {
+                    op.clone().act(state.clone())
                 } else {
                     log_warn(format!("Skipping undefined term: {}", op_name));
-                    state
+                    state.clone()
                 }
             }
             _ => state.update_quote(|quote| quote.push(rail_val.clone())),
