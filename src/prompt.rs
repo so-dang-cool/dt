@@ -28,8 +28,8 @@ impl RailPrompt {
 
         let end_state = self.fold(state, |state, term| state.run_term(term));
 
-        if !end_state.quote.is_empty() {
-            let end_state_msg = format!("State dump: {}", end_state.quote);
+        if !end_state.values.is_empty() {
+            let end_state_msg = format!("State dump: {}", end_state.values);
             eprintln!("{}", end_state_msg.dimmed().red());
         }
     }

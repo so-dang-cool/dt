@@ -42,7 +42,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
 fn do_it() -> impl Fn(RailState) -> RailState {
     |state| {
-        let (commands, quote) = state.quote.clone().pop();
+        let (commands, quote) = state.values.clone().pop();
         let state = state.replace_quote(quote);
 
         match commands {
@@ -68,7 +68,7 @@ fn doin() -> impl Fn(RailState) -> RailState {
             let substate = state.jail_state(targets); // TODO: Really just need dictionaries.
             let substate = run_quote(&commands, substate);
 
-            quote.push_quote(substate.quote)
+            quote.push_quote(substate.values)
         })
     }
 }

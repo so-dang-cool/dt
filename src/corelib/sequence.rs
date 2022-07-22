@@ -70,14 +70,14 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             quote.push_quote(results)
         }),
         RailDef::on_state("filter", &["quote", "quote"], &["quote"], |state| {
-            let (predicate, quote) = state.quote.clone().pop_quote("filter");
+            let (predicate, quote) = state.values.clone().pop_quote("filter");
             let (sequence, quote) = quote.pop_quote("filter");
             let mut results = Stack::default();
 
             for term in sequence.values {
                 let substate = state.jail_state(Stack::default().push(term.clone()));
                 let substate = run_quote(&predicate, substate);
-                let (keep, _) = substate.quote.pop_bool("filter");
+                let (keep, _) = substate.values.pop_bool("filter");
                 if keep {
                     results = results.push(term);
                 }
@@ -97,14 +97,14 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                     results = results.push(term.clone());
                     let substate = state.jail_state(results);
                     let substate = run_quote(&transform, substate);
-                    results = substate.quote;
+                    results = substate.values;
                 }
 
                 quote.push_quote(results)
             })
         }),
         RailDef::on_state("each!", &["quote", "quote"], &[], |state| {
-            let (command, quote) = state.quote.clone().pop_quote("each");
+            let (command, quote) = state.values.clone().pop_quote("each");
             let (sequence, quote) = quote.pop_quote("each");
 
             let state = state.replace_quote(quote);
@@ -115,7 +115,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
         RailDef::on_jailed_state("each", &["quote", "quote"], &[], |state| {
-            let (command, quote) = state.quote.clone().pop_quote("each");
+            let (command, quote) = state.values.clone().pop_quote("each");
             let (sequence, quote) = quote.pop_quote("each");
 
             let state = state.replace_quote(quote);

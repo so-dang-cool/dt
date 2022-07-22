@@ -27,7 +27,7 @@ pub fn state_with_libs(skip_stdlib: bool, lib_list: Option<String>) -> RailState
 #[derive(Clone, Debug)]
 pub struct RailState {
     // TODO: Provide update functions and make these private
-    pub quote: Stack,
+    pub values: Stack,
     pub dictionary: Dictionary,
     pub context: Context,
 }
@@ -37,7 +37,7 @@ impl RailState {
         let quote = Stack::default();
         let dictionary = corelib_dictionary();
         RailState {
-            quote,
+            values: quote,
             dictionary,
             context,
         }
@@ -48,7 +48,7 @@ impl RailState {
     }
 
     pub fn get_def(&self, name: &str) -> Option<RailDef> {
-        self.quote
+        self.values
             .shadows
             .get(name)
             .or_else(|| self.dictionary.get(name))
@@ -64,7 +64,7 @@ impl RailState {
         S: Into<String>,
     {
         let term: String = term.into();
-        let mut quote = self.quote.clone();
+        let mut quote = self.values.clone();
         let dictionary = self.dictionary.clone();
 
         // Quotations
@@ -107,7 +107,7 @@ impl RailState {
         }
 
         RailState {
-            quote,
+            values: quote,
             dictionary,
             context: self.context,
         }
@@ -115,7 +115,7 @@ impl RailState {
 
     pub fn update_quote(self, update: impl Fn(Stack) -> Stack) -> RailState {
         RailState {
-            quote: update(self.quote),
+            values: update(self.values),
             dictionary: self.dictionary,
             context: self.context,
         }
@@ -125,9 +125,9 @@ impl RailState {
         self,
         update: impl Fn(Stack, Dictionary) -> (Stack, Dictionary),
     ) -> RailState {
-        let (quote, dictionary) = update(self.quote, self.dictionary);
+        let (quote, dictionary) = update(self.values, self.dictionary);
         RailState {
-            quote,
+            values: quote,
             dictionary,
             context: self.context,
         }
@@ -135,7 +135,7 @@ impl RailState {
 
     pub fn replace_quote(self, quote: Stack) -> RailState {
         RailState {
-            quote,
+            values: quote,
             dictionary: self.dictionary,
             context: self.context,
         }
@@ -143,7 +143,7 @@ impl RailState {
 
     pub fn replace_dictionary(self, dictionary: Dictionary) -> RailState {
         RailState {
-            quote: self.quote,
+            values: self.values,
             dictionary,
             context: self.context,
         }
@@ -153,7 +153,7 @@ impl RailState {
     /// dictionary to parent contexts.
     pub fn jail_state(&self, quote: Stack) -> RailState {
         RailState {
-            quote,
+            values: quote,
             dictionary: self.dictionary.clone(),
             context: Context::None,
         }
@@ -161,7 +161,7 @@ impl RailState {
 
     pub fn deeper(self) -> RailState {
         RailState {
-            quote: Stack::default(),
+            values: Stack::default(),
             dictionary: self.dictionary.clone(),
             context: Context::Quotation {
                 parent_state: Box::new(self),
@@ -176,7 +176,7 @@ impl RailState {
             Context::None => panic!("Can't escape"),
         };
 
-        let quote = state.quote.clone().push_quote(self.quote);
+        let quote = state.values.clone().push_quote(self.values);
         state.replace_quote(quote)
     }
 }
@@ -554,14 +554,14 @@ impl RailDef<'_> {
     }
 
     pub fn act(&mut self, state: RailState) -> RailState {
-        if state.quote.len() < self.consumes.len() {
+        if state.values.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
             log_warn(format!(
                 "Underflow for \"{}\" (takes: {}, gives: {}). State: {}",
                 self.name,
                 self.consumes.join(" "),
                 self.produces.join(" "),
-                state.quote
+                state.values
             ));
             return state;
         }
