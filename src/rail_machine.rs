@@ -28,17 +28,17 @@ pub fn state_with_libs(skip_stdlib: bool, lib_list: Option<String>) -> RailState
 pub struct RailState {
     // TODO: Provide update functions and make these private
     pub values: Stack,
-    pub dictionary: Dictionary,
+    pub definitions: Dictionary,
     pub context: Context,
 }
 
 impl RailState {
     pub fn new(context: Context) -> RailState {
         let values = Stack::default();
-        let dictionary = corelib_dictionary();
+        let definitions = corelib_dictionary();
         RailState {
             values,
-            dictionary,
+            definitions,
             context,
         }
     }
@@ -51,7 +51,7 @@ impl RailState {
         self.values
             .shadows
             .get(name)
-            .or_else(|| self.dictionary.get(name))
+            .or_else(|| self.definitions.get(name))
             .cloned()
     }
 
@@ -65,7 +65,7 @@ impl RailState {
     {
         let term: String = term.into();
         let mut values = self.values.clone();
-        let dictionary = self.dictionary.clone();
+        let definitions = self.definitions.clone();
 
         // Quotations
         if term == "[" {
@@ -108,7 +108,7 @@ impl RailState {
 
         RailState {
             values,
-            dictionary,
+            definitions,
             context: self.context,
         }
     }
@@ -116,19 +116,19 @@ impl RailState {
     pub fn update_values(self, update: impl Fn(Stack) -> Stack) -> RailState {
         RailState {
             values: update(self.values),
-            dictionary: self.dictionary,
+            definitions: self.definitions,
             context: self.context,
         }
     }
 
-    pub fn update_values_and_dict(
+    pub fn update_values_and_defs(
         self,
         update: impl Fn(Stack, Dictionary) -> (Stack, Dictionary),
     ) -> RailState {
-        let (values, dictionary) = update(self.values, self.dictionary);
+        let (values, definitions) = update(self.values, self.definitions);
         RailState {
             values,
-            dictionary,
+            definitions,
             context: self.context,
         }
     }
@@ -136,15 +136,15 @@ impl RailState {
     pub fn replace_values(self, values: Stack) -> RailState {
         RailState {
             values,
-            dictionary: self.dictionary,
+            definitions: self.definitions,
             context: self.context,
         }
     }
 
-    pub fn replace_dictionary(self, dictionary: Dictionary) -> RailState {
+    pub fn replace_definitions(self, definitions: Dictionary) -> RailState {
         RailState {
             values: self.values,
-            dictionary,
+            definitions,
             context: self.context,
         }
     }
@@ -154,7 +154,7 @@ impl RailState {
     pub fn jail_state(&self, values: Stack) -> RailState {
         RailState {
             values,
-            dictionary: self.dictionary.clone(),
+            definitions: self.definitions.clone(),
             context: Context::None,
         }
     }
@@ -162,7 +162,7 @@ impl RailState {
     pub fn deeper(self) -> RailState {
         RailState {
             values: Stack::default(),
-            dictionary: self.dictionary.clone(),
+            definitions: self.definitions.clone(),
             context: Context::Quotation {
                 parent_state: Box::new(self),
             },
@@ -507,9 +507,9 @@ impl RailDef<'_> {
             consumes,
             produces,
             action: RailAction::Builtin(Arc::new(move |state| {
-                let dictionary = state.dictionary.clone();
+                let definitions = state.definitions.clone();
                 let substate = state_action(state);
-                substate.replace_dictionary(dictionary)
+                substate.replace_definitions(definitions)
             })),
         }
     }

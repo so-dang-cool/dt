@@ -120,12 +120,12 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             let state = state.replace_values(quote);
 
-            let dictionary = state.dictionary.clone();
+            let definitions = state.definitions.clone();
 
             sequence.values.into_iter().fold(state, |state, value| {
                 let state = state
                     .update_values(|quote| quote.push(value.clone()))
-                    .replace_dictionary(dictionary.clone());
+                    .replace_definitions(definitions.clone());
                 run_quote(&command, state)
             })
         }),

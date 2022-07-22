@@ -7,22 +7,22 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_state("doin!", &["quote", "quote|command"], &["..."], doin()),
         RailDef::on_jailed_state("doin", &["quote", "quote|command"], &["..."], doin()),
         RailDef::on_state("def!", &["quote", "string|command"], &[], |state| {
-            state.update_values_and_dict(|quote, dictionary| {
-                let mut dictionary = dictionary;
+            state.update_values_and_defs(|quote, definitions| {
+                let mut definitions = definitions;
                 let (name, quote) = quote.pop();
                 let name = if let Some(name) = get_command_name(&name) {
                     name
                 } else {
                     rail_machine::log_warn(format!("{} is not a string or command", name));
-                    return (quote, dictionary);
+                    return (quote, definitions);
                 };
                 let (commands, quote) = quote.pop_quote("def");
-                if dictionary.contains_key(&name) {
+                if definitions.contains_key(&name) {
                     rail_machine::log_warn(format!("{} was already defined.", name));
-                    return (quote, dictionary);
+                    return (quote, definitions);
                 }
-                dictionary.insert(name.clone(), RailDef::from_quote(&name, commands));
-                (quote, dictionary)
+                definitions.insert(name.clone(), RailDef::from_quote(&name, commands));
+                (quote, definitions)
             })
         }),
         RailDef::on_state("def?", &["string|command"], &["bool"], |state| {
@@ -34,7 +34,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                     rail_machine::log_warn(format!("{} is not a string or command", name));
                     return quote;
                 };
-                quote.push_bool(state.dictionary.contains_key(&name))
+                quote.push_bool(state.definitions.contains_key(&name))
             })
         }),
     ]
