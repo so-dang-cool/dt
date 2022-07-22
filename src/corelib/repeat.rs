@@ -11,7 +11,7 @@ fn times() -> impl Fn(RailState) -> RailState {
     |state| {
         let (n, quote) = state.values.clone().pop_i64("times");
         let (commands, quote) = quote.pop_quote("times");
-        let state = state.replace_quote(quote);
+        let state = state.replace_values(quote);
         (0..n).fold(state, |state, _n| run_quote(&commands, state))
     }
 }

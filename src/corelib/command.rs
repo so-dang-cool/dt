@@ -7,7 +7,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_state("doin!", &["quote", "quote|command"], &["..."], doin()),
         RailDef::on_jailed_state("doin", &["quote", "quote|command"], &["..."], doin()),
         RailDef::on_state("def!", &["quote", "string|command"], &[], |state| {
-            state.update_quote_and_dict(|quote, dictionary| {
+            state.update_values_and_dict(|quote, dictionary| {
                 let mut dictionary = dictionary;
                 let (name, quote) = quote.pop();
                 let name = if let Some(name) = get_command_name(&name) {
@@ -26,7 +26,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
         RailDef::on_state("def?", &["string|command"], &["bool"], |state| {
-            state.clone().update_quote(|quote| {
+            state.clone().update_values(|quote| {
                 let (name, quote) = quote.pop();
                 let name = if let Some(name) = get_command_name(&name) {
                     name
@@ -43,7 +43,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 fn do_it() -> impl Fn(RailState) -> RailState {
     |state| {
         let (commands, quote) = state.values.clone().pop();
-        let state = state.replace_quote(quote);
+        let state = state.replace_values(quote);
 
         match commands {
             RailVal::Quote(quote) => run_quote(&quote, state),
@@ -61,7 +61,7 @@ fn do_it() -> impl Fn(RailState) -> RailState {
 
 fn doin() -> impl Fn(RailState) -> RailState {
     |state| {
-        state.clone().update_quote(|quote| {
+        state.clone().update_values(|quote| {
             let (commands, quote) = quote.pop_quote("doin");
             let (targets, quote) = quote.pop_quote("doin");
 

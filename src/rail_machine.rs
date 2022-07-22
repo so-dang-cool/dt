@@ -34,10 +34,10 @@ pub struct RailState {
 
 impl RailState {
     pub fn new(context: Context) -> RailState {
-        let quote = Stack::default();
+        let values = Stack::default();
         let dictionary = corelib_dictionary();
         RailState {
-            values: quote,
+            values,
             dictionary,
             context,
         }
@@ -64,7 +64,7 @@ impl RailState {
         S: Into<String>,
     {
         let term: String = term.into();
-        let mut quote = self.values.clone();
+        let mut values = self.values.clone();
         let dictionary = self.dictionary.clone();
 
         // Quotations
@@ -78,25 +78,25 @@ impl RailState {
             if self.in_main() {
                 return op.clone().act(self.clone());
             } else {
-                quote = quote.push_command(&op.name);
+                values = values.push_command(&op.name);
             }
         }
         // Strings
         else if term.starts_with('"') && term.ends_with('"') {
             let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-            quote = quote.push_string(term.to_string());
+            values = values.push_string(term.to_string());
         }
         // Integers
         else if let Ok(i) = term.parse::<i64>() {
-            quote = quote.push_i64(i);
+            values = values.push_i64(i);
         }
         // Floating point numbers
         else if let Ok(n) = term.parse::<f64>() {
-            quote = quote.push_f64(n);
+            values = values.push_f64(n);
         }
         // Unknown
         else if !self.in_main() {
-            quote = quote.push_command(&term)
+            values = values.push_command(&term)
         } else {
             // TODO: Use a logging library? Log levels? Exit in a strict mode?
             // TODO: Have/get details on filename/source, line number, character number
@@ -107,13 +107,13 @@ impl RailState {
         }
 
         RailState {
-            values: quote,
+            values,
             dictionary,
             context: self.context,
         }
     }
 
-    pub fn update_quote(self, update: impl Fn(Stack) -> Stack) -> RailState {
+    pub fn update_values(self, update: impl Fn(Stack) -> Stack) -> RailState {
         RailState {
             values: update(self.values),
             dictionary: self.dictionary,
@@ -121,21 +121,21 @@ impl RailState {
         }
     }
 
-    pub fn update_quote_and_dict(
+    pub fn update_values_and_dict(
         self,
         update: impl Fn(Stack, Dictionary) -> (Stack, Dictionary),
     ) -> RailState {
-        let (quote, dictionary) = update(self.values, self.dictionary);
+        let (values, dictionary) = update(self.values, self.dictionary);
         RailState {
-            values: quote,
+            values,
             dictionary,
             context: self.context,
         }
     }
 
-    pub fn replace_quote(self, quote: Stack) -> RailState {
+    pub fn replace_values(self, values: Stack) -> RailState {
         RailState {
-            values: quote,
+            values,
             dictionary: self.dictionary,
             context: self.context,
         }
@@ -151,9 +151,9 @@ impl RailState {
 
     /// A substate that will take a parent dictionary, but never leak its own
     /// dictionary to parent contexts.
-    pub fn jail_state(&self, quote: Stack) -> RailState {
+    pub fn jail_state(&self, values: Stack) -> RailState {
         RailState {
-            values: quote,
+            values,
             dictionary: self.dictionary.clone(),
             context: Context::None,
         }
@@ -176,8 +176,8 @@ impl RailState {
             Context::None => panic!("Can't escape"),
         };
 
-        let quote = state.values.clone().push_quote(self.values);
-        state.replace_quote(quote)
+        let values = state.values.clone().push_quote(self.values);
+        state.replace_values(values)
     }
 }
 
@@ -524,7 +524,7 @@ impl RailDef<'_> {
         F: Fn(Stack) -> Stack + 'a,
     {
         RailDef::on_state(name, consumes, produces, move |state| {
-            state.update_quote(&quote_action)
+            state.update_values(&quote_action)
         })
     }
 
@@ -600,7 +600,7 @@ pub fn run_quote(quote: &Stack, state: RailState) -> RailState {
                     state.clone()
                 }
             }
-            _ => state.update_quote(|quote| quote.push(rail_val.clone())),
+            _ => state.update_values(|quote| quote.push(rail_val.clone())),
         })
 }
 

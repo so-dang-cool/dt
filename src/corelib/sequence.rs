@@ -85,10 +85,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             let quote = quote.push_quote(results);
 
-            state.replace_quote(quote)
+            state.replace_values(quote)
         }),
         RailDef::on_state("map", &["quote", "quote"], &["quote"], |state| {
-            state.clone().update_quote(move |quote| {
+            state.clone().update_values(move |quote| {
                 let (transform, quote) = quote.pop_quote("map");
                 let (sequence, quote) = quote.pop_quote("map");
                 let mut results = Stack::default();
@@ -107,10 +107,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (command, quote) = state.values.clone().pop_quote("each");
             let (sequence, quote) = quote.pop_quote("each");
 
-            let state = state.replace_quote(quote);
+            let state = state.replace_values(quote);
 
             sequence.values.into_iter().fold(state, |state, value| {
-                let state = state.update_quote(|quote| quote.push(value.clone()));
+                let state = state.update_values(|quote| quote.push(value.clone()));
                 run_quote(&command, state)
             })
         }),
@@ -118,13 +118,13 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (command, quote) = state.values.clone().pop_quote("each");
             let (sequence, quote) = quote.pop_quote("each");
 
-            let state = state.replace_quote(quote);
+            let state = state.replace_values(quote);
 
             let dictionary = state.dictionary.clone();
 
             sequence.values.into_iter().fold(state, |state, value| {
                 let state = state
-                    .update_quote(|quote| quote.push(value.clone()))
+                    .update_values(|quote| quote.push(value.clone()))
                     .replace_dictionary(dictionary.clone());
                 run_quote(&command, state)
             })
