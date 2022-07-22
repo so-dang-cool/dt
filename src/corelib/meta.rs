@@ -1,4 +1,4 @@
-use crate::rail_machine::{Quote, RailDef};
+use crate::rail_machine::{RailDef, Stack};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -12,14 +12,14 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 defs.sort();
                 let defs = defs
                     .iter()
-                    .fold(Quote::default(), |quote, def| quote.push_str(def));
+                    .fold(Stack::default(), |quote, def| quote.push_str(def));
                 let quote = quote.push_quote(defs);
                 (quote, dictionary)
             })
         }),
         // TODO: In typing, consumes of 'quote-all' should be something that means 0-to-many
         RailDef::on_quote("quote-all", &[], &["quote"], |quote| {
-            let wrapper = Quote::default();
+            let wrapper = Stack::default();
             wrapper.push_quote(quote)
         }),
     ]

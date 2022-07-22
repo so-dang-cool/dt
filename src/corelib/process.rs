@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::rail_machine::{self, Quote, RailDef, RailVal};
+use crate::rail_machine::{self, RailDef, RailVal, Stack};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -60,7 +60,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let lines = std::io::stdin()
                 .lines()
                 .filter_map(|line| line.ok())
-                .fold(Quote::default(), |quote, line| quote.push_string(line));
+                .fold(Stack::default(), |quote, line| quote.push_string(line));
             quote.push_quote(lines)
         }),
     ]

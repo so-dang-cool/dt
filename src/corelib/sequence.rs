@@ -1,4 +1,4 @@
-use crate::rail_machine::{self, run_quote, Quote, RailDef, RailVal};
+use crate::rail_machine::{self, run_quote, RailDef, RailVal, Stack};
 
 // TODO: These should all work for both String and Quote? Should String also be a Quote? Typeclasses?
 pub fn builtins() -> Vec<RailDef<'static>> {
@@ -22,7 +22,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         }),
         RailDef::on_quote("quote", &["a"], &["quote"], |quote| {
             let (a, quote) = quote.pop();
-            let wrapper = Quote::default();
+            let wrapper = Stack::default();
             let wrapper = wrapper.push(a);
             quote.push_quote(wrapper)
         }),
@@ -63,7 +63,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_quote("concat", &["quote", "quote"], &["quote"], |quote| {
             let (suffix, quote) = quote.pop_quote("concat");
             let (prefix, quote) = quote.pop_quote("concat");
-            let mut results = Quote::default();
+            let mut results = Stack::default();
             for term in prefix.values.into_iter().chain(suffix.values) {
                 results = results.push(term);
             }
@@ -72,10 +72,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_state("filter", &["quote", "quote"], &["quote"], |state| {
             let (predicate, quote) = state.quote.clone().pop_quote("filter");
             let (sequence, quote) = quote.pop_quote("filter");
-            let mut results = Quote::default();
+            let mut results = Stack::default();
 
             for term in sequence.values {
-                let substate = state.jail_state(Quote::default().push(term.clone()));
+                let substate = state.jail_state(Stack::default().push(term.clone()));
                 let substate = run_quote(&predicate, substate);
                 let (keep, _) = substate.quote.pop_bool("filter");
                 if keep {
@@ -91,7 +91,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             state.clone().update_quote(move |quote| {
                 let (transform, quote) = quote.pop_quote("map");
                 let (sequence, quote) = quote.pop_quote("map");
-                let mut results = Quote::default();
+                let mut results = Stack::default();
 
                 for term in sequence.values {
                     results = results.push(term.clone());

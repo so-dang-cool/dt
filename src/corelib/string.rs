@@ -1,4 +1,4 @@
-use crate::rail_machine::{Quote, RailDef};
+use crate::rail_machine::{RailDef, Stack};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -29,15 +29,15 @@ pub fn builtins() -> Vec<RailDef<'static>> {
     ]
 }
 
-fn split(s: String, delimiter: &str) -> Quote {
-    let mut words = Quote::default();
+fn split(s: String, delimiter: &str) -> Stack {
+    let mut words = Stack::default();
     for s in s.split(delimiter) {
         words = words.push_str(s);
     }
     words
 }
 
-fn join(context: &str, words: Quote, delimiter: &str) -> String {
+fn join(context: &str, words: Stack, delimiter: &str) -> String {
     let mut s = vec![];
     let mut words = words;
     while !words.is_empty() {
