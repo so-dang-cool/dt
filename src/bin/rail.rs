@@ -13,7 +13,7 @@ pub fn main() {
 
 #[derive(Parser)]
 #[clap(name = "rail", version = RAIL_VERSION)]
-/// A straightforward programming language
+/// Rail Evaluator. A straightforward programming language
 struct RailEvaluator {
     #[clap(long)]
     /// Disable loading the Rail standard library.

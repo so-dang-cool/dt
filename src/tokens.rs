@@ -2,7 +2,7 @@ use std::{fmt::Debug, fs, path::Path};
 
 use regex::Regex;
 
-use crate::{RAIL_VERSION, rail_machine};
+use crate::{rail_machine, rail_lib_path};
 
 fn tokenize(line: &str) -> Vec<String> {
     // TODO: Validate that a line does not contain unterminated strings.
@@ -33,8 +33,7 @@ where
 }
 
 pub fn from_stdlib() -> Vec<String> {
-    let path = format!("~/local/share/rail/{}/stdlib/all.txt", RAIL_VERSION);
-    let path = Path::new(&path);
+    let path = rail_lib_path().join("rail-src/stdlib/all.txt");
 
     if path.is_file() {
         return from_lib_list(path);
