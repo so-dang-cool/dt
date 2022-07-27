@@ -14,15 +14,14 @@ versions is guaranteed.
 ```
 $ rail i
 rail 0.18.1
-> 1 1 + print
+> 1 1 + p
 2
 > [ 1 + ] "inc" def
-> [ dup print ] "p" def
-> 1 [ p inc ] 2 times print
+> 1 [ dup p inc ] 2 times p
 1
 2
 3
-> [ [ false ] [ "bye" ] [ true ] [ "hi" ] ] opt print
+> [ [ false ] [ "bye" ] [ true ] [ "hi" ] ] opt p
 "hi"
 ```
 
@@ -32,6 +31,7 @@ For now...
 
 ```shell
 $ cargo install rail-lang
+$ railup bootstrap
 ```
 
 ## Usage
