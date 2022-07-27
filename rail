@@ -4,5 +4,6 @@ set -eu
 
 cargo run --bin "$(basename "$0")" \
     -- \
-    --lib-list rail-src/extras.txt \
+    --no-stdlib \
+    --lib-list rail-src/dev.txt \
     "$@"

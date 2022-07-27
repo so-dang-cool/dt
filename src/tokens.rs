@@ -2,6 +2,8 @@ use std::{fmt::Debug, fs, path::Path};
 
 use regex::Regex;
 
+use crate::{RAIL_VERSION, rail_machine};
+
 fn tokenize(line: &str) -> Vec<String> {
     // TODO: Validate that a line does not contain unterminated strings.
     // TODO: Allow for string escapes for quotes, newlines, etc
@@ -28,6 +30,20 @@ where
     let source = fs::read_to_string(path).expect(&error_msg);
 
     from_rail_source(source)
+}
+
+pub fn from_stdlib() -> Vec<String> {
+    let path = format!("~/local/share/rail/{}/stdlib/all.txt", RAIL_VERSION);
+    let path = Path::new(&path);
+
+    if path.is_file() {
+        return from_lib_list(path);
+    }
+
+    let message = format!("Unable to load stdlib. Wanted to find it at {:?}", path);
+    rail_machine::log_warn(message);
+
+    vec![]
 }
 
 pub fn from_lib_list<P>(path: P) -> Vec<String>

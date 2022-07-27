@@ -12,7 +12,7 @@ pub fn state_with_libs(skip_stdlib: bool, lib_list: Option<String>) -> RailState
     let state = if skip_stdlib {
         state
     } else {
-        let tokens = tokens::from_lib_list("rail-src/stdlib/all.txt");
+        let tokens = tokens::from_stdlib();
         state.run_tokens(tokens)
     };
 
