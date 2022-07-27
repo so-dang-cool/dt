@@ -665,18 +665,6 @@ impl RailDef<'_> {
         }
     }
 
-    pub fn on_quote<'a, F>(
-        name: &str,
-        consumes: &'a [&'a str],
-        produces: &'a [&'a str],
-        quote_action: F,
-    ) -> RailDef<'a>
-    where
-        F: Fn(RailState) -> RailState + 'a,
-    {
-        RailDef::on_state(name, consumes, produces, quote_action)
-    }
-
     pub fn contextless<'a, F>(
         name: &str,
         consumes: &'a [&'a str],

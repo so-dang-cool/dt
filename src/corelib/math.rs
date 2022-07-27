@@ -9,10 +9,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         binary_numeric_op("*", |a, b| a * b, |a, b| a * b),
         binary_numeric_op("/", |a, b| a / b, |a, b| a / b),
         binary_numeric_op("mod", |a, b| a % b, |a, b| a % b),
-        RailDef::on_quote("int-max", &[], &["i64"], |quote| quote.push_i64(i64::MAX)),
-        RailDef::on_quote("int-min", &[], &["i64"], |quote| quote.push_i64(i64::MIN)),
-        RailDef::on_quote("float-max", &[], &["f64"], |quote| quote.push_f64(f64::MAX)),
-        RailDef::on_quote("float-min", &[], &["f64"], |quote| quote.push_f64(f64::MIN)),
+        RailDef::on_state("int-max", &[], &["i64"], |quote| quote.push_i64(i64::MAX)),
+        RailDef::on_state("int-min", &[], &["i64"], |quote| quote.push_i64(i64::MIN)),
+        RailDef::on_state("float-max", &[], &["f64"], |quote| quote.push_f64(f64::MAX)),
+        RailDef::on_state("float-min", &[], &["f64"], |quote| quote.push_f64(f64::MIN)),
     ]
 }
 
@@ -21,7 +21,7 @@ where
     F: Fn(f64) -> f64 + Sized + 'a,
     G: Fn(i64) -> i64 + Sized + 'a,
 {
-    RailDef::on_quote(name, &["i64"], &["i64"], move |quote| {
+    RailDef::on_state(name, &["i64"], &["i64"], move |quote| {
         let (n, quote) = quote.pop();
         match n {
             RailVal::I64(n) => quote.push_i64(i64_op(n)),
@@ -42,7 +42,7 @@ where
     F: Fn(f64, f64) -> f64 + Sized + 'a,
     G: Fn(i64, i64) -> i64 + Sized + 'a,
 {
-    RailDef::on_quote(name, &["num", "num"], &["num"], move |quote| {
+    RailDef::on_state(name, &["num", "num"], &["num"], move |quote| {
         let (b, quote) = quote.pop();
         let (a, quote) = quote.pop();
 

@@ -15,7 +15,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::contextless("clear", &[], &[], || {
             clearscreen::clear().expect("Unable to clear screen")
         }),
-        RailDef::on_quote("version", &[], &["string"], |quote| {
+        RailDef::on_state("version", &[], &["string"], |quote| {
             quote.push_str(RAIL_VERSION)
         }),
     ]
@@ -25,7 +25,7 @@ fn printer<'a, P>(name: &str, p: &'a P) -> RailDef<'a>
 where
     P: Fn(&dyn Display) + 'a,
 {
-    RailDef::on_quote(name, &["a"], &[], move |quote| {
+    RailDef::on_state(name, &["a"], &[], move |quote| {
         let (a, quote) = quote.pop();
         match a {
             RailVal::String(a) => p(&a),

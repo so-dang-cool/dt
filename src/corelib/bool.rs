@@ -4,16 +4,16 @@ pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
         push_bool("true", true),
         push_bool("false", false),
-        RailDef::on_quote("not", &["bool"], &["bool"], |quote| {
+        RailDef::on_state("not", &["bool"], &["bool"], |quote| {
             let (b, quote) = quote.pop_bool("not");
             quote.push_bool(!b)
         }),
-        RailDef::on_quote("or", &["bool", "bool"], &["bool"], |quote| {
+        RailDef::on_state("or", &["bool", "bool"], &["bool"], |quote| {
             let (b2, quote) = quote.pop_bool("or");
             let (b1, quote) = quote.pop_bool("or");
             quote.push_bool(b1 || b2)
         }),
-        RailDef::on_quote("and", &["bool", "bool"], &["bool"], |quote| {
+        RailDef::on_state("and", &["bool", "bool"], &["bool"], |quote| {
             let (b2, quote) = quote.pop_bool("and");
             let (b1, quote) = quote.pop_bool("and");
             quote.push_bool(b1 && b2)
@@ -28,7 +28,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 }
 
 fn push_bool(name: &str, b: bool) -> RailDef<'_> {
-    RailDef::on_quote(name, &[], &["bool"], move |quote| quote.push_bool(b))
+    RailDef::on_state(name, &[], &["bool"], move |quote| quote.push_bool(b))
 }
 
 enum Equality {
@@ -37,7 +37,7 @@ enum Equality {
 }
 
 fn equality(name: &str, eq: Equality) -> RailDef<'_> {
-    RailDef::on_quote(name, &["a", "a"], &["bool"], move |quote| {
+    RailDef::on_state(name, &["a", "a"], &["bool"], move |quote| {
         let (b, quote) = quote.pop();
         let (a, quote) = quote.pop();
 
@@ -57,7 +57,7 @@ where
     F: Fn(f64, f64) -> bool + Sized + 'a,
     G: Fn(i64, i64) -> bool + Sized + 'a,
 {
-    RailDef::on_quote(name, &["num", "num"], &["bool"], move |quote| {
+    RailDef::on_state(name, &["num", "num"], &["bool"], move |quote| {
         let (b, quote) = quote.pop();
         let (a, quote) = quote.pop();
 

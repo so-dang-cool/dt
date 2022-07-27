@@ -2,15 +2,15 @@ use crate::rail_machine::{RailDef, RailState, Stack};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_quote("upcase", &["string"], &["string"], |quote| {
+        RailDef::on_state("upcase", &["string"], &["string"], |quote| {
             let (s, quote) = quote.pop_string("upcase");
             quote.push_string(s.to_uppercase())
         }),
-        RailDef::on_quote("downcase", &["string"], &["string"], |quote| {
+        RailDef::on_state("downcase", &["string"], &["string"], |quote| {
             let (s, quote) = quote.pop_string("downcase");
             quote.push_string(s.to_lowercase())
         }),
-        RailDef::on_quote("trim", &["string"], &["string"], |quote| {
+        RailDef::on_state("trim", &["string"], &["string"], |quote| {
             let (s, quote) = quote.pop_string("trim");
             quote.push_string(s.trim().to_string())
         }),
@@ -23,7 +23,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
         // TODO: Should this also work on Quotes?
-        RailDef::on_quote("join", &["quote", "string"], &["string"], |quote| {
+        RailDef::on_state("join", &["quote", "string"], &["string"], |quote| {
             let (delimiter, quote) = quote.pop_string("join");
             let (strings, quote) = quote.pop_quote("join");
             quote.push_string(join("join", strings.values, &delimiter))

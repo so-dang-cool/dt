@@ -2,7 +2,7 @@ use crate::rail_machine::RailDef;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_quote("type", &["a"], &["string"], |quote| {
+        RailDef::on_state("type", &["a"], &["string"], |quote| {
             let (thing, quote) = quote.pop();
             quote.push_string(thing.type_name())
         }),
@@ -18,7 +18,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
         // TODO: In typing, consumes of 'quote-all' should be something that means 0-to-many
-        RailDef::on_quote("quote-all", &[], &["quote"], |quote| {
+        RailDef::on_state("quote-all", &[], &["quote"], |quote| {
             let wrapper = quote.child();
             wrapper.push_quote(quote)
         }),
