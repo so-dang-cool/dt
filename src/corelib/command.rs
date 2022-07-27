@@ -68,7 +68,7 @@ fn doin() -> impl Fn(RailState) -> RailState {
             let substate = state.jail_state(targets); // TODO: Really just need dictionaries.
             let substate = run_quote(&commands, substate);
 
-            quote.push_quote(substate.values)
+            quote.push_quote(substate)
         })
     }
 }

@@ -22,6 +22,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                     quote.push_string(dir)
                 },
             );
+            let files = quote.child().replace_values(files);
             quote.push_quote(files)
         }),
         RailDef::on_quote("pwd", &[], &["string"], |quote| {

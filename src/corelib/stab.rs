@@ -1,4 +1,4 @@
-use crate::rail_machine::{self, RailDef, Stack};
+use crate::rail_machine::{self, RailDef};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -11,15 +11,11 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             st.insert(k, v);
             quote.push_stab(st)
         }),
-        RailDef::on_quote("extract", &["stab", "string"], &["quote"], |quote| {
+        RailDef::on_quote("extract", &["stab", "string"], &["a"], |quote| {
             let (k, quote) = quote.pop_string("insert");
             let (st, quote) = quote.pop_stab("insert");
-            let result = if let Some(v) = st.get(&k) {
-                Stack::of(v.clone())
-            } else {
-                Stack::default()
-            };
-            quote.push_quote(result)
+            let result = st.get(&k).unwrap().to_owned();
+            quote.push(result)
         }),
     ]
 }

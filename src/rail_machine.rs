@@ -56,6 +56,14 @@ impl RailState {
             .cloned()
     }
 
+    pub fn child(&self) -> Self {
+        RailState {
+            values: Stack::default(),
+            definitions: self.definitions.clone(),
+            context: Context::None,
+        }
+    }
+
     pub fn run_tokens(self, tokens: Vec<String>) -> RailState {
         tokens.iter().fold(self, |state, term| state.run_term(term))
     }
@@ -152,9 +160,10 @@ impl RailState {
 
     /// A substate that will take a parent dictionary, but never leak its own
     /// dictionary to parent contexts.
-    pub fn jail_state(&self, values: Stack) -> RailState {
+    /// TODO: Probably a dumb approach.
+    pub fn jail_state(&self, parent: RailState) -> RailState {
         RailState {
-            values,
+            values: parent.values,
             definitions: self.definitions.clone(),
             context: Context::None,
         }
@@ -171,14 +180,152 @@ impl RailState {
     }
 
     pub fn higher(self) -> RailState {
-        let state = match self.context {
+        let state = match self.context.clone() {
             Context::Quotation { parent_state } => *parent_state,
             Context::Main => panic!("Can't escape main"),
             Context::None => panic!("Can't escape"),
         };
 
-        let values = state.values.clone().push_quote(self.values);
+        let values = state.values.clone().push_quote(self);
         state.replace_values(values)
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
+
+    pub fn reverse(self) -> Self {
+        self.update_values(|stack| stack.reverse())
+    }
+
+    pub fn push(self, term: RailVal) -> Self {
+        self.update_values(|stack| stack.push(term.clone()))
+    }
+
+    pub fn push_bool(self, b: bool) -> Self {
+        self.push(RailVal::Boolean(b))
+    }
+
+    pub fn push_i64(self, i: i64) -> Self {
+        self.push(RailVal::I64(i))
+    }
+
+    pub fn push_f64(self, n: f64) -> Self {
+        self.push(RailVal::F64(n))
+    }
+
+    pub fn push_command(self, op_name: &str) -> Self {
+        self.push(RailVal::Command(op_name.to_owned()))
+    }
+
+    pub fn push_quote(self, quote: RailState) -> Self {
+        self.push(RailVal::Quote(quote))
+    }
+
+    pub fn push_stab(self, st: Stab) -> Self {
+        self.push(RailVal::Stab(st))
+    }
+
+    pub fn push_string(self, s: String) -> Self {
+        self.push(RailVal::String(s))
+    }
+
+    pub fn push_str(self, s: &str) -> Self {
+        self.push(RailVal::String(s.to_owned()))
+    }
+
+    pub fn pop(self) -> (RailVal, Self) {
+        let (value, values) = self.values.clone().pop();
+        (value, self.replace_values(values))
+    }
+
+    pub fn pop_bool(self, context: &str) -> (bool, Self) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::Boolean(b) => (b, quote),
+            _ => panic!("{}", type_panic_msg(context, "bool", value)),
+        }
+    }
+
+    pub fn pop_i64(self, context: &str) -> (i64, Self) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::I64(n) => (n, quote),
+            rail_val => panic!("{}", type_panic_msg(context, "i64", rail_val)),
+        }
+    }
+
+    pub fn pop_f64(self, context: &str) -> (f64, Self) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::F64(n) => (n, quote),
+            rail_val => panic!("{}", type_panic_msg(context, "f64", rail_val)),
+        }
+    }
+
+    fn _pop_command(self, context: &str) -> (String, Self) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::Command(op) => (op, quote),
+            rail_val => panic!("{}", type_panic_msg(context, "command", rail_val)),
+        }
+    }
+
+    pub fn pop_quote(self, context: &str) -> (RailState, Self) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::Quote(subquote) => (subquote, quote),
+            // TODO: Can we coerce somehow?
+            // RailVal::Stab(s) => (stab_to_quote(s), quote),
+            rail_val => panic!("{}", type_panic_msg(context, "quote", rail_val)),
+        }
+    }
+
+    pub fn pop_stab(self, context: &str) -> (Stab, Self) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::Stab(s) => (s, quote),
+            // TODO: Can we coerce somehow?
+            // RailVal::Quote(q) => (quote_to_stab(q.values), quote),
+            rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
+        }
+    }
+
+    pub fn pop_stab_entry(self, context: &str) -> (String, RailVal, Self) {
+        let (original_entry, quote) = self.pop_quote(context);
+        let (value, entry) = original_entry.clone().values.pop();
+        let (key, entry) = entry.pop_string(context);
+
+        if !entry.is_empty() {
+            panic!(
+                "{}",
+                type_panic_msg(context, "[ string a ]", RailVal::Quote(original_entry))
+            );
+        }
+
+        (key, value, quote)
+    }
+
+    pub fn pop_string(self, context: &str) -> (String, Self) {
+        let (value, quote) = self.pop();
+        match value {
+            RailVal::String(s) => (s, quote),
+            rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
+        }
+    }
+
+    pub fn enqueue(self, value: RailVal) -> Self {
+        let values = self.values.clone().enqueue(value);
+        self.replace_values(values)
+    }
+
+    pub fn dequeue(self) -> (RailVal, Self) {
+        let (value, values) = self.values.clone().dequeue();
+        (value, self.replace_values(values))
     }
 }
 
@@ -202,7 +349,7 @@ pub enum RailVal {
     I64(i64),
     F64(f64),
     Command(String),
-    Quote(Stack),
+    Quote(RailState),
     String(String),
     Stab(Stab),
 }
@@ -218,7 +365,8 @@ impl PartialEq for RailVal {
             (F64(a), F64(b)) => a == b,
             (String(a), String(b)) => a == b,
             (Command(a), Command(b)) => a == b,
-            (Quote(a), Quote(b)) => a == b,
+            // TODO: For quotes, what about differing dictionaries? For simple lists they don't matter, for closures they do.
+            (Quote(a), Quote(b)) => a.values == b.values,
             (Stab(a), Stab(b)) => a == b,
             _ => false,
         }
@@ -249,7 +397,7 @@ impl std::fmt::Display for RailVal {
             I64(n) => write!(fmt, "{}", n),
             F64(n) => write!(fmt, "{}", n),
             Command(o) => write!(fmt, "{}", o),
-            Quote(q) => write!(fmt, "{}", q),
+            Quote(q) => write!(fmt, "{}", q.values),
             String(s) => write!(fmt, "\"{}\"", s.replace('\n', "\\n")),
             Stab(t) => {
                 write!(fmt, "[ ").unwrap();
@@ -329,7 +477,7 @@ impl Stack {
         self.push(RailVal::Command(op_name.to_owned()))
     }
 
-    pub fn push_quote(self, quote: Stack) -> Stack {
+    pub fn push_quote(self, quote: RailState) -> Stack {
         self.push(RailVal::Quote(quote))
     }
 
@@ -382,11 +530,12 @@ impl Stack {
         }
     }
 
-    pub fn pop_quote(self, context: &str) -> (Stack, Stack) {
+    pub fn pop_quote(self, context: &str) -> (RailState, Stack) {
         let (value, quote) = self.pop();
         match value {
             RailVal::Quote(subquote) => (subquote, quote),
-            RailVal::Stab(s) => (stab_to_quote(s), quote),
+            // TODO: Can we coerce somehow?
+            // RailVal::Stab(s) => (stab_to_quote(s), quote),
             rail_val => panic!("{}", type_panic_msg(context, "quote", rail_val)),
         }
     }
@@ -395,14 +544,15 @@ impl Stack {
         let (value, quote) = self.pop();
         match value {
             RailVal::Stab(s) => (s, quote),
-            RailVal::Quote(q) => (quote_to_stab(q), quote),
+            // TODO: Can we coerce somehow?
+            // RailVal::Quote(q) => (quote_to_stab(q.values), quote),
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
         }
     }
 
     pub fn pop_stab_entry(self, context: &str) -> (String, RailVal, Stack) {
         let (original_entry, quote) = self.pop_quote(context);
-        let (value, entry) = original_entry.clone().pop();
+        let (value, entry) = original_entry.clone().values.pop();
         let (key, entry) = entry.pop_string(context);
 
         if !entry.is_empty() {
@@ -473,7 +623,7 @@ pub struct RailDef<'a> {
 #[derive(Clone)]
 pub enum RailAction<'a> {
     Builtin(Arc<dyn Fn(RailState) -> RailState + 'a>),
-    Quotation(Stack),
+    Quotation(RailState),
 }
 
 impl RailDef<'_> {
@@ -522,11 +672,9 @@ impl RailDef<'_> {
         quote_action: F,
     ) -> RailDef<'a>
     where
-        F: Fn(Stack) -> Stack + 'a,
+        F: Fn(RailState) -> RailState + 'a,
     {
-        RailDef::on_state(name, consumes, produces, move |state| {
-            state.update_values(&quote_action)
-        })
+        RailDef::on_state(name, consumes, produces, quote_action)
     }
 
     pub fn contextless<'a, F>(
@@ -544,7 +692,7 @@ impl RailDef<'_> {
         })
     }
 
-    pub fn from_quote<'a>(name: &str, quote: Stack) -> RailDef<'a> {
+    pub fn from_quote<'a>(name: &str, quote: RailState) -> RailDef<'a> {
         // TODO: Infer quote effects
         RailDef {
             name: name.to_string(),
@@ -588,12 +736,14 @@ impl Debug for RailDef<'_> {
     }
 }
 
-pub fn run_quote(quote: &Stack, state: RailState) -> RailState {
+pub fn run_quote(quote: &RailState, state: RailState) -> RailState {
     quote
+        .values
         .values
         .iter()
         .fold(state, |state, rail_val| match rail_val {
             RailVal::Command(op_name) => {
+                // TODO: This should use the definitions from quote first then state second
                 if let Some(op) = state.get_def(&op_name.clone()) {
                     op.clone().act(state.clone())
                 } else {
@@ -607,25 +757,6 @@ pub fn run_quote(quote: &Stack, state: RailState) -> RailState {
 
 pub fn empty_dictionary() -> Dictionary {
     HashMap::new()
-}
-
-fn stab_to_quote(stab: Stab) -> Stack {
-    stab.into_iter()
-        .map(|(k, v)| Stack::default().push_string(k).push(v))
-        .fold(Stack::default(), |quote, entry| quote.push_quote(entry))
-}
-
-fn quote_to_stab(quote: Stack) -> Stab {
-    let mut quote = quote;
-    let mut stab = new_stab();
-
-    while !quote.is_empty() {
-        let (k, v, new_quote) = quote.pop_stab_entry("<coersion: quote to stab>");
-        quote = new_quote;
-        stab.insert(k, v);
-    }
-
-    stab
 }
 
 // The following are all formatting things for errors/warnings/panics.

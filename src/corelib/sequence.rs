@@ -1,4 +1,4 @@
-use crate::rail_machine::{self, run_quote, RailDef, RailVal, Stack};
+use crate::rail_machine::{self, run_quote, RailDef, RailVal};
 
 // TODO: These should all work for both String and Quote? Should String also be a Quote? Typeclasses?
 pub fn builtins() -> Vec<RailDef<'static>> {
@@ -22,13 +22,13 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         }),
         RailDef::on_quote("quote", &["a"], &["quote"], |quote| {
             let (a, quote) = quote.pop();
-            let wrapper = Stack::default();
+            let wrapper = quote.child();
             let wrapper = wrapper.push(a);
             quote.push_quote(wrapper)
         }),
         RailDef::on_quote("unquote", &["quote"], &["..."], |quote| {
             let (wrapper, mut quote) = quote.pop_quote("unquote");
-            for value in wrapper.values {
+            for value in wrapper.values.values {
                 quote = quote.push(value);
             }
             quote
@@ -63,8 +63,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_quote("concat", &["quote", "quote"], &["quote"], |quote| {
             let (suffix, quote) = quote.pop_quote("concat");
             let (prefix, quote) = quote.pop_quote("concat");
-            let mut results = Stack::default();
-            for term in prefix.values.into_iter().chain(suffix.values) {
+            let mut results = quote.child();
+            for term in prefix.values.values.into_iter().chain(suffix.values.values) {
                 results = results.push(term);
             }
             quote.push_quote(results)
@@ -72,10 +72,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_state("filter", &["quote", "quote"], &["quote"], |state| {
             let (predicate, quote) = state.values.clone().pop_quote("filter");
             let (sequence, quote) = quote.pop_quote("filter");
-            let mut results = Stack::default();
+            let mut results = state.child();
 
-            for term in sequence.values {
-                let substate = state.jail_state(Stack::default().push(term.clone()));
+            for term in sequence.values.values {
+                let substate = state.jail_state(state.child().push(term.clone()));
                 let substate = run_quote(&predicate, substate);
                 let (keep, _) = substate.values.pop_bool("filter");
                 if keep {
@@ -91,13 +91,13 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             state.clone().update_values(move |quote| {
                 let (transform, quote) = quote.pop_quote("map");
                 let (sequence, quote) = quote.pop_quote("map");
-                let mut results = Stack::default();
+                let mut results = state.child();
 
-                for term in sequence.values {
+                for term in sequence.values.values {
                     results = results.push(term.clone());
                     let substate = state.jail_state(results);
                     let substate = run_quote(&transform, substate);
-                    results = substate.values;
+                    results = substate;
                 }
 
                 quote.push_quote(results)
@@ -109,10 +109,14 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             let state = state.replace_values(quote);
 
-            sequence.values.into_iter().fold(state, |state, value| {
-                let state = state.update_values(|quote| quote.push(value.clone()));
-                run_quote(&command, state)
-            })
+            sequence
+                .values
+                .values
+                .into_iter()
+                .fold(state, |state, value| {
+                    let state = state.update_values(|quote| quote.push(value.clone()));
+                    run_quote(&command, state)
+                })
         }),
         RailDef::on_jailed_state("each", &["quote", "quote"], &[], |state| {
             let (command, quote) = state.values.clone().pop_quote("each");
@@ -122,12 +126,16 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             let definitions = state.definitions.clone();
 
-            sequence.values.into_iter().fold(state, |state, value| {
-                let state = state
-                    .update_values(|quote| quote.push(value.clone()))
-                    .replace_definitions(definitions.clone());
-                run_quote(&command, state)
-            })
+            sequence
+                .values
+                .values
+                .into_iter()
+                .fold(state, |state, value| {
+                    let state = state
+                        .update_values(|quote| quote.push(value.clone()))
+                        .replace_definitions(definitions.clone());
+                    run_quote(&command, state)
+                })
         }),
     ]
 }

@@ -3,10 +3,10 @@ use crate::rail_machine::{run_quote, RailDef};
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![RailDef::on_state("opt", &["quote"], &[], |state| {
         // TODO: All conditions and all actions must have the same quote effect.
-        let (mut options, quote) = state.values.clone().pop_quote("opt");
+        let (options, quote) = state.values.clone().pop_quote("opt");
         let mut state = state.replace_values(quote);
 
-        options.reverse();
+        let mut options = options.reverse();
 
         while !options.is_empty() {
             let (condition, opts) = options.pop_quote("opt");
