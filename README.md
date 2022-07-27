@@ -13,7 +13,7 @@ versions is guaranteed.
 
 ```
 $ rail i
-rail 0.18.0
+rail 0.18.1
 > 1 1 + print
 2
 > [ 1 + ] "inc" def
