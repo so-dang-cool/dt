@@ -158,17 +158,6 @@ impl RailState {
         }
     }
 
-    /// A substate that will take a parent dictionary, but never leak its own
-    /// dictionary to parent contexts.
-    /// TODO: Probably a dumb approach.
-    pub fn jail_state(&self, parent: RailState) -> RailState {
-        RailState {
-            values: parent.values,
-            definitions: self.definitions.clone(),
-            context: Context::None,
-        }
-    }
-
     pub fn deeper(self) -> RailState {
         RailState {
             values: Stack::default(),

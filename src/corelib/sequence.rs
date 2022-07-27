@@ -1,4 +1,4 @@
-use crate::rail_machine::{self, run_quote, RailDef, RailVal};
+use crate::rail_machine::{self, run_quote, RailDef, RailVal, Stack};
 
 // TODO: These should all work for both String and Quote? Should String also be a Quote? Typeclasses?
 pub fn builtins() -> Vec<RailDef<'static>> {
@@ -75,7 +75,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let mut results = state.child();
 
             for term in sequence.values.values {
-                let substate = state.jail_state(state.child().push(term.clone()));
+                let substate = state.child().replace_values(Stack::of(term.clone()));
                 let substate = run_quote(&predicate, substate);
                 let (keep, _) = substate.values.pop_bool("filter");
                 if keep {
@@ -95,7 +95,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
                 for term in sequence.values.values {
                     results = results.push(term.clone());
-                    let substate = state.jail_state(results);
+                    let substate = state.child().replace_values(results.values);
                     let substate = run_quote(&transform, substate);
                     results = substate;
                 }
