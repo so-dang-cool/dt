@@ -29,6 +29,7 @@ pub struct RailState {
     // TODO: Provide update functions and make these private
     pub values: Stack,
     pub definitions: Dictionary,
+    // TODO: Save parents at time of definition and at runtime
     pub context: Context,
 }
 
