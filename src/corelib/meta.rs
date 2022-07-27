@@ -7,7 +7,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             quote.push_string(thing.type_name())
         }),
         RailDef::on_state("defs", &[], &["quote"], |state| {
-            state.clone().update_values_and_defs(|quote, definitions| {
+            state.clone().update_stack_and_defs(|quote, definitions| {
                 let mut defs = definitions.keys().collect::<Vec<_>>();
                 defs.sort();
                 let defs = defs

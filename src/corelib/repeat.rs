@@ -9,9 +9,9 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
 fn times() -> impl Fn(RailState) -> RailState {
     |state| {
-        let (n, quote) = state.values.clone().pop_i64("times");
+        let (n, quote) = state.stack.clone().pop_i64("times");
         let (commands, quote) = quote.pop_quote("times");
-        let state = state.replace_values(quote);
+        let state = state.replace_stack(quote);
         (0..n).fold(state, |state, _n| run_quote(&commands, state))
     }
 }

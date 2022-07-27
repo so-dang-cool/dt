@@ -28,7 +28,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         }),
         RailDef::on_state("unquote", &["quote"], &["..."], |quote| {
             let (wrapper, mut quote) = quote.pop_quote("unquote");
-            for value in wrapper.values.values {
+            for value in wrapper.stack.values {
                 quote = quote.push(value);
             }
             quote
@@ -64,20 +64,20 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (suffix, quote) = quote.pop_quote("concat");
             let (prefix, quote) = quote.pop_quote("concat");
             let mut results = quote.child();
-            for term in prefix.values.values.into_iter().chain(suffix.values.values) {
+            for term in prefix.stack.values.into_iter().chain(suffix.stack.values) {
                 results = results.push(term);
             }
             quote.push_quote(results)
         }),
         RailDef::on_state("filter", &["quote", "quote"], &["quote"], |state| {
-            let (predicate, quote) = state.values.clone().pop_quote("filter");
+            let (predicate, quote) = state.stack.clone().pop_quote("filter");
             let (sequence, quote) = quote.pop_quote("filter");
             let mut results = state.child();
 
-            for term in sequence.values.values {
-                let substate = state.child().replace_values(Stack::of(term.clone()));
+            for term in sequence.stack.values {
+                let substate = state.child().replace_stack(Stack::of(term.clone()));
                 let substate = run_quote(&predicate, substate);
-                let (keep, _) = substate.values.pop_bool("filter");
+                let (keep, _) = substate.stack.pop_bool("filter");
                 if keep {
                     results = results.push(term);
                 }
@@ -85,17 +85,17 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             let quote = quote.push_quote(results);
 
-            state.replace_values(quote)
+            state.replace_stack(quote)
         }),
         RailDef::on_state("map", &["quote", "quote"], &["quote"], |state| {
-            state.clone().update_values(move |quote| {
+            state.clone().update_stack(move |quote| {
                 let (transform, quote) = quote.pop_quote("map");
                 let (sequence, quote) = quote.pop_quote("map");
                 let mut results = state.child();
 
-                for term in sequence.values.values {
+                for term in sequence.stack.values {
                     results = results.push(term.clone());
-                    let substate = state.child().replace_values(results.values);
+                    let substate = state.child().replace_stack(results.stack);
                     let substate = run_quote(&transform, substate);
                     results = substate;
                 }
@@ -104,35 +104,35 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
         RailDef::on_state("each!", &["quote", "quote"], &[], |state| {
-            let (command, quote) = state.values.clone().pop_quote("each");
+            let (command, quote) = state.stack.clone().pop_quote("each");
             let (sequence, quote) = quote.pop_quote("each");
 
-            let state = state.replace_values(quote);
+            let state = state.replace_stack(quote);
 
             sequence
-                .values
+                .stack
                 .values
                 .into_iter()
                 .fold(state, |state, value| {
-                    let state = state.update_values(|quote| quote.push(value.clone()));
+                    let state = state.update_stack(|quote| quote.push(value.clone()));
                     run_quote(&command, state)
                 })
         }),
         RailDef::on_jailed_state("each", &["quote", "quote"], &[], |state| {
-            let (command, quote) = state.values.clone().pop_quote("each");
+            let (command, quote) = state.stack.clone().pop_quote("each");
             let (sequence, quote) = quote.pop_quote("each");
 
-            let state = state.replace_values(quote);
+            let state = state.replace_stack(quote);
 
             let definitions = state.definitions.clone();
 
             sequence
-                .values
+                .stack
                 .values
                 .into_iter()
                 .fold(state, |state, value| {
                     let state = state
-                        .update_values(|quote| quote.push(value.clone()))
+                        .update_stack(|quote| quote.push(value.clone()))
                         .replace_definitions(definitions.clone());
                     run_quote(&command, state)
                 })

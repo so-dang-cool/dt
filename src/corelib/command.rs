@@ -7,7 +7,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_state("doin!", &["quote", "quote|command"], &["..."], doin()),
         RailDef::on_jailed_state("doin", &["quote", "quote|command"], &["..."], doin()),
         RailDef::on_state("def!", &["quote", "string|command"], &[], |state| {
-            state.update_values_and_defs(|quote, definitions| {
+            state.update_stack_and_defs(|quote, definitions| {
                 let mut definitions = definitions;
                 let (name, quote) = quote.pop();
                 let name = if let Some(name) = get_command_name(&name) {
@@ -26,7 +26,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
         RailDef::on_state("def?", &["string|command"], &["bool"], |state| {
-            state.clone().update_values(|quote| {
+            state.clone().update_stack(|quote| {
                 let (name, quote) = quote.pop();
                 let name = if let Some(name) = get_command_name(&name) {
                     name
@@ -42,8 +42,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
 fn do_it() -> impl Fn(RailState) -> RailState {
     |state| {
-        let (commands, quote) = state.values.clone().pop();
-        let state = state.replace_values(quote);
+        let (commands, quote) = state.stack.clone().pop();
+        let state = state.replace_stack(quote);
 
         match commands {
             RailVal::Quote(quote) => run_quote(&quote, state),
@@ -61,11 +61,11 @@ fn do_it() -> impl Fn(RailState) -> RailState {
 
 fn doin() -> impl Fn(RailState) -> RailState {
     |state| {
-        state.clone().update_values(|quote| {
+        state.clone().update_stack(|quote| {
             let (commands, quote) = quote.pop_quote("doin");
             let (targets, quote) = quote.pop_quote("doin");
 
-            let substate = state.child().replace_values(targets.values);
+            let substate = state.child().replace_stack(targets.stack);
             let substate = run_quote(&commands, substate);
 
             quote.push_quote(substate)

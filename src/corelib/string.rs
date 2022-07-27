@@ -16,7 +16,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         }),
         // TODO: Should this also work on Quotes?
         RailDef::on_state("split", &["string", "string"], &["quote"], |state| {
-            state.clone().update_values(|quote| {
+            state.clone().update_stack(|quote| {
                 let (delimiter, quote) = quote.pop_string("split");
                 let (s, quote) = quote.pop_string("split");
                 quote.push_quote(split(state.clone(), s, &delimiter))
@@ -26,7 +26,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_state("join", &["quote", "string"], &["string"], |quote| {
             let (delimiter, quote) = quote.pop_string("join");
             let (strings, quote) = quote.pop_quote("join");
-            quote.push_string(join("join", strings.values, &delimiter))
+            quote.push_string(join("join", strings.stack, &delimiter))
         }),
     ]
 }
@@ -36,7 +36,7 @@ fn split(state: RailState, s: String, delimiter: &str) -> RailState {
     for s in s.split(delimiter) {
         words = words.push_str(s);
     }
-    state.replace_values(words)
+    state.replace_stack(words)
 }
 
 fn join(context: &str, words: Stack, delimiter: &str) -> String {

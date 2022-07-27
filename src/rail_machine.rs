@@ -27,7 +27,7 @@ pub fn state_with_libs(skip_stdlib: bool, lib_list: Option<String>) -> RailState
 #[derive(Clone, Debug)]
 pub struct RailState {
     // TODO: Provide update functions and make these private
-    pub values: Stack,
+    pub stack: Stack,
     pub definitions: Dictionary,
     // TODO: Save parents at time of definition and at runtime
     pub context: Context,
@@ -35,10 +35,10 @@ pub struct RailState {
 
 impl RailState {
     pub fn new(context: Context) -> RailState {
-        let values = Stack::default();
+        let stack = Stack::default();
         let definitions = corelib_dictionary();
         RailState {
-            values,
+            stack,
             definitions,
             context,
         }
@@ -49,16 +49,12 @@ impl RailState {
     }
 
     pub fn get_def(&self, name: &str) -> Option<RailDef> {
-        self.values
-            .shadows
-            .get(name)
-            .or_else(|| self.definitions.get(name))
-            .cloned()
+        self.definitions.get(name).cloned()
     }
 
     pub fn child(&self) -> Self {
         RailState {
-            values: Stack::default(),
+            stack: Stack::default(),
             definitions: self.definitions.clone(),
             context: Context::None,
         }
@@ -73,7 +69,7 @@ impl RailState {
         S: Into<String>,
     {
         let term: String = term.into();
-        let mut values = self.values.clone();
+        let mut stack = self.stack.clone();
         let definitions = self.definitions.clone();
 
         // Quotations
@@ -87,25 +83,25 @@ impl RailState {
             if self.in_main() {
                 return op.clone().act(self.clone());
             } else {
-                values = values.push_command(&op.name);
+                stack = stack.push_command(&op.name);
             }
         }
         // Strings
         else if term.starts_with('"') && term.ends_with('"') {
             let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-            values = values.push_string(term.to_string());
+            stack = stack.push_string(term.to_string());
         }
         // Integers
         else if let Ok(i) = term.parse::<i64>() {
-            values = values.push_i64(i);
+            stack = stack.push_i64(i);
         }
         // Floating point numbers
         else if let Ok(n) = term.parse::<f64>() {
-            values = values.push_f64(n);
+            stack = stack.push_f64(n);
         }
         // Unknown
         else if !self.in_main() {
-            values = values.push_command(&term)
+            stack = stack.push_command(&term)
         } else {
             // TODO: Use a logging library? Log levels? Exit in a strict mode?
             // TODO: Have/get details on filename/source, line number, character number
@@ -116,35 +112,35 @@ impl RailState {
         }
 
         RailState {
-            values,
+            stack,
             definitions,
             context: self.context,
         }
     }
 
-    pub fn update_values(self, update: impl Fn(Stack) -> Stack) -> RailState {
+    pub fn update_stack(self, update: impl Fn(Stack) -> Stack) -> RailState {
         RailState {
-            values: update(self.values),
+            stack: update(self.stack),
             definitions: self.definitions,
             context: self.context,
         }
     }
 
-    pub fn update_values_and_defs(
+    pub fn update_stack_and_defs(
         self,
         update: impl Fn(Stack, Dictionary) -> (Stack, Dictionary),
     ) -> RailState {
-        let (values, definitions) = update(self.values, self.definitions);
+        let (stack, definitions) = update(self.stack, self.definitions);
         RailState {
-            values,
+            stack,
             definitions,
             context: self.context,
         }
     }
 
-    pub fn replace_values(self, values: Stack) -> RailState {
+    pub fn replace_stack(self, stack: Stack) -> RailState {
         RailState {
-            values,
+            stack,
             definitions: self.definitions,
             context: self.context,
         }
@@ -152,7 +148,7 @@ impl RailState {
 
     pub fn replace_definitions(self, definitions: Dictionary) -> RailState {
         RailState {
-            values: self.values,
+            stack: self.stack,
             definitions,
             context: self.context,
         }
@@ -160,7 +156,7 @@ impl RailState {
 
     pub fn deeper(self) -> RailState {
         RailState {
-            values: Stack::default(),
+            stack: Stack::default(),
             definitions: self.definitions.clone(),
             context: Context::Quotation {
                 parent_state: Box::new(self),
@@ -175,24 +171,24 @@ impl RailState {
             Context::None => panic!("Can't escape"),
         };
 
-        let values = state.values.clone().push_quote(self);
-        state.replace_values(values)
+        let stack = state.stack.clone().push_quote(self);
+        state.replace_stack(stack)
     }
 
     pub fn len(&self) -> usize {
-        self.values.len()
+        self.stack.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.values.is_empty()
+        self.stack.is_empty()
     }
 
     pub fn reverse(self) -> Self {
-        self.update_values(|stack| stack.reverse())
+        self.update_stack(|stack| stack.reverse())
     }
 
     pub fn push(self, term: RailVal) -> Self {
-        self.update_values(|stack| stack.push(term.clone()))
+        self.update_stack(|stack| stack.push(term.clone()))
     }
 
     pub fn push_bool(self, b: bool) -> Self {
@@ -228,8 +224,8 @@ impl RailState {
     }
 
     pub fn pop(self) -> (RailVal, Self) {
-        let (value, values) = self.values.clone().pop();
-        (value, self.replace_values(values))
+        let (value, stack) = self.stack.clone().pop();
+        (value, self.replace_stack(stack))
     }
 
     pub fn pop_bool(self, context: &str) -> (bool, Self) {
@@ -279,14 +275,14 @@ impl RailState {
         match value {
             RailVal::Stab(s) => (s, quote),
             // TODO: Can we coerce somehow?
-            // RailVal::Quote(q) => (quote_to_stab(q.values), quote),
+            // RailVal::Quote(q) => (quote_to_stab(q.stack), quote),
             rail_val => panic!("{}", type_panic_msg(context, "string", rail_val)),
         }
     }
 
     pub fn pop_stab_entry(self, context: &str) -> (String, RailVal, Self) {
         let (original_entry, quote) = self.pop_quote(context);
-        let (value, entry) = original_entry.clone().values.pop();
+        let (value, entry) = original_entry.clone().stack.pop();
         let (key, entry) = entry.pop_string(context);
 
         if !entry.is_empty() {
@@ -308,13 +304,13 @@ impl RailState {
     }
 
     pub fn enqueue(self, value: RailVal) -> Self {
-        let values = self.values.clone().enqueue(value);
-        self.replace_values(values)
+        let stack = self.stack.clone().enqueue(value);
+        self.replace_stack(stack)
     }
 
     pub fn dequeue(self) -> (RailVal, Self) {
-        let (value, values) = self.values.clone().dequeue();
-        (value, self.replace_values(values))
+        let (value, stack) = self.stack.clone().dequeue();
+        (value, self.replace_stack(stack))
     }
 }
 
@@ -355,7 +351,7 @@ impl PartialEq for RailVal {
             (String(a), String(b)) => a == b,
             (Command(a), Command(b)) => a == b,
             // TODO: For quotes, what about differing dictionaries? For simple lists they don't matter, for closures they do.
-            (Quote(a), Quote(b)) => a.values == b.values,
+            (Quote(a), Quote(b)) => a.stack == b.stack,
             (Stab(a), Stab(b)) => a == b,
             _ => false,
         }
@@ -386,7 +382,7 @@ impl std::fmt::Display for RailVal {
             I64(n) => write!(fmt, "{}", n),
             F64(n) => write!(fmt, "{}", n),
             Command(o) => write!(fmt, "{}", o),
-            Quote(q) => write!(fmt, "{}", q.values),
+            Quote(q) => write!(fmt, "{}", q.stack),
             String(s) => write!(fmt, "\"{}\"", s.replace('\n', "\\n")),
             Stab(t) => {
                 write!(fmt, "[ ").unwrap();
@@ -404,7 +400,6 @@ impl std::fmt::Display for RailVal {
 #[derive(Clone, Debug)]
 pub struct Stack {
     pub values: Vector<RailVal>,
-    pub shadows: Dictionary,
 }
 
 impl PartialEq for Stack {
@@ -419,17 +414,14 @@ impl PartialEq for Stack {
 }
 
 impl Stack {
-    pub fn new(values: Vector<RailVal>, shadows: Dictionary) -> Self {
-        Stack { values, shadows }
+    pub fn new(values: Vector<RailVal>) -> Self {
+        Stack { values }
     }
 
     pub fn of(value: RailVal) -> Self {
         let mut values = Vector::default();
         values.push_back(value);
-        Stack {
-            values,
-            shadows: empty_dictionary(),
-        }
+        Stack { values }
     }
 
     pub fn len(&self) -> usize {
@@ -442,7 +434,7 @@ impl Stack {
 
     pub fn reverse(&self) -> Stack {
         let values = self.values.iter().rev().cloned().collect();
-        Stack::new(values, self.shadows.clone())
+        Stack::new(values)
     }
 
     pub fn push(mut self, term: RailVal) -> Stack {
@@ -541,7 +533,7 @@ impl Stack {
 
     pub fn pop_stab_entry(self, context: &str) -> (String, RailVal, Stack) {
         let (original_entry, quote) = self.pop_quote(context);
-        let (value, entry) = original_entry.clone().values.pop();
+        let (value, entry) = original_entry.clone().stack.pop();
         let (key, entry) = entry.pop_string(context);
 
         if !entry.is_empty() {
@@ -575,7 +567,7 @@ impl Stack {
 
 impl Default for Stack {
     fn default() -> Self {
-        Self::new(Vector::default(), empty_dictionary())
+        Self::new(Vector::default())
     }
 }
 
@@ -680,14 +672,14 @@ impl RailDef<'_> {
     }
 
     pub fn act(&mut self, state: RailState) -> RailState {
-        if state.values.len() < self.consumes.len() {
+        if state.stack.len() < self.consumes.len() {
             // TODO: At some point will want source context here like line/column number.
             log_warn(format!(
                 "Underflow for \"{}\" (takes: {}, gives: {}). State: {}",
                 self.name,
                 self.consumes.join(" "),
                 self.produces.join(" "),
-                state.values
+                state.stack
             ));
             return state;
         }
@@ -715,7 +707,7 @@ impl Debug for RailDef<'_> {
 
 pub fn run_quote(quote: &RailState, state: RailState) -> RailState {
     quote
-        .values
+        .stack
         .values
         .iter()
         .fold(state, |state, rail_val| match rail_val {
@@ -728,7 +720,7 @@ pub fn run_quote(quote: &RailState, state: RailState) -> RailState {
                     state.clone()
                 }
             }
-            _ => state.update_values(|quote| quote.push(rail_val.clone())),
+            _ => state.update_stack(|quote| quote.push(rail_val.clone())),
         })
 }
 

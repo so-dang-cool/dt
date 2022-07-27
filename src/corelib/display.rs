@@ -9,7 +9,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         printer("pl", &|a| println!("{}", a)),
         RailDef::contextless("nl", &[], &[], || print!("\n")),
         RailDef::on_state("status", &[], &[], |state| {
-            println!("{}", state.values);
+            println!("{}", state.stack);
             state
         }),
         RailDef::contextless("clear", &[], &[], || {
