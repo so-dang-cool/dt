@@ -12,7 +12,7 @@ pub fn main() {
 
 #[derive(Parser)]
 #[clap(name = "railc", version = RAIL_VERSION)]
-/// A straightforward programming language
+/// Rail Compiler. A straightforward programming language
 struct RailCompiler {
     #[clap(long)]
     /// Disable loading the Rail standard library.

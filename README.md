@@ -34,12 +34,6 @@ $ cargo install rail-lang
 $ railup bootstrap
 ```
 
-## Usage
-
-Currently you'll need to check out at least the `rail-src` directory of this
-repository, and execute `rail` in the same directory. (Or run with
-`rail --no-stdlib ETC`)
-
 ## Credits
 
 Available under GPL v2.

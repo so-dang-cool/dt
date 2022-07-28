@@ -17,8 +17,8 @@ pub fn main() {
 }
 
 #[derive(Parser)]
-#[clap(name = "rail", version = RAIL_VERSION)]
-/// A straightforward programming language
+#[clap(name = "railsh", version = RAIL_VERSION)]
+/// Rail Shell. A straightforward programming language
 struct RailShell {
     #[clap(subcommand)]
     mode: Option<Mode>,
