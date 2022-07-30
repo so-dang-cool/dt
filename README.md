@@ -12,22 +12,22 @@ programming language. It is under wild development and zero stability between
 versions is guaranteed.
 
 ```
-$ rail i
-rail 0.18.1
-> 1 1 + p
+$ railsh
+rail 0.18.2
+
+> 1 1 + print
 2
-> [ 1 + ] "inc" def
-> 1 [ dup p inc ] 2 times p
-1
-2
-3
-> [ [ false ] [ "bye" ] [ true ] [ "hi" ] ] opt p
-"hi"
+
+> [ [ n ] -> n print " " print n 2 * ] "print-and-double" def
+
+> 1 [ print-and-double ] 7 times
+1 2 4 8 16 32 64 
+
+> [ [ false ] [ "bye" ] [ true ] [ "hi" ] ] opt println
+hi
 ```
 
 ## Installation
-
-For now...
 
 ```shell
 $ cargo install rail-lang
