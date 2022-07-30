@@ -1,5 +1,5 @@
 use crate::rail_machine::{self, RailState};
-use crate::{tokens, RAIL_VERSION};
+use crate::{loading, RAIL_VERSION};
 use colored::Colorize;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
@@ -73,7 +73,7 @@ impl Iterator for RailPrompt {
 
             self.editor.add_history_entry(&input);
 
-            self.terms = tokens::from_rail_source(input);
+            self.terms = loading::from_rail_source(input);
             self.terms.reverse();
         }
 

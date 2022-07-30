@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use rail_lang::{prompt::RailPrompt, rail_machine, tokens, RAIL_VERSION};
+use rail_lang::{loading, prompt::RailPrompt, rail_machine, RAIL_VERSION};
 
 pub fn main() {
     let args = RailShell::parse();
@@ -9,7 +9,7 @@ pub fn main() {
     match args.mode {
         Some(Mode::Interactive) | None => RailPrompt::default().run(state),
         Some(Mode::Run { file }) => {
-            let tokens = tokens::from_rail_source_file(file);
+            let tokens = loading::from_rail_source_file(file);
             state.run_tokens(tokens);
         }
         Some(Mode::RunStdin) => unimplemented!("I don't know how to run stdin yet"),

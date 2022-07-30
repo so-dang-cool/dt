@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 use crate::corelib::corelib_dictionary;
-use crate::tokens;
+use crate::loading;
 use im::{HashMap, Vector};
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
@@ -12,12 +12,12 @@ pub fn state_with_libs(skip_stdlib: bool, lib_list: Option<String>) -> RailState
     let state = if skip_stdlib {
         state
     } else {
-        let tokens = tokens::from_stdlib();
+        let tokens = loading::from_stdlib();
         state.run_tokens(tokens)
     };
 
     if let Some(lib_list) = lib_list {
-        let tokens = tokens::from_lib_list(&lib_list);
+        let tokens = loading::from_lib_list(&lib_list);
         state.run_tokens(tokens)
     } else {
         state
