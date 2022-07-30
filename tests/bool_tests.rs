@@ -1,4 +1,5 @@
-use std::process::Command;
+mod rail_runner;
+use rail_runner::rail_eval;
 
 pub const RAIL_PATH: &str = std::env!("CARGO_BIN_EXE_rail");
 
@@ -140,16 +141,4 @@ fn test_comparison_ge() {
     assert_eq!("false", &rail_eval("0.9 1 >= print"));
     assert_eq!("false", &rail_eval("1 1.1 >= print"));
     assert_eq!("false", &rail_eval("0.9 1.1 >= print"));
-}
-
-fn rail_eval(source: &str) -> String {
-    let output = Command::new(RAIL_PATH)
-        .args(&["eval", source])
-        .output()
-        .expect("Error running process");
-
-    String::from_utf8(output.stdout)
-        .expect("Error reading stdout as utf8")
-        .trim_end_matches('\n')
-        .to_string()
 }

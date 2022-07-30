@@ -3,6 +3,7 @@ use std::process::{Command, ExitStatus, Output, Stdio};
 
 const RAIL_PATH: &str = std::env!("CARGO_BIN_EXE_rail");
 const RAILSH_PATH: &str = std::env!("CARGO_BIN_EXE_railsh");
+const DEV_MODE_ARGS: [&str; 3] = ["--no-stdlib", "--lib-list", "rail-src/dev.txt"];
 
 #[allow(dead_code)]
 pub struct RailPipedResult {
@@ -37,6 +38,7 @@ impl From<Output> for RailRunResult {
 #[allow(dead_code)]
 pub fn railsh(stdin: &str) -> RailPipedResult {
     let rail_proc = Command::new(RAILSH_PATH)
+        .args(DEV_MODE_ARGS)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -69,6 +71,7 @@ pub fn railsh(stdin: &str) -> RailPipedResult {
 #[allow(dead_code)]
 pub fn railsh_run_file(file: &str) -> RailRunResult {
     Command::new(RAILSH_PATH)
+        .args(DEV_MODE_ARGS)
         .args(&["run", file])
         .output()
         .expect("Error running process")
@@ -76,8 +79,23 @@ pub fn railsh_run_file(file: &str) -> RailRunResult {
 }
 
 #[allow(dead_code)]
+pub fn rail_eval(source: &str) -> String {
+    let output = Command::new(RAIL_PATH)
+        .args(DEV_MODE_ARGS)
+        .args(&["eval", source])
+        .output()
+        .expect("Error running process");
+
+    String::from_utf8(output.stdout)
+        .expect("Error reading stdout as utf8")
+        .trim_end_matches('\n')
+        .to_string()
+}
+
+#[allow(dead_code)]
 pub fn rail(args: &[&str]) -> RailRunResult {
     Command::new(RAIL_PATH)
+        .args(DEV_MODE_ARGS)
         .args(args)
         .output()
         .expect("Error running process")

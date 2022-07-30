@@ -2,7 +2,7 @@ use std::{fmt::Debug, fs, path::Path};
 
 use regex::Regex;
 
-use crate::{rail_machine, rail_lib_path};
+use crate::{rail_lib_path, rail_machine};
 
 fn tokenize(line: &str) -> Vec<String> {
     // TODO: Validate that a line does not contain unterminated strings.

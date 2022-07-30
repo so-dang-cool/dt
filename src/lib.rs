@@ -1,4 +1,7 @@
-use std::{path::{Path, PathBuf}, env};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 pub mod corelib;
 pub mod prompt;
