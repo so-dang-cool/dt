@@ -59,7 +59,10 @@ fn basic_arrow_do() {
 fn arrow_in_times() {
     let source = r#"
         1
-        [ [ n ] -> n println n 2 * ] 7 times
+        [ [ n ] ->
+            n println
+            n 2 *
+        ] 7 times
 
         [ n ] undef? "times must not leak definitions, but n was defined" assert-true
     "#;
