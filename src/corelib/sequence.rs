@@ -1,4 +1,4 @@
-use crate::rail_machine::{self, run_quote, RailDef, RailVal, Stack};
+use crate::rail_machine::{self, RailDef, RailVal, Stack};
 
 // TODO: These should all work for both String and Quote? Should String also be a Quote? Typeclasses?
 pub fn builtins() -> Vec<RailDef<'static>> {
@@ -76,7 +76,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             for term in sequence.stack.values {
                 let substate = state.child().replace_stack(Stack::of(term.clone()));
-                let substate = run_quote(&predicate, substate);
+                let substate = predicate.clone().jailed_run_in_state(substate);
                 let (keep, _) = substate.stack.pop_bool("filter");
                 if keep {
                     results = results.push(term);
@@ -96,7 +96,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 for term in sequence.stack.values {
                     results = results.push(term.clone());
                     let substate = state.child().replace_stack(results.stack);
-                    let substate = run_quote(&transform, substate);
+                    let substate = transform.clone().jailed_run_in_state(substate);
                     results = substate;
                 }
 
@@ -115,7 +115,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 .into_iter()
                 .fold(state, |state, value| {
                     let state = state.update_stack(|quote| quote.push(value.clone()));
-                    run_quote(&command, state)
+                    command.clone().run_in_state(state)
                 })
         }),
         RailDef::on_jailed_state("each", &["quote", "quote"], &[], |state| {
@@ -134,7 +134,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                     let state = state
                         .update_stack(|quote| quote.push(value.clone()))
                         .replace_definitions(definitions.clone());
-                    run_quote(&command, state)
+                    command.clone().jailed_run_in_state(state)
                 })
         }),
     ]

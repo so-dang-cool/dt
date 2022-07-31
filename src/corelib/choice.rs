@@ -1,4 +1,4 @@
-use crate::rail_machine::{run_quote, RailDef};
+use crate::rail_machine::RailDef;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![RailDef::on_state("opt", &["quote"], &[], |state| {
@@ -13,13 +13,12 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (action, opts) = opts.pop_quote("opt");
             options = opts;
 
-            // TODO: Should this be running in a way that can't alter the main quote?
-            state = run_quote(&condition, state);
+            state = condition.jailed_run_in_state(state);
             let (success, quote) = state.stack.clone().pop_bool("opt");
             state = state.replace_stack(quote);
 
             if success {
-                return run_quote(&action, state);
+                return action.run_in_state(state);
             }
         }
 

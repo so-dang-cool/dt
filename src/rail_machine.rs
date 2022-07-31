@@ -710,7 +710,7 @@ impl RailDef<'_> {
 
         match &self.action {
             RailAction::Builtin(action) => action(state),
-            RailAction::Quotation(quote) => run_quote(quote, state),
+            RailAction::Quotation(quote) => quote.clone().run_in_state(state),
         }
     }
 }
@@ -725,25 +725,6 @@ impl Debug for RailDef<'_> {
             self.produces.join(" ")
         )
     }
-}
-
-pub fn run_quote(quote: &RailState, state: RailState) -> RailState {
-    quote
-        .stack
-        .values
-        .iter()
-        .fold(state, |state, rail_val| match rail_val {
-            RailVal::Command(op_name) => {
-                // TODO: This should use the definitions from quote first then state second
-                if let Some(op) = state.get_def(&op_name.clone()) {
-                    op.clone().act(state.clone())
-                } else {
-                    log_warn(format!("Skipping undefined term: {}", op_name));
-                    state.clone()
-                }
-            }
-            _ => state.update_stack(|quote| quote.push(rail_val.clone())),
-        })
 }
 
 pub fn empty_dictionary() -> Dictionary {

@@ -1,4 +1,4 @@
-use crate::rail_machine::{self, run_quote, RailDef, RailState, RailVal};
+use crate::rail_machine::{self, RailDef, RailState, RailVal};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -46,7 +46,7 @@ fn do_it() -> impl Fn(RailState) -> RailState {
         let state = state.replace_stack(quote);
 
         match commands {
-            RailVal::Quote(quote) => run_quote(&quote, state),
+            RailVal::Quote(quote) => quote.run_in_state(state),
             RailVal::Command(command) => {
                 let action = state.get_def(&command).unwrap();
                 action.clone().act(state.clone())
@@ -66,7 +66,7 @@ fn doin() -> impl Fn(RailState) -> RailState {
             let (targets, quote) = quote.pop_quote("doin");
 
             let substate = state.child().replace_stack(targets.stack);
-            let substate = run_quote(&commands, substate);
+            let substate = commands.run_in_state(substate);
 
             quote.push_quote(substate)
         })
