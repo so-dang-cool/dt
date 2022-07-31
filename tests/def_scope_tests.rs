@@ -56,6 +56,25 @@ fn basic_arrow_do() {
 }
 
 #[test]
+fn arrow_in_times() {
+    let source = r#"
+        1
+        [ [ n ] -> n println n 2 * ] 7 times
+
+        [ n ] undef? "times must not leak definitions, but n was defined" assert-true
+    "#;
+
+    let res = rail(&[source]);
+
+    assert_eq!("", res.stderr);
+
+    assert_eq!(
+        ["1", "2", "4", "8", "16", "32", "64", ""].join("\n"),
+        res.stdout
+    );
+}
+
+#[test]
 fn arrow_in_each() {
     let source = r#"
         [ 1 2 3 4 5 ]

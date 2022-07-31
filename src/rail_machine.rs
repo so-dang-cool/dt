@@ -118,6 +118,28 @@ impl RailState {
         }
     }
 
+    pub fn run_val(&self, value: RailVal) -> RailState {
+        match value {
+            RailVal::Command(name) => {
+                let mut cmd = self.get_def(&name).unwrap();
+                cmd.act(self.clone())
+            }
+            value => self.clone().push(value),
+        }
+    }
+
+    pub fn run_in_state(self, other_state: RailState) -> RailState {
+        self.stack
+            .values
+            .into_iter()
+            .fold(other_state, |state, value| state.run_val(value))
+    }
+
+    pub fn jailed_run_in_state(self, other_state: RailState) -> RailState {
+        let after_run = self.run_in_state(other_state.clone());
+        other_state.replace_stack(after_run.stack)
+    }
+
     pub fn update_stack(self, update: impl Fn(Stack) -> Stack) -> RailState {
         RailState {
             stack: update(self.stack),

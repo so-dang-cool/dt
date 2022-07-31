@@ -1,17 +1,17 @@
-use crate::rail_machine::{run_quote, RailDef, RailState};
+use crate::rail_machine::RailDef;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
-    vec![
-        RailDef::on_state("times!", &["quote", "i64"], &[], times()),
-        RailDef::on_jailed_state("times", &["quote", "i64"], &[], times()),
-    ]
-}
-
-fn times() -> impl Fn(RailState) -> RailState {
-    |state| {
-        let (n, quote) = state.stack.clone().pop_i64("times");
-        let (commands, quote) = quote.pop_quote("times");
-        let state = state.replace_stack(quote);
-        (0..n).fold(state, |state, _n| run_quote(&commands, state))
-    }
+    vec![RailDef::on_state(
+        "times",
+        &["quote", "i64"],
+        &[],
+        |state| {
+            let (n, stack) = state.stack.clone().pop_i64("times");
+            let (commands, stack) = stack.pop_quote("times");
+            let state = state.replace_stack(stack);
+            (0..n).fold(state, |state, _n| {
+                commands.clone().jailed_run_in_state(state)
+            })
+        },
+    )]
 }
