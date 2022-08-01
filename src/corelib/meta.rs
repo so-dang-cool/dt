@@ -7,15 +7,14 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             quote.push_string(thing.type_name())
         }),
         RailDef::on_state("defs", &[], &["quote"], |state| {
-            state.clone().update_stack_and_defs(|quote, definitions| {
-                let mut defs = definitions.keys().collect::<Vec<_>>();
-                defs.sort();
-                let defs = defs
-                    .iter()
-                    .fold(state.child(), |quote, def| quote.push_str(def));
-                let quote = quote.push_quote(defs);
-                (quote, definitions)
-            })
+            let mut defs = state.definitions.keys().collect::<Vec<_>>();
+            defs.sort();
+
+            let defs = defs
+                .iter()
+                .fold(state.child(), |quote, def| quote.push_str(def));
+
+            state.push_quote(defs)
         }),
         // TODO: In typing, consumes of 'quote-all' should be something that means 0-to-many
         RailDef::on_state("quote-all", &[], &["quote"], |quote| {

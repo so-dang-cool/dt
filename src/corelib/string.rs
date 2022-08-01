@@ -1,4 +1,4 @@
-use crate::rail_machine::{RailDef, RailState, Stack};
+use crate::rail_machine::{RailDef, Stack};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -16,11 +16,14 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         }),
         // TODO: Should this also work on Quotes?
         RailDef::on_state("split", &["string", "string"], &["quote"], |state| {
-            state.clone().update_stack(|quote| {
-                let (delimiter, quote) = quote.pop_string("split");
-                let (s, quote) = quote.pop_string("split");
-                quote.push_quote(split(state.clone(), s, &delimiter))
-            })
+            let (delimiter, state) = state.pop_string("split");
+            let (s, state) = state.pop_string("split");
+
+            let words = s
+                .split(&delimiter)
+                .fold(state.child(), |words, word| words.push_str(word));
+
+            state.push_quote(words)
         }),
         // TODO: Should this also work on Quotes?
         RailDef::on_state("join", &["quote", "string"], &["string"], |quote| {
@@ -29,14 +32,6 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             quote.push_string(join("join", strings.stack, &delimiter))
         }),
     ]
-}
-
-fn split(state: RailState, s: String, delimiter: &str) -> RailState {
-    let mut words = Stack::default();
-    for s in s.split(delimiter) {
-        words = words.push_str(s);
-    }
-    state.replace_stack(words)
 }
 
 fn join(context: &str, words: Stack, delimiter: &str) -> String {

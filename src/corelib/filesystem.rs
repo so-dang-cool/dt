@@ -3,7 +3,6 @@ use std::fs;
 use std::path::Path;
 
 use crate::rail_machine::RailDef;
-use crate::rail_machine::Stack;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -13,17 +12,18 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             env::set_current_dir(path).unwrap();
             quote
         }),
-        RailDef::on_state("ls", &[], &["quote"], |quote| {
+        RailDef::on_state("ls", &[], &["quote"], |state| {
             let path = env::current_dir().unwrap();
+
             let files = fs::read_dir(path).unwrap().filter(|dir| dir.is_ok()).fold(
-                Stack::default(),
+                state.child(),
                 |quote, dir| {
                     let dir = dir.unwrap().file_name().to_string_lossy().to_string();
                     quote.push_string(dir)
                 },
             );
-            let files = quote.child().replace_stack(files);
-            quote.push_quote(files)
+
+            state.push_quote(files)
         }),
         RailDef::on_state("pwd", &[], &["string"], |quote| {
             let path = env::current_dir().unwrap().to_string_lossy().to_string();

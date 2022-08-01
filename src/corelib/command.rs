@@ -26,16 +26,15 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             })
         }),
         RailDef::on_state("def?", &["string|command"], &["bool"], |state| {
-            state.clone().update_stack(|quote| {
-                let (name, quote) = quote.pop();
-                let name = if let Some(name) = get_command_name(&name) {
-                    name
-                } else {
-                    rail_machine::log_warn(format!("{} is not a string or command", name));
-                    return quote;
-                };
-                quote.push_bool(state.definitions.contains_key(&name))
-            })
+            let (name, state) = state.pop();
+            let name = if let Some(name) = get_command_name(&name) {
+                name
+            } else {
+                rail_machine::log_warn(format!("{} is not a string or command", name));
+                return state;
+            };
+            let is_def = state.definitions.contains_key(&name);
+            state.push_bool(is_def)
         }),
     ]
 }
@@ -61,15 +60,13 @@ fn do_it() -> impl Fn(RailState) -> RailState {
 
 fn doin() -> impl Fn(RailState) -> RailState {
     |state| {
-        state.clone().update_stack(|quote| {
-            let (commands, quote) = quote.pop_quote("doin");
-            let (targets, quote) = quote.pop_quote("doin");
+        let (commands, state) = state.pop_quote("doin");
+        let (targets, state) = state.pop_quote("doin");
 
-            let substate = state.child().replace_stack(targets.stack);
-            let substate = commands.run_in_state(substate);
+        let substate = state.child().replace_stack(targets.stack);
+        let substate = commands.run_in_state(substate);
 
-            quote.push_quote(substate)
-        })
+        state.push_quote(substate)
     }
 }
 

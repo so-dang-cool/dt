@@ -70,8 +70,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             quote.push_quote(results)
         }),
         RailDef::on_state("filter", &["quote", "quote"], &["quote"], |state| {
-            let (predicate, quote) = state.stack.clone().pop_quote("filter");
-            let (sequence, quote) = quote.pop_quote("filter");
+            let (predicate, state) = state.pop_quote("filter");
+            let (sequence, state) = state.pop_quote("filter");
             let mut results = state.child();
 
             for term in sequence.stack.values {
@@ -83,25 +83,22 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                 }
             }
 
-            let quote = quote.push_quote(results);
-
-            state.replace_stack(quote)
+            state.push_quote(results)
         }),
         RailDef::on_state("map", &["quote", "quote"], &["quote"], |state| {
-            state.clone().update_stack(move |quote| {
-                let (transform, quote) = quote.pop_quote("map");
-                let (sequence, quote) = quote.pop_quote("map");
-                let mut results = state.child();
+            let (transform, state) = state.pop_quote("map");
+            let (sequence, state) = state.pop_quote("map");
 
-                for term in sequence.stack.values {
-                    results = results.push(term.clone());
-                    let substate = state.child().replace_stack(results.stack);
-                    let substate = transform.clone().jailed_run_in_state(substate);
-                    results = substate;
-                }
+            let mut results = state.child();
 
-                quote.push_quote(results)
-            })
+            for term in sequence.stack.values {
+                results = results.push(term.clone());
+                let substate = state.child().replace_stack(results.stack);
+                let substate = transform.clone().jailed_run_in_state(substate);
+                results = substate;
+            }
+
+            state.push_quote(results)
         }),
         RailDef::on_state("each!", &["quote", "quote"], &[], |state| {
             let (command, quote) = state.stack.clone().pop_quote("each");

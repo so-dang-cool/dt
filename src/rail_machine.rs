@@ -69,7 +69,7 @@ impl RailState {
         S: Into<String>,
     {
         let term: String = term.into();
-        let mut stack = self.stack.clone();
+        let stack = self.stack.clone();
         let definitions = self.definitions.clone();
 
         // Quotations
@@ -79,29 +79,29 @@ impl RailState {
             return self.higher();
         }
         // Defined operations
-        else if let Some(op) = self.get_def(&term) {
+        else if let Some(op) = self.clone().get_def(&term) {
             if self.in_main() {
                 return op.clone().act(self.clone());
             } else {
-                stack = stack.push_command(&op.name);
+                return self.push_command(&op.name);
             }
         }
         // Strings
         else if term.starts_with('"') && term.ends_with('"') {
             let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-            stack = stack.push_string(term.to_string());
+            return self.push_string(term.to_string());
         }
         // Integers
         else if let Ok(i) = term.parse::<i64>() {
-            stack = stack.push_i64(i);
+            return self.push_i64(i);
         }
         // Floating point numbers
         else if let Ok(n) = term.parse::<f64>() {
-            stack = stack.push_f64(n);
+            return self.push_f64(n);
         }
         // Unknown
         else if !self.in_main() {
-            stack = stack.push_command(&term)
+            return self.push_command(&term);
         } else {
             // TODO: Use a logging library? Log levels? Exit in a strict mode?
             // TODO: Have/get details on filename/source, line number, character number
@@ -193,8 +193,7 @@ impl RailState {
             Context::None => panic!("Can't escape"),
         };
 
-        let stack = state.stack.clone().push_quote(self);
-        state.replace_stack(stack)
+        state.push_quote(self)
     }
 
     pub fn len(&self) -> usize {
@@ -462,38 +461,6 @@ impl Stack {
     pub fn push(mut self, term: RailVal) -> Stack {
         self.values.push_back(term);
         self
-    }
-
-    pub fn push_bool(self, b: bool) -> Stack {
-        self.push(RailVal::Boolean(b))
-    }
-
-    pub fn push_i64(self, i: i64) -> Stack {
-        self.push(RailVal::I64(i))
-    }
-
-    pub fn push_f64(self, n: f64) -> Stack {
-        self.push(RailVal::F64(n))
-    }
-
-    pub fn push_command(self, op_name: &str) -> Stack {
-        self.push(RailVal::Command(op_name.to_owned()))
-    }
-
-    pub fn push_quote(self, quote: RailState) -> Stack {
-        self.push(RailVal::Quote(quote))
-    }
-
-    pub fn push_stab(self, st: Stab) -> Stack {
-        self.push(RailVal::Stab(st))
-    }
-
-    pub fn push_string(self, s: String) -> Stack {
-        self.push(RailVal::String(s))
-    }
-
-    pub fn push_str(self, s: &str) -> Stack {
-        self.push(RailVal::String(s.to_owned()))
     }
 
     pub fn pop(mut self) -> (RailVal, Stack) {
