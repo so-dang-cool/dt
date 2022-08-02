@@ -483,7 +483,7 @@ dependencies = [
 
 [[package]]
 name = "rail-lang"
-version = "0.19.0"
+version = "0.19.1"
 dependencies = [
  "clap",
  "clearscreen",
