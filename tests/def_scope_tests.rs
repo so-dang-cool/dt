@@ -125,3 +125,44 @@ fn arrow_in_filter() {
 
     assert_eq!(r#"[ 4 "bananas make a bunch!" ]"#, res.stdout);
 }
+
+#[test]
+fn shadowing_in_do() {
+    let source = r#"
+        [ 5 ] "fav-number" def
+
+        fav-number println
+
+        [
+            [ 8 ] "fav-number" def
+            fav-number println
+        ] do
+
+        fav-number println
+    "#;
+
+    let res = rail(&[source]);
+
+    assert_eq!("", res.stderr);
+
+    assert_eq!(["5", "8", "5", ""].join("\n"), res.stdout);
+}
+
+#[test]
+fn shadowing_arrow_in_do() {
+    let source = r#"
+        [ 6 ] "fav-number" def
+
+        fav-number println
+
+        2 [ [ fav-number ] -> fav-number println ] do
+
+        fav-number println
+    "#;
+
+    let res = rail(&[source]);
+
+    assert_eq!("", res.stderr);
+
+    assert_eq!(["6", "2", "6", ""].join("\n"), res.stdout);
+}

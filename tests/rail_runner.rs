@@ -79,17 +79,8 @@ pub fn railsh_run_file(file: &str) -> RailRunResult {
 }
 
 #[allow(dead_code)]
-pub fn rail_eval(source: &str) -> String {
-    let output = Command::new(RAIL_PATH)
-        .args(DEV_MODE_ARGS)
-        .args(&["eval", source])
-        .output()
-        .expect("Error running process");
-
-    String::from_utf8(output.stdout)
-        .expect("Error reading stdout as utf8")
-        .trim_end_matches('\n')
-        .to_string()
+pub fn rail_oneliner(source: &str) -> RailRunResult {
+    rail(&[source])
 }
 
 #[allow(dead_code)]

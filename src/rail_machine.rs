@@ -72,56 +72,52 @@ impl RailState {
 
         // Quotations
         if term == "[" {
-            return self.deeper();
+            self.deeper()
         } else if term == "]" {
-            return self.higher();
+            self.higher()
         }
         // Defined operations
         else if let Some(op) = self.clone().get_def(&term) {
             if self.in_main() {
                 let mut op = op;
-                return op.act(self);
+                op.act(self)
             } else {
-                return self.push_command(&op.name);
+                self.push_command(&op.name)
             }
         }
         // Strings
         else if term.starts_with('"') && term.ends_with('"') {
             let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-            return self.push_str(term);
+            self.push_str(term)
         }
         // Integers
         else if let Ok(i) = term.parse::<i64>() {
-            return self.push_i64(i);
+            self.push_i64(i)
         }
         // Floating point numbers
         else if let Ok(n) = term.parse::<f64>() {
-            return self.push_f64(n);
+            self.push_f64(n)
         }
         // Unknown
         else if !self.in_main() {
             // We optimistically expect this may be a not-yet-defined term. This
             // gives a way to do recursive definitions.
-            return self.push_command(&term);
+            self.push_command(&term)
         } else {
             // TODO: Use a logging library? Log levels? Exit in a strict mode?
             // TODO: Have/get details on filename/source, line number, character number
-            log_warn(format!(
-                "Skipping unknown term: \"{}\"",
-                term.replace('\n', "\\n")
-            ));
+            let term = term.replace('\n', "\\n");
+            derail_for_unknown_command(&term);
         }
-
-        self
     }
 
     pub fn run_val(&self, value: RailVal, local_state: RailState) -> RailState {
         match value {
             RailVal::Command(name) => {
-                let mut cmd = local_state
+                let mut cmd = self
                     .get_def(&name)
-                    .or_else(|| self.get_def(&name))
-                    .unwrap();
+                    .or_else(|| local_state.get_def(&name))
+                    .unwrap_or_else(|| derail_for_unknown_command(&name));
                 cmd.act(self.clone())
             }
             value => self.clone().push(value),
@@ -706,8 +702,13 @@ pub fn empty_dictionary() -> Dictionary {
     HashMap::new()
 }
 
-// The following are all formatting things for errors/warnings/panics.
+// The following are all handling for errors, warnings, and panics.
 // TODO: Update places these are referenced to return Result.
+
+pub fn derail_for_unknown_command(name: &str) -> ! {
+    log_derail(format!("Unknown command '{}'", name));
+    std::process::exit(1)
+}
 
 pub fn type_panic_msg(context: &str, expected: &str, actual: RailVal) -> String {
     format!(

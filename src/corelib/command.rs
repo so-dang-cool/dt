@@ -17,10 +17,6 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                     return (quote, definitions);
                 };
                 let (commands, quote) = quote.pop_quote("def");
-                if definitions.contains_key(&name) {
-                    rail_machine::log_warn(format!("{} was already defined.", name));
-                    return (quote, definitions);
-                }
                 definitions.insert(name.clone(), RailDef::from_quote(&name, commands));
                 (quote, definitions)
             })
@@ -41,17 +37,16 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
 fn do_it() -> impl Fn(RailState) -> RailState {
     |state| {
-        let (commands, quote) = state.stack.clone().pop();
-        let state = state.replace_stack(quote);
+        let (command, state) = state.pop();
 
-        match commands {
+        match command {
             RailVal::Quote(quote) => quote.run_in_state(state),
-            RailVal::Command(command) => {
-                let action = state.get_def(&command).unwrap();
+            RailVal::Command(name) => {
+                let action = state.get_def(&name).unwrap();
                 action.clone().act(state.clone())
             }
             _ => {
-                rail_machine::log_warn(format!("{} is not a quote or command", commands));
+                rail_machine::log_warn(format!("{} is not a quote or command", command));
                 state
             }
         }
