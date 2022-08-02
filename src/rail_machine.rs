@@ -176,6 +176,14 @@ impl RailState {
         }
     }
 
+    pub fn replace_context(self, context: Context) -> RailState {
+        RailState {
+            stack: self.stack,
+            definitions: self.definitions,
+            context,
+        }
+    }
+
     pub fn deeper(self) -> RailState {
         RailState {
             stack: Stack::default(),
@@ -187,13 +195,13 @@ impl RailState {
     }
 
     pub fn higher(self) -> RailState {
-        let state = match self.context.clone() {
+        let parent_state = match self.context.clone() {
             Context::Quotation { parent_state } => *parent_state,
             Context::Main => panic!("Can't escape main"),
             Context::None => panic!("Can't escape"),
         };
 
-        state.push_quote(self)
+        parent_state.push_quote(self)
     }
 
     pub fn len(&self) -> usize {

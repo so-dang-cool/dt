@@ -1,4 +1,4 @@
-use crate::rail_machine::RailDef;
+use crate::rail_machine::{Context, RailDef};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
@@ -18,7 +18,10 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         }),
         // TODO: In typing, consumes of 'quote-all' should be something that means 0-to-many
         RailDef::on_state("quote-all", &[], &["quote"], |quote| {
-            let wrapper = quote.child();
+            let wrapper = quote.child().replace_context(Context::Main);
+            let quote = quote.replace_context(Context::Quotation {
+                parent_state: Box::new(wrapper.clone()),
+            });
             wrapper.push_quote(quote)
         }),
     ]
