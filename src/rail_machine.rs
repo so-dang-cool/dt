@@ -69,8 +69,6 @@ impl RailState {
         S: Into<String>,
     {
         let term: String = term.into();
-        let stack = self.stack.clone();
-        let definitions = self.definitions.clone();
 
         // Quotations
         if term == "[" {
@@ -81,7 +79,8 @@ impl RailState {
         // Defined operations
         else if let Some(op) = self.clone().get_def(&term) {
             if self.in_main() {
-                return op.clone().act(self.clone());
+                let mut op = op;
+                return op.act(self);
             } else {
                 return self.push_command(&op.name);
             }
@@ -89,7 +88,7 @@ impl RailState {
         // Strings
         else if term.starts_with('"') && term.ends_with('"') {
             let term = term.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
-            return self.push_string(term.to_string());
+            return self.push_str(term);
         }
         // Integers
         else if let Ok(i) = term.parse::<i64>() {
@@ -101,6 +100,8 @@ impl RailState {
         }
         // Unknown
         else if !self.in_main() {
+            // We optimistically expect this may be a not-yet-defined term. This
+            // gives a way to do recursive definitions.
             return self.push_command(&term);
         } else {
             // TODO: Use a logging library? Log levels? Exit in a strict mode?
@@ -111,17 +112,16 @@ impl RailState {
             ));
         }
 
-        RailState {
-            stack,
-            definitions,
-            context: self.context,
-        }
+        self
     }
 
-    pub fn run_val(&self, value: RailVal) -> RailState {
+    pub fn run_val(&self, value: RailVal, local_state: RailState) -> RailState {
         match value {
             RailVal::Command(name) => {
-                let mut cmd = self.get_def(&name).unwrap();
+                let mut cmd = local_state
+                    .get_def(&name)
+                    .or_else(|| self.get_def(&name))
+                    .unwrap();
                 cmd.act(self.clone())
             }
             value => self.clone().push(value),
@@ -129,10 +129,10 @@ impl RailState {
     }
 
     pub fn run_in_state(self, other_state: RailState) -> RailState {
-        self.stack
-            .values
-            .into_iter()
-            .fold(other_state, |state, value| state.run_val(value))
+        let values = self.stack.clone().values;
+        values.into_iter().fold(other_state, |state, value| {
+            state.run_val(value, self.child())
+        })
     }
 
     pub fn jailed_run_in_state(self, other_state: RailState) -> RailState {
