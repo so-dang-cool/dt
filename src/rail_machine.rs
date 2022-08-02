@@ -6,24 +6,6 @@ use im::{HashMap, Vector};
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
-pub fn state_with_libs(skip_stdlib: bool, lib_list: Option<String>) -> RailState {
-    let state = RailState::default();
-
-    let state = if skip_stdlib {
-        state
-    } else {
-        let tokens = loading::from_stdlib();
-        state.run_tokens(tokens)
-    };
-
-    if let Some(lib_list) = lib_list {
-        let tokens = loading::from_lib_list(&lib_list);
-        state.run_tokens(tokens)
-    } else {
-        state
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct RailState {
     // TODO: Provide update functions and make these private
@@ -41,6 +23,24 @@ impl RailState {
             stack,
             definitions,
             context,
+        }
+    }
+
+    pub fn new_with_libs(skip_stdlib: bool, lib_list: Option<String>) -> RailState {
+        let state = RailState::default();
+
+        let state = if skip_stdlib {
+            state
+        } else {
+            let tokens = loading::from_stdlib();
+            state.run_tokens(tokens)
+        };
+
+        if let Some(lib_list) = lib_list {
+            let tokens = loading::from_lib_list(&lib_list);
+            state.run_tokens(tokens)
+        } else {
+            state
         }
     }
 

@@ -1,10 +1,12 @@
 use clap::{Parser, Subcommand};
-use rail_lang::{loading, prompt::RailPrompt, rail_machine, RAIL_VERSION};
+use rail_lang::prompt::RailPrompt;
+use rail_lang::rail_machine::RailState;
+use rail_lang::{loading, RAIL_VERSION};
 
 pub fn main() {
     let args = RailShell::parse();
 
-    let state = rail_machine::state_with_libs(args.no_stdlib, args.lib_list);
+    let state = RailState::new_with_libs(args.no_stdlib, args.lib_list);
 
     match args.mode {
         Some(Mode::Interactive) | None => RailPrompt::default().run(state),

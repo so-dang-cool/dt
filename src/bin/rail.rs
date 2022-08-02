@@ -1,11 +1,11 @@
 use clap::Parser;
-use rail_lang::rail_machine;
+use rail_lang::rail_machine::RailState;
 use rail_lang::{loading, RAIL_VERSION};
 
 pub fn main() {
     let args = RailEvaluator::parse();
 
-    let state = rail_machine::state_with_libs(args.no_stdlib, args.lib_list);
+    let state = RailState::new_with_libs(args.no_stdlib, args.lib_list);
 
     let tokens = loading::from_rail_source(args.rail_code.join(" "));
     state.run_tokens(tokens);
