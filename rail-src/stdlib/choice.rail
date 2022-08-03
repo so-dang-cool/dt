@@ -1,5 +1,3 @@
 [ [ case when-true when-false ] ->
-  case quote quote when-true push [ otherwise ] push when-false push opt
-  # TODO: This should work, but subscoping is not working right.
-  # [ [ case ] when-true [ otherwise ] when-false ] opt
+  [ [ case ] [ when-true ] [ otherwise ] [ when-false ] ] opt do
 ] "choose" def

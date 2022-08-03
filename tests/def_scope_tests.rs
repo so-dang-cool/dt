@@ -166,3 +166,86 @@ fn shadowing_arrow_in_do() {
 
     assert_eq!(["6", "2", "6", ""].join("\n"), res.stdout);
 }
+
+#[test]
+fn shadowing_in_times() {
+    let source = r#"
+        [ 1 ] [ n ] def
+
+        n [ [ n ] -> n println n 1 + ] 3 times
+
+        n println
+    "#;
+
+    let res = rail(&[source]);
+
+    assert_eq!("", res.stderr);
+
+    assert_eq!(["1", "2", "3", "1", ""].join("\n"), res.stdout);
+}
+
+#[test]
+fn shadowing_in_each() {
+    let source = r#"
+        [ "pepperoni" ] [ pizza ] def
+
+        pizza println
+
+        [ "cheese" "bbq" "combo" ] [ [ pizza ] -> pizza println ] each
+
+        pizza println
+    "#;
+
+    let res = rail(&[source]);
+
+    assert_eq!("", res.stderr);
+
+    assert_eq!(
+        ["pepperoni", "cheese", "bbq", "combo", "pepperoni", ""].join("\n"),
+        res.stdout
+    );
+}
+
+#[test]
+fn shadowing_in_map() {
+    let source = r#"
+        [ "banana" ] [ x ] def
+
+        x println
+
+        [ 1 2 3 ] [ [ x ] -> x 2.0 / ] map println
+
+        x println
+    "#;
+
+    let res = rail(&[source]);
+
+    assert_eq!("", res.stderr);
+
+    assert_eq!(
+        ["banana", "[ 0.5 1 1.5 ]", "banana", ""].join("\n"),
+        res.stdout
+    );
+}
+
+#[test]
+fn shadowing_in_filter() {
+    let source = r#"
+        [ "whee" ] [ happy-word ] def
+
+        happy-word println
+
+        [ "yay" "hurray" "whoo" "huzzah" ] [ [ happy-word ] -> happy-word len 4 > ] filter println
+
+        happy-word println
+    "#;
+
+    let res = rail(&[source]);
+
+    assert_eq!("", res.stderr);
+
+    assert_eq!(
+        ["whee", r#"[ "hurray" "huzzah" ]"#, "whee", ""].join("\n"),
+        res.stdout
+    );
+}
