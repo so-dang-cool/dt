@@ -1,11 +1,9 @@
-"max"
 [ [ a b ] ->
   [ [ a b >= ]    [ a ]
     [ otherwise ] [ b ] ] opt
-] swap def
+] [ max ] def
 
-"min"
 [ [ a b ] ->
   [ [ a b <= ]    [ a ]
     [ otherwise ] [ b ] ] opt
-] swap def
+] [ min ] def

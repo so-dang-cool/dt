@@ -1,5 +1,3 @@
-# TODO: This is not stdlib stuff. Move to another library
+[ exec "stdout" extract pop ] [ exec-stdout ] def
 
-[ exec "stdout" extract pop ] "exec-stdout" def
-
-[ [ q n ] -> [ q doin ] n times ] "timesin" def
+[ [ q n ] -> [ q doin ] n times ] [ timesin ] def

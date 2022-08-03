@@ -1,2 +1,2 @@
-[ p ] "print" def
-[ pl ] "println" def
+[ p ]  [ print ]   def
+[ pl ] [ println ] def

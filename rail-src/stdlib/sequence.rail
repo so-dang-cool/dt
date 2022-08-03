@@ -1,2 +1,2 @@
-[ pop swap drop ] "pop!" def
-[ len ] "length" def
+[ pop swap drop ] [ pop! ]   def
+[ len ]           [ length ] def

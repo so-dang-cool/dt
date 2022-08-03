@@ -6,7 +6,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_jailed_state("do", &["quote|command"], &["..."], do_it()),
         RailDef::on_state("doin!", &["quote", "quote|command"], &["..."], doin()),
         RailDef::on_jailed_state("doin", &["quote", "quote|command"], &["..."], doin()),
-        RailDef::on_state("def!", &["quote", "string|command"], &[], |state| {
+        RailDef::on_state("def!", &["quote", "string|command|quote"], &[], |state| {
             state.update_stack_and_defs(|quote, definitions| {
                 let mut definitions = definitions;
                 let (name, quote) = quote.pop();

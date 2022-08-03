@@ -1,5 +1,5 @@
 # Define "string?"
-[ type "string" == ] "string?" def
+[ type "string" == ] [ string? ] def
 
 # Define its friends
 [ "i64" "f64" "command" "quote" "bool" "stab" ]
@@ -10,4 +10,4 @@
 ] map
 [ [ def ] concat do! ] each!
 
-[ unquote ] "..." def
+[ unquote ] [ ... ] def
