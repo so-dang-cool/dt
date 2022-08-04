@@ -12,6 +12,11 @@ pub fn problem_01() {
 }
 
 #[test]
-pub fn problem_02() {
-    assert_eq!("4613732", run_problem("02"));
+pub fn problem_02a() {
+    assert_eq!("4613732", run_problem("02a"));
+}
+
+#[test]
+pub fn problem_02b() {
+    assert_eq!("4613732", run_problem("02b"));
 }
