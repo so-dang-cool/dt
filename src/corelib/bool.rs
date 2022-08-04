@@ -24,6 +24,21 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         binary_numeric_pred("<", |a, b| a < b, |a, b| a < b),
         binary_numeric_pred(">=", |a, b| a >= b, |a, b| a >= b),
         binary_numeric_pred("<=", |a, b| a <= b, |a, b| a <= b),
+        RailDef::on_state("any", &["quote", "quote"], &["quote"], |state| {
+            let (predicate, state) = state.pop_quote("any");
+            let (sequence, state) = state.pop_quote("any");
+
+            for term in sequence.stack.values {
+                let substate = state.child().push(term);
+                let substate = predicate.clone().run_in_state(substate);
+                let (pass, _) = substate.stack.pop_bool("any");
+                if pass {
+                    return state.push_bool(true);
+                }
+            }
+
+            state.push_bool(false)
+        }),
     ]
 }
 

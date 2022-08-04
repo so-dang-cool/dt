@@ -1,0 +1,6 @@
+# What is the largest prime factor of the number 600851475143?
+# https://projecteuler.net/problem=3
+
+# Uhh ok this is sorta cheating, but pretty unixy I guess.
+# TODO: Implement a proper primes generator and sieve?
+"/usr/bin/factor 600851475143" exec "stdout" extract words last pl

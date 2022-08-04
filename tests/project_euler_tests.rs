@@ -20,3 +20,8 @@ pub fn problem_02a() {
 pub fn problem_02b() {
     assert_eq!("4613732", run_problem("02b"));
 }
+
+#[test]
+pub fn problem_03() {
+    assert_eq!("6857", run_problem("03"));
+}

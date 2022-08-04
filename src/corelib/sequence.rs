@@ -50,6 +50,14 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let sequence = sequence.enqueue(a);
             quote.push_quote(sequence)
         }),
+        RailDef::on_state("nth", &["quote", "i64"], &["a"], |state| {
+            let (nth, state) = state.pop_i64("nth");
+            let (seq, state) = state.pop_quote("nth");
+
+            let nth = seq.stack.values.get(nth as usize).unwrap();
+
+            state.push(nth.clone())
+        }),
         RailDef::on_state("deq", &["quote"], &["a", "quote"], |quote| {
             let (sequence, quote) = quote.pop_quote("pop");
             let (a, sequence) = sequence.dequeue();

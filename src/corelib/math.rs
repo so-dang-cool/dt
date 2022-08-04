@@ -4,6 +4,8 @@ pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
         unary_numeric_op("abs", |a| a.abs(), |a| a.abs()),
         unary_numeric_op("negate", |a| -a, |a| -a),
+        unary_to_f64_op("sqrt", |a| a.sqrt()),
+        unary_to_i64_op("floor", |a| a),
         binary_numeric_op("+", |a, b| a + b, |a, b| a + b),
         binary_numeric_op("-", |a, b| a - b, |a, b| a - b),
         binary_numeric_op("*", |a, b| a * b, |a, b| a * b),
@@ -21,11 +23,51 @@ where
     F: Fn(f64) -> f64 + Sized + 'a,
     G: Fn(i64) -> i64 + Sized + 'a,
 {
-    RailDef::on_state(name, &["i64"], &["i64"], move |quote| {
+    RailDef::on_state(name, &["i64|f64"], &["i64|f64"], move |quote| {
         let (n, quote) = quote.pop();
         match n {
             RailVal::I64(n) => quote.push_i64(i64_op(n)),
             RailVal::F64(n) => quote.push_f64(f64_op(n)),
+            _ => {
+                rail_machine::log_warn(format!(
+                    "Can only perform {} on numeric values, but got {}",
+                    name, n
+                ));
+                quote.push(n)
+            }
+        }
+    })
+}
+
+fn unary_to_f64_op<'a, F>(name: &'a str, f64_op: F) -> RailDef<'a>
+where
+    F: Fn(f64) -> f64 + Sized + 'a,
+{
+    RailDef::on_state(name, &["i64|f64"], &["f64"], move |quote| {
+        let (n, quote) = quote.pop();
+        match n {
+            RailVal::I64(n) => quote.push_f64(f64_op(n as f64)),
+            RailVal::F64(n) => quote.push_f64(f64_op(n)),
+            _ => {
+                rail_machine::log_warn(format!(
+                    "Can only perform {} on numeric values, but got {}",
+                    name, n
+                ));
+                quote.push(n)
+            }
+        }
+    })
+}
+
+fn unary_to_i64_op<'a, F>(name: &'a str, i64_op: F) -> RailDef<'a>
+where
+    F: Fn(i64) -> i64 + Sized + 'a,
+{
+    RailDef::on_state(name, &["i64|f64"], &["f64"], move |quote| {
+        let (n, quote) = quote.pop();
+        match n {
+            RailVal::I64(n) => quote.push_i64(i64_op(n)),
+            RailVal::F64(n) => quote.push_i64(i64_op(n as i64)),
             _ => {
                 rail_machine::log_warn(format!(
                     "Can only perform {} on numeric values, but got {}",

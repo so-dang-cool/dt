@@ -1,2 +1,8 @@
 [ pop swap drop ] [ last ]   def
 [ len ]           [ length ] def
+
+[ [ start end step ] :
+    start quote
+    [ [ dup step + ] doin ]
+    end start - step / floor times
+] [ range ] def

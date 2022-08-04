@@ -2,3 +2,4 @@
 [ 2 mod 1 == ] [ odd? ]      def
 [ mod 0 == ]   [ divisor? ]  def
 [ true ]       [ otherwise ] def
+[ any not ]    [ none ]      def
