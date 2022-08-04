@@ -1,0 +1,6 @@
+[ [ cond action ] :
+  cond do
+    [ action do cond action while ]
+    [ ]
+  choose
+] [ while ] def

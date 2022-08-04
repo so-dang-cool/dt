@@ -1,2 +1,2 @@
-[ pop swap drop ] [ pop! ]   def
+[ pop swap drop ] [ last ]   def
 [ len ]           [ length ] def

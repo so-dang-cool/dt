@@ -1,5 +1,5 @@
 [ swap quote [ do ] concat swap def! ] [ def ] def!
 [ rev [ swap quote swap def ] each! ]  [ -> ]  def!
-[ -> ] [ : ] def
+[ -> ] [ : ] def!
 
 [ def? not ] [ undef? ] def
