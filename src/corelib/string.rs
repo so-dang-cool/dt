@@ -31,6 +31,24 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (strings, quote) = quote.pop_quote("join");
             quote.push_string(join("join", strings.stack, &delimiter))
         }),
+        RailDef::on_state("contains?", &["string", "string"], &["bool"], |quote| {
+            let (substring, quote) = quote.pop_string("contains?");
+            let (string, quote) = quote.pop_string("contains?");
+            let is_contained = string.contains(&substring);
+            quote.push_bool(is_contained)
+        }),
+        RailDef::on_state("starts-with?", &["string", "string"], &["bool"], |quote| {
+            let (prefix, quote) = quote.pop_string("starts-with?");
+            let (string, quote) = quote.pop_string("starts-with?");
+            let is_prefix = string.starts_with(&prefix);
+            quote.push_bool(is_prefix)
+        }),
+        RailDef::on_state("ends-with?", &["string", "string"], &["bool"], |quote| {
+            let (suffix, quote) = quote.pop_string("ends-with?");
+            let (string, quote) = quote.pop_string("ends-with?");
+            let is_suffix = string.ends_with(&suffix);
+            quote.push_bool(is_suffix)
+        }),
     ]
 }
 
