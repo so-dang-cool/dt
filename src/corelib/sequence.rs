@@ -142,5 +142,35 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                     command.clone().jailed_run_in_state(state)
                 })
         }),
+        RailDef::on_state("zip", &["quote", "quote"], &["quote"], |state| {
+            let (b, state) = state.pop_quote("zip");
+            let (a, state) = state.pop_quote("zip");
+
+            let c = a
+                .stack
+                .values
+                .into_iter()
+                .zip(b.stack.values)
+                .map(|(a, b)| state.child().push(a).push(b))
+                .fold(state.child(), |c, quote| c.push_quote(quote));
+
+            state.push_quote(c)
+        }),
+        RailDef::on_state("zip-with", &["quote", "quote", "quote"], &["quote"], |state| {
+            let (xform, state) = state.pop_quote("zip-with");
+            let (b, state) = state.pop_quote("zip-with");
+            let (a, state) = state.pop_quote("zip-with");
+
+            let c = a
+                .stack
+                .values
+                .into_iter()
+                .zip(b.stack.values)
+                .map(|(a, b)| state.child().push(a).push(b))
+                .map(|ab| xform.clone().run_in_state(ab))
+                .fold(state.child(), |c, result| c.push_quote(result));
+
+            state.push_quote(c)
+        }),
     ]
 }
