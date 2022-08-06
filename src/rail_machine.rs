@@ -580,6 +580,13 @@ impl std::fmt::Display for Stack {
 
 pub type Dictionary = HashMap<String, RailDef<'static>>;
 
+pub fn dictionary_of<Entries>(entries: Entries) -> Dictionary
+where
+    Entries: IntoIterator<Item = (String, RailDef<'static>)>,
+{
+    HashMap::from_iter(entries)
+}
+
 pub type Stab = HashMap<String, RailVal>;
 
 pub fn new_stab() -> Stab {
@@ -696,10 +703,6 @@ impl Debug for RailDef<'_> {
             self.produces.join(" ")
         )
     }
-}
-
-pub fn empty_dictionary() -> Dictionary {
-    HashMap::new()
 }
 
 // The following are all handling for errors, warnings, and panics.
