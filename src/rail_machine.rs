@@ -3,10 +3,10 @@ use colored::Colorize;
 use crate::corelib::corelib_dictionary;
 use crate::loading;
 use im::{HashMap, Vector};
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 use std::sync::Arc;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RailState {
     // TODO: Provide update functions and make these private
     pub stack: Stack,
@@ -345,14 +345,58 @@ impl Default for RailState {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Context {
     Main,
     Quotation { parent_state: Box<RailState> },
     None,
 }
 
-#[derive(Clone, Debug)]
+pub enum RailType {
+    A,
+    B,
+    C,
+    ZeroOrMoreAny,
+    Boolean,
+    Number,
+    I64,
+    F64,
+    Command,
+    // TODO: have quotes with typed contents, e.g. Quote<String>
+    Quote,
+    QuoteOrCommand,
+    QuoteOrString,
+    String,
+    Stab,
+}
+
+impl Display for RailType {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use RailType::*;
+        write!(
+            fmt,
+            "{}",
+            match self {
+                A => "a",
+                B => "b",
+                C => "c",
+                ZeroOrMoreAny => "...",
+                Boolean => "bool",
+                Number => "num",
+                I64 => "i64",
+                F64 => "f64",
+                Command => "command",
+                Quote => "quote",
+                QuoteOrCommand => "quote|command",
+                QuoteOrString => "quote|string",
+                String => "string",
+                Stab => "stab",
+            }
+        )
+    }
+}
+
+#[derive(Clone)]
 pub enum RailVal {
     Boolean(bool),
     // TODO: Make a "Numeric" typeclass. (And floating-point/rational numbers)
@@ -385,17 +429,19 @@ impl PartialEq for RailVal {
 
 impl RailVal {
     pub fn type_name(&self) -> String {
-        use RailVal::*;
+        self.get_type().to_string()
+    }
+
+    fn get_type(&self) -> RailType {
         match self {
-            Boolean(_) => "bool",
-            I64(_) => "i64",
-            F64(_) => "f64",
-            Command(_) => "command",
-            Quote(_) => "quote",
-            String(_) => "string",
-            Stab(_) => "stab",
+            RailVal::Boolean(_) => RailType::Boolean,
+            RailVal::I64(_) => RailType::I64,
+            RailVal::F64(_) => RailType::F64,
+            RailVal::Command(_) => RailType::Command,
+            RailVal::Quote(_) => RailType::Quote,
+            RailVal::String(_) => RailType::String,
+            RailVal::Stab(_) => RailType::Stab,
         }
-        .into()
     }
 }
 
@@ -422,7 +468,7 @@ impl std::fmt::Display for RailVal {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Stack {
     pub values: Vector<RailVal>,
 }
@@ -596,8 +642,8 @@ pub fn new_stab() -> Stab {
 #[derive(Clone)]
 pub struct RailDef<'a> {
     pub name: String,
-    consumes: &'a [&'a str],
-    produces: &'a [&'a str],
+    consumes: &'a [RailType],
+    produces: &'a [RailType],
     action: RailAction<'a>,
 }
 
@@ -610,8 +656,8 @@ pub enum RailAction<'a> {
 impl RailDef<'_> {
     pub fn on_state<'a, F>(
         name: &str,
-        consumes: &'a [&'a str],
-        produces: &'a [&'a str],
+        consumes: &'a [RailType],
+        produces: &'a [RailType],
         state_action: F,
     ) -> RailDef<'a>
     where
@@ -627,8 +673,8 @@ impl RailDef<'_> {
 
     pub fn on_jailed_state<'a, F>(
         name: &str,
-        consumes: &'a [&'a str],
-        produces: &'a [&'a str],
+        consumes: &'a [RailType],
+        produces: &'a [RailType],
         state_action: F,
     ) -> RailDef<'a>
     where
@@ -648,8 +694,8 @@ impl RailDef<'_> {
 
     pub fn contextless<'a, F>(
         name: &str,
-        consumes: &'a [&'a str],
-        produces: &'a [&'a str],
+        consumes: &'a [RailType],
+        produces: &'a [RailType],
         contextless_action: F,
     ) -> RailDef<'a>
     where
@@ -677,31 +723,35 @@ impl RailDef<'_> {
             log_warn(format!(
                 "Underflow for \"{}\" (takes: {}, gives: {}). State: {}",
                 self.name,
-                self.consumes.join(" "),
-                self.produces.join(" "),
+                self.display_consumes(),
+                self.display_produces(),
                 state.stack
             ));
             return state;
         }
 
-        // TODO: Type checks
+        // TODO: Type checks?
 
         match &self.action {
             RailAction::Builtin(action) => action(state),
             RailAction::Quotation(quote) => quote.clone().run_in_state(state),
         }
     }
-}
 
-impl Debug for RailDef<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "{} ({} -> {})",
-            self.name,
-            self.consumes.join(" "),
-            self.produces.join(" ")
-        )
+    fn display_consumes(&self) -> String {
+        self.consumes
+            .iter()
+            .map(|t| t.to_string())
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+
+    fn display_produces(&self) -> String {
+        self.produces
+            .iter()
+            .map(|t| t.to_string())
+            .collect::<Vec<_>>()
+            .join(" ")
     }
 }
 

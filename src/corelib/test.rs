@@ -1,12 +1,14 @@
 use colored::Colorize;
 
-use crate::rail_machine::RailDef;
+use crate::rail_machine::{RailDef, RailType};
+
+use RailType::*;
 
 // TODO: More forms, optional messages, etc. Input as stab? Output as stab or quote of failures?
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![RailDef::on_state(
         "assert-true",
-        &["bool", "string"],
+        &[Boolean, String],
         &[],
         |quote| {
             let (msg, quote) = quote.pop_string("assert-true");

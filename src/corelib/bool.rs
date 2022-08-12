@@ -1,19 +1,21 @@
-use crate::rail_machine::{self, RailDef, RailVal};
+use crate::rail_machine::{self, RailDef, RailType, RailVal};
+
+use RailType::*;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
         push_bool("true", true),
         push_bool("false", false),
-        RailDef::on_state("not", &["bool"], &["bool"], |quote| {
+        RailDef::on_state("not", &[Boolean], &[Boolean], |quote| {
             let (b, quote) = quote.pop_bool("not");
             quote.push_bool(!b)
         }),
-        RailDef::on_state("or", &["bool", "bool"], &["bool"], |quote| {
+        RailDef::on_state("or", &[Boolean, Boolean], &[Boolean], |quote| {
             let (b2, quote) = quote.pop_bool("or");
             let (b1, quote) = quote.pop_bool("or");
             quote.push_bool(b1 || b2)
         }),
-        RailDef::on_state("and", &["bool", "bool"], &["bool"], |quote| {
+        RailDef::on_state("and", &[Boolean, Boolean], &[Boolean], |quote| {
             let (b2, quote) = quote.pop_bool("and");
             let (b1, quote) = quote.pop_bool("and");
             quote.push_bool(b1 && b2)
@@ -24,7 +26,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         binary_numeric_pred("<", |a, b| a < b, |a, b| a < b),
         binary_numeric_pred(">=", |a, b| a >= b, |a, b| a >= b),
         binary_numeric_pred("<=", |a, b| a <= b, |a, b| a <= b),
-        RailDef::on_state("any", &["quote", "quote"], &["quote"], |state| {
+        RailDef::on_state("any", &[Quote, Quote], &[Quote], |state| {
             let (predicate, state) = state.pop_quote("any");
             let (sequence, state) = state.pop_quote("any");
 
@@ -43,7 +45,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 }
 
 fn push_bool(name: &str, b: bool) -> RailDef<'_> {
-    RailDef::on_state(name, &[], &["bool"], move |quote| quote.push_bool(b))
+    RailDef::on_state(name, &[], &[Boolean], move |quote| quote.push_bool(b))
 }
 
 enum Equality {
@@ -52,7 +54,7 @@ enum Equality {
 }
 
 fn equality(name: &str, eq: Equality) -> RailDef<'_> {
-    RailDef::on_state(name, &["a", "a"], &["bool"], move |quote| {
+    RailDef::on_state(name, &[A, A], &[Boolean], move |quote| {
         let (b, quote) = quote.pop();
         let (a, quote) = quote.pop();
 
@@ -72,7 +74,7 @@ where
     F: Fn(f64, f64) -> bool + Sized + 'a,
     G: Fn(i64, i64) -> bool + Sized + 'a,
 {
-    RailDef::on_state(name, &["num", "num"], &["bool"], move |quote| {
+    RailDef::on_state(name, &[Number, Number], &[Boolean], move |quote| {
         let (b, quote) = quote.pop();
         let (a, quote) = quote.pop();
 

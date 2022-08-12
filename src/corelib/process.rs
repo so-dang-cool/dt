@@ -1,10 +1,12 @@
 use std::env;
 
-use crate::rail_machine::{self, RailDef, RailVal};
+use crate::rail_machine::{self, RailDef, RailType, RailVal};
+
+use RailType::*;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_state("exec", &["string"], &["quote"], |quote| {
+        RailDef::on_state("exec", &[String], &[Quote], |quote| {
             let (invocation, quote) = quote.pop_string("exec");
             let invocation = invocation.trim();
             let (exe, args) = invocation.split_once(' ').unwrap_or((invocation, ""));
@@ -20,7 +22,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             result.insert(
                 "stdout".to_string(),
                 RailVal::String(
-                    String::from_utf8(res.stdout)
+                    std::string::String::from_utf8(res.stdout)
                         .unwrap()
                         .trim_end()
                         .to_string(),
@@ -29,7 +31,7 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             result.insert(
                 "stderr".to_string(),
                 RailVal::String(
-                    String::from_utf8(res.stderr)
+                    std::string::String::from_utf8(res.stderr)
                         .unwrap()
                         .trim_end()
                         .to_string(),
@@ -38,25 +40,25 @@ pub fn builtins() -> Vec<RailDef<'static>> {
 
             quote.push_stab(result)
         }),
-        RailDef::on_state("env", &[], &["string"], |quote| {
+        RailDef::on_state("env", &[], &[String], |quote| {
             let vars = env::vars().fold(rail_machine::new_stab(), |mut stab, (k, v)| {
                 stab.insert(k, RailVal::String(v));
                 stab
             });
             quote.push_stab(vars)
         }),
-        RailDef::on_state("envget", &["string"], &["string"], |quote| {
+        RailDef::on_state("envget", &[String], &[String], |quote| {
             let (key, quote) = quote.pop_string("envget");
             let var = env::var(key).unwrap_or_else(|_| "unset".to_string());
             quote.push_string(var)
         }),
-        RailDef::on_state("envset", &["string", "string"], &[], |quote| {
+        RailDef::on_state("envset", &[String, String], &[], |quote| {
             let (var, quote) = quote.pop_string("envset");
             let (key, quote) = quote.pop_string("envset");
             env::set_var(key, var);
             quote
         }),
-        RailDef::on_state("stdin", &[], &["quote"], |quote| {
+        RailDef::on_state("stdin", &[], &[Quote], |quote| {
             let lines = std::io::stdin()
                 .lines()
                 .filter_map(|line| line.ok())

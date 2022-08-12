@@ -1,12 +1,14 @@
-use crate::rail_machine::{self, RailDef, RailState, RailVal};
+use crate::rail_machine::{self, RailDef, RailState, RailType, RailVal};
+
+use RailType::*;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_state("do!", &["quote|command"], &["..."], do_it()),
-        RailDef::on_jailed_state("do", &["quote|command"], &["..."], do_it()),
-        RailDef::on_state("doin!", &["quote", "quote|command"], &["..."], doin()),
-        RailDef::on_jailed_state("doin", &["quote", "quote|command"], &["..."], doin()),
-        RailDef::on_state("def!", &["quote", "string|command|quote"], &[], |state| {
+        RailDef::on_state("do!", &[QuoteOrCommand], &[ZeroOrMoreAny], do_it()),
+        RailDef::on_jailed_state("do", &[QuoteOrCommand], &[ZeroOrMoreAny], do_it()),
+        RailDef::on_state("doin!", &[Quote, QuoteOrCommand], &[ZeroOrMoreAny], doin()),
+        RailDef::on_jailed_state("doin", &[Quote, QuoteOrCommand], &[ZeroOrMoreAny], doin()),
+        RailDef::on_state("def!", &[Quote, QuoteOrCommand], &[], |state| {
             state.update_stack_and_defs(|quote, definitions| {
                 let mut definitions = definitions;
                 let (name, quote) = quote.pop();
@@ -17,11 +19,12 @@ pub fn builtins() -> Vec<RailDef<'static>> {
                     return (quote, definitions);
                 };
                 let (commands, quote) = quote.pop_quote("def");
+                // TODO: Typecheck...?
                 definitions.insert(name.clone(), RailDef::from_quote(&name, commands));
                 (quote, definitions)
             })
         }),
-        RailDef::on_state("def?", &["string|command"], &["bool"], |state| {
+        RailDef::on_state("def?", &[QuoteOrCommand], &[Boolean], |state| {
             let (name, state) = state.pop();
             let name = if let Some(name) = get_command_name(&name) {
                 name
@@ -65,7 +68,7 @@ fn doin() -> impl Fn(RailState) -> RailState {
     }
 }
 
-fn get_command_name(name: &RailVal) -> Option<String> {
+fn get_command_name(name: &RailVal) -> Option<std::string::String> {
     match name.clone() {
         RailVal::String(s) => Some(s),
         RailVal::Command(c) => Some(c),

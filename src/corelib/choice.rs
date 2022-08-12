@@ -1,7 +1,7 @@
-use crate::rail_machine::RailDef;
+use crate::rail_machine::{RailDef, RailType};
 
 pub fn builtins() -> Vec<RailDef<'static>> {
-    vec![RailDef::on_state("opt", &["quote"], &[], |state| {
+    vec![RailDef::on_state("opt", &[RailType::Quote], &[], |state| {
         // TODO: All conditions and all actions must have the same quote effect.
         let (options, quote) = state.stack.clone().pop_quote("opt");
         let mut state = state.replace_stack(quote);
