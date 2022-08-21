@@ -51,6 +51,11 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let is_suffix = string.ends_with(&suffix);
             quote.push_bool(is_suffix)
         }),
+        RailDef::on_state("to-string", &[A], &[String], |quote| {
+            let (a, quote) = quote.pop();
+            let a = format!("{}", a);
+            quote.push_string(a)
+        }),
     ]
 }
 

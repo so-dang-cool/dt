@@ -17,6 +17,20 @@ pub fn builtins() -> Vec<RailDef<'static>> {
         RailDef::on_state("int-min", &[], &[I64], |quote| quote.push_i64(i64::MIN)),
         RailDef::on_state("float-max", &[], &[F64], |quote| quote.push_f64(f64::MAX)),
         RailDef::on_state("float-min", &[], &[F64], |quote| quote.push_f64(f64::MIN)),
+        RailDef::on_state("digits", &[I64], &[Quote], |quote| {
+            let (n, quote) = quote.pop_i64("digits");
+            let ns = quote.child();
+            if n == 0 {
+                return quote.push_quote(ns.push_i64(0));
+            }
+            let mut ns = ns;
+            let mut n = n;
+            while n != 0 {
+                ns = ns.push_i64(n % 10);
+                n = n / 10;
+            }
+            return quote.push_quote(ns.reverse())
+        })
     ]
 }
 

@@ -3,7 +3,11 @@
     [ otherwise ] [ b ] ] opt
 ] [ max ] def
 
+[ [ dup length 1 > ] [ [ max ] doin ] while ... ] [ maximum ] def
+
 [ [ a b ] ->
   [ [ a b <= ]    [ a ]
     [ otherwise ] [ b ] ] opt
 ] [ min ] def
+
+[ [ dup length 1 > ] [ [ min ] doin ] while ... ] [ minimum ] def

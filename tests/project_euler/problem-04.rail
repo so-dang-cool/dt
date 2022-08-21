@@ -1,0 +1,25 @@
+# Find the largest palindrome made from the product of two 3-digit numbers.
+# https://projecteuler.net/problem=4
+
+[ digits dup rev == ] [ palin? ] def
+
+[ 999 999 [ ] ]
+
+[ ... [ a b ps ] :
+    [
+        [ a b * palin? ] [ [ ] a push
+                               b 1 - push
+                               ps a b * push push ]
+        # Assuming both factors will be in the 900s...
+        [ b 900 == ]     [ [ ] a 1 - push
+                               999 push
+                               ps push ]
+        [ otherwise ]    [ [ ] a push
+                               b 1 - push
+                               ps push ]
+    ] opt
+] [ palin-once ] def
+
+[ palin-once ] 10000 times
+
+last maximum println

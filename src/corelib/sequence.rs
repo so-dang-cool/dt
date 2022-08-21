@@ -65,10 +65,19 @@ pub fn builtins() -> Vec<RailDef<'static>> {
             let (a, sequence) = sequence.dequeue();
             quote.push(a).push_quote(sequence)
         }),
-        RailDef::on_state("rev", &[Quote], &[Quote], |quote| {
-            let (sequence, quote) = quote.pop_quote("rev");
-            let sequence = sequence.reverse();
-            quote.push_quote(sequence)
+        RailDef::on_state("rev", &[QuoteOrString], &[Quote], |quote| {
+            let (a, quote) = quote.pop();
+            match a {
+                RailVal::String(s) => quote.push_string(s.chars().rev().collect()),
+                RailVal::Quote(q) => quote.push_quote(q.reverse()),
+                _ => {
+                    rail_machine::log_warn(format!(
+                        "Can only perform len on quote or string but got {}",
+                        a
+                    ));
+                    quote.push(a)
+                }
+            }
         }),
         RailDef::on_state("concat", &[Quote, Quote], &[Quote], |quote| {
             let (suffix, quote) = quote.pop_quote("concat");
