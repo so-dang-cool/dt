@@ -356,13 +356,16 @@ pub enum RailType {
     A,
     B,
     C,
-    ZeroOrMoreAny,
+    /// Zero or many unknown types.
+    Unknown,
     Boolean,
     Number,
     I64,
     F64,
     Command,
-    // TODO: have quotes with typed contents, e.g. Quote<String>
+    // TODO: have quotes with typed contents
+    // Examples: Quote<String...> for split
+    //           Quote<String, Unknown> for stab entries
     Quote,
     QuoteOrCommand,
     QuoteOrString,
@@ -373,26 +376,24 @@ pub enum RailType {
 impl Display for RailType {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use RailType::*;
-        write!(
-            fmt,
-            "{}",
-            match self {
-                A => "a",
-                B => "b",
-                C => "c",
-                ZeroOrMoreAny => "...",
-                Boolean => "bool",
-                Number => "num",
-                I64 => "i64",
-                F64 => "f64",
-                Command => "command",
-                Quote => "quote",
-                QuoteOrCommand => "quote|command",
-                QuoteOrString => "quote|string",
-                String => "string",
-                Stab => "stab",
-            }
-        )
+        let my_type = match self {
+            A => "a",
+            B => "b",
+            C => "c",
+            Unknown => "...",
+            Boolean => "bool",
+            Number => "num",
+            I64 => "i64",
+            F64 => "f64",
+            Command => "command",
+            Quote => "quote",
+            QuoteOrCommand => "quote|command",
+            QuoteOrString => "quote|string",
+            String => "string",
+            Stab => "stab",
+        };
+
+        write!(fmt, "{}", my_type)
     }
 }
 

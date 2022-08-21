@@ -4,10 +4,10 @@ use RailType::*;
 
 pub fn builtins() -> Vec<RailDef<'static>> {
     vec![
-        RailDef::on_state("do!", &[QuoteOrCommand], &[ZeroOrMoreAny], do_it()),
-        RailDef::on_jailed_state("do", &[QuoteOrCommand], &[ZeroOrMoreAny], do_it()),
-        RailDef::on_state("doin!", &[Quote, QuoteOrCommand], &[ZeroOrMoreAny], doin()),
-        RailDef::on_jailed_state("doin", &[Quote, QuoteOrCommand], &[ZeroOrMoreAny], doin()),
+        RailDef::on_state("do!", &[QuoteOrCommand], &[Unknown], do_it()),
+        RailDef::on_jailed_state("do", &[QuoteOrCommand], &[Unknown], do_it()),
+        RailDef::on_state("doin!", &[Quote, QuoteOrCommand], &[Unknown], doin()),
+        RailDef::on_jailed_state("doin", &[Quote, QuoteOrCommand], &[Unknown], doin()),
         RailDef::on_state("def!", &[Quote, QuoteOrCommand], &[], |state| {
             state.update_stack_and_defs(|quote, definitions| {
                 let mut definitions = definitions;
