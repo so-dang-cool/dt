@@ -1,19 +1,19 @@
 
-![License](https://img.shields.io/github/license/hiljusti/rail)
-![Lines of code](https://img.shields.io/tokei/lines/github/hiljusti/rail)
-![GitHub repo size](https://img.shields.io/github/repo-size/hiljusti/rail)
+![License](https://img.shields.io/github/license/hiljusti/dt)
+![Lines of code](https://img.shields.io/tokei/lines/github/hiljusti/dt)
+![GitHub repo size](https://img.shields.io/github/repo-size/hiljusti/dt)
 
-# Rail
+# `dt`
 
-A straightforward programming language.
+It's duck tape for your unix pipe.
 
-Rail is an experimental [concatenative](https://concatenative.org/wiki/view/Concatenative%20language)
+`dt` is an experimental [concatenative](https://concatenative.org/wiki/view/Concatenative%20language)
 programming language. It is under wild development and zero stability between
 versions is guaranteed.
 
 ```
-$ railsh
-rail 0.20.3
+$ dtsh
+dt 0.20.3
 
 > 1 1 + print
 2
@@ -30,8 +30,8 @@ hi
 ## Installation
 
 ```shell
-$ cargo install rail-lang
-$ railup bootstrap
+$ cargo install dt-tool
+$ dtup bootstrap
 ```
 
 ## Credits

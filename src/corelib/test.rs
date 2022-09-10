@@ -1,12 +1,12 @@
 use colored::Colorize;
 
-use crate::rail_machine::{RailDef, RailType};
+use crate::dt_machine::{Definition, DtType};
 
-use RailType::*;
+use DtType::*;
 
 // TODO: More forms, optional messages, etc. Input as stab? Output as stab or quote of failures?
-pub fn builtins() -> Vec<RailDef<'static>> {
-    vec![RailDef::on_state(
+pub fn builtins() -> Vec<Definition<'static>> {
+    vec![Definition::on_state(
         "assert-true",
         &[Boolean, String],
         &[],

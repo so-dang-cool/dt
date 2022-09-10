@@ -5,5 +5,5 @@ set -eu
 cargo run --bin "$(basename "$0")" \
     -- \
     --no-stdlib \
-    --lib-list rail-src/dev.txt \
+    --lib-list dt-src/dev.txt \
     "$@"

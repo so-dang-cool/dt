@@ -1,6 +1,6 @@
 Guiding principles:
 
-1. **Left-to-right, top-to-bottom always.** This is a core to giving rail an understandable model. I think this is where other concatenative languages (or functional application in Haskell, etc) starts to require a galaxy brain.
+1. **Left-to-right, top-to-bottom always.** This is a core to an understandable model. I think this is where other concatenative languages (or functional application in Haskell, etc) starts to require a galaxy brain.
 
 2. **Many UNDERSTANDABLE granular pieces.** Abstraction only works when both the interface and implementation are understandable. An interface MUST be understandable, and an implementation SHOULD be as understandable as possible.
 

@@ -1,26 +1,26 @@
 use std::{env, fs, io, process};
 
 use clap::{ArgMatches, Command};
-use rail_lang::{rail_lib_path, RAIL_VERSION};
+use dt_tool::{dt_lib_path, DT_VERSION};
 
 pub fn main() {
     let args = parse_args();
 
     match args.subcommand() {
         Some(("bootstrap", _)) => {
-            let path = rail_lib_path();
+            let path = dt_lib_path();
             fs::create_dir_all(path.clone())
                 .unwrap_or_else(|e| panic!("Couldn't create {:?} : {}", path, e));
             env::set_current_dir(path.clone())
                 .unwrap_or_else(|e| panic!("Couldn't access {:?} : {}", path, e));
-            let version_tag = format!("v{}", RAIL_VERSION);
+            let version_tag = format!("v{}", DT_VERSION);
             let clone_result = process::Command::new("git")
                 .args([
                     "clone",
                     "--single-branch",
                     "--branch",
                     &version_tag,
-                    "https://github.com/hiljusti/rail",
+                    "https://github.com/hiljusti/dt",
                     &path.to_string_lossy(),
                 ])
                 .output()
@@ -30,7 +30,7 @@ pub fn main() {
             }
         }
         Some(("zap", _)) => {
-            let path = rail_lib_path();
+            let path = dt_lib_path();
             if let Err(e) = fs::remove_dir_all(path.clone()) {
                 match e.kind() {
                     io::ErrorKind::NotFound => (),
@@ -47,14 +47,14 @@ pub fn main() {
 
 fn parse_args() -> ArgMatches {
     // TODO: How can I do these in the derive style?
-    let bootstrap_help = format!("Fetch the Rail {} std library and extras", RAIL_VERSION);
+    let bootstrap_help = format!("Fetch the dt {} std library and extras", DT_VERSION);
     let zap_help = format!(
-        "Destroy any cached Rail {} std library and extras",
-        RAIL_VERSION
+        "Destroy any cached dt {} std library and extras",
+        DT_VERSION
     );
 
-    Command::new("railup")
-        .about("Rail Updater. Provides updates for the Rail programming language")
+    Command::new("dtup")
+        .about("dt updater. Provides updates for the dt utility")
         .subcommand(
             Command::new("bootstrap")
                 .short_flag('b')

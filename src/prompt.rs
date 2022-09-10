@@ -1,29 +1,29 @@
-use crate::rail_machine::{self, RailState};
-use crate::{loading, RAIL_VERSION};
+use crate::dt_machine::{self, DtState};
+use crate::{loading, DT_VERSION};
 use colored::Colorize;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-pub struct RailPrompt {
+pub struct DtPrompt {
     is_tty: bool,
     editor: Editor<()>,
     terms: Vec<String>,
 }
 
-impl RailPrompt {
-    pub fn new() -> RailPrompt {
+impl DtPrompt {
+    pub fn new() -> DtPrompt {
         let mut editor = Editor::<()>::new().expect("Unable to boot editor");
         let is_tty = editor.dimensions().is_some();
         let terms = vec![];
-        RailPrompt {
+        DtPrompt {
             is_tty,
             editor,
             terms,
         }
     }
 
-    pub fn run(self, state: RailState) {
-        let name_and_version = format!("rail {}", RAIL_VERSION);
+    pub fn run(self, state: DtState) {
+        let name_and_version = format!("dt {}", DT_VERSION);
         eprintln!("{}", name_and_version.dimmed().red());
 
         let end_state = self.fold(state, |state, term| state.run_term(term));
@@ -35,13 +35,13 @@ impl RailPrompt {
     }
 }
 
-impl Default for RailPrompt {
+impl Default for DtPrompt {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Iterator for RailPrompt {
+impl Iterator for DtPrompt {
     type Item = String;
 
     fn next(&mut self) -> Option<String> {
@@ -58,14 +58,14 @@ impl Iterator for RailPrompt {
             if let Err(e) = input {
                 // ^D and ^C are not error cases.
                 if let ReadlineError::Eof = e {
-                    rail_machine::log_derail("End of input");
+                    dt_machine::log_exit("End of input");
                     return None;
                 } else if let ReadlineError::Interrupted = e {
-                    rail_machine::log_derail("Process interrupt");
+                    dt_machine::log_exit("Process interrupt");
                     return None;
                 }
 
-                rail_machine::log_derail(e);
+                dt_machine::log_exit(e);
                 std::process::exit(1);
             }
 
@@ -73,7 +73,7 @@ impl Iterator for RailPrompt {
 
             self.editor.add_history_entry(&input);
 
-            self.terms = loading::from_rail_source(input);
+            self.terms = loading::from_dt_source(input);
             self.terms.reverse();
         }
 

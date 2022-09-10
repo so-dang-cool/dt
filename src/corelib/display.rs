@@ -1,34 +1,34 @@
 use std::fmt::Display;
 
-use crate::rail_machine::{RailDef, RailType, RailVal};
-use crate::RAIL_VERSION;
+use crate::dt_machine::{Definition, DtType, DtValue};
+use crate::DT_VERSION;
 
-pub fn builtins() -> Vec<RailDef<'static>> {
+pub fn builtins() -> Vec<Definition<'static>> {
     vec![
         printer("p", &|a| print!("{}", a)),
         printer("pl", &|a| println!("{}", a)),
-        RailDef::contextless("nl", &[], &[], || print!("\n")),
-        RailDef::on_state("status", &[], &[], |state| {
+        Definition::contextless("nl", &[], &[], || print!("\n")),
+        Definition::on_state("status", &[], &[], |state| {
             println!("{}", state.stack);
             state
         }),
-        RailDef::contextless("clear", &[], &[], || {
+        Definition::contextless("clear", &[], &[], || {
             clearscreen::clear().expect("Unable to clear screen")
         }),
-        RailDef::on_state("version", &[], &[RailType::String], |quote| {
-            quote.push_str(RAIL_VERSION)
+        Definition::on_state("version", &[], &[DtType::String], |quote| {
+            quote.push_str(DT_VERSION)
         }),
     ]
 }
 
-fn printer<'a, P>(name: &str, p: &'a P) -> RailDef<'a>
+fn printer<'a, P>(name: &str, p: &'a P) -> Definition<'a>
 where
     P: Fn(&dyn Display) + 'a,
 {
-    RailDef::on_state(name, &[RailType::A], &[], move |quote| {
+    Definition::on_state(name, &[DtType::A], &[], move |quote| {
         let (a, quote) = quote.pop();
         match a {
-            RailVal::String(a) => p(&a),
+            DtValue::String(a) => p(&a),
             _ => p(&a),
         }
         quote

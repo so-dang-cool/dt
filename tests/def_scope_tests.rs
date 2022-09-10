@@ -1,5 +1,5 @@
-mod rail_runner;
-use rail_runner::rail;
+mod dt_test_utils;
+use dt_test_utils::dt;
 
 #[test]
 fn basic_def() {
@@ -9,7 +9,7 @@ fn basic_def() {
         "inc" def? print
     "#;
 
-    assert_eq!("2true", rail(&[source]).stdout);
+    assert_eq!("2true", dt(&[source]).stdout);
 }
 
 #[test]
@@ -20,8 +20,8 @@ fn basic_do_bang_def() {
         "empty-quote" def? "do! should define in parent context" assert-true
     "#;
 
-    assert_eq!("", rail(&[source]).stderr);
-    assert_eq!("", rail(&[source]).stdout);
+    assert_eq!("", dt(&[source]).stderr);
+    assert_eq!("", dt(&[source]).stdout);
 }
 
 #[test]
@@ -32,8 +32,8 @@ fn basic_do_def() {
         "empty-quote" undef? "do should NOT define in parent context" assert-true
     "#;
 
-    assert_eq!("", rail(&[source]).stderr);
-    assert_eq!("", rail(&[source]).stdout);
+    assert_eq!("", dt(&[source]).stderr);
+    assert_eq!("", dt(&[source]).stdout);
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn basic_arrow_do() {
         "str" undef? "do must not leak definitions, but str was defined" assert-true
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -67,7 +67,7 @@ fn arrow_in_times() {
         [ n ] undef? "times must not leak definitions, but n was defined" assert-true
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -86,7 +86,7 @@ fn arrow_in_each() {
         [ n ] undef? "each must not leak definitions, but n was defined" assert-true
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -102,7 +102,7 @@ fn arrow_in_map() {
         "food" undef? "map must not leak definitions, but food was defined" assert-true
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -119,7 +119,7 @@ fn arrow_in_filter() {
         "str" undef? "filter must not leak definitions, but str was defined" assert-true
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -141,7 +141,7 @@ fn shadowing_in_do() {
         fav-number println
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -160,7 +160,7 @@ fn shadowing_arrow_in_do() {
         fav-number println
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -177,7 +177,7 @@ fn shadowing_in_times() {
         n println
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -196,7 +196,7 @@ fn shadowing_in_each() {
         pizza println
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -218,7 +218,7 @@ fn shadowing_in_map() {
         x println
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 
@@ -240,7 +240,7 @@ fn shadowing_in_filter() {
         happy-word println
     "#;
 
-    let res = rail(&[source]);
+    let res = dt(&[source]);
 
     assert_eq!("", res.stderr);
 

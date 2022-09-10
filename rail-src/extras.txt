@@ -1,4 +1,0 @@
-misc/incubating.rail
-
-alien/factorisms.rail
-alien/forthisms.rail

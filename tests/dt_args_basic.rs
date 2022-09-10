@@ -1,21 +1,21 @@
-mod rail_runner;
-use rail_runner::rail;
+mod dt_test_utils;
+use dt_test_utils::dt;
 
 #[test]
 fn status() {
-    assert_eq!("[ ]\n", rail(&["status"]).stdout);
+    assert_eq!("[ ]\n", dt(&["status"]).stdout);
 }
 
 #[test]
 fn one_plus_one_is_two() {
     // rail 1 1 + print
-    let res = rail(&["1", "1", "+", "println"]);
+    let res = dt(&["1", "1", "+", "println"]);
     assert_eq!("2\n", res.stdout);
 }
 
 #[test]
 fn quoted_one_plus_one_is_two() {
     // rail "1 1 + print"
-    let res = rail(&["1 1 + println"]);
+    let res = dt(&["1 1 + println"]);
     assert_eq!("2\n", res.stdout);
 }

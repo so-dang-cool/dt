@@ -1,17 +1,17 @@
 use clap::{Parser, Subcommand};
-use rail_lang::prompt::RailPrompt;
-use rail_lang::rail_machine::RailState;
-use rail_lang::{loading, RAIL_VERSION};
+use dt_tool::dt_machine::DtState;
+use dt_tool::prompt::DtPrompt;
+use dt_tool::{loading, DT_VERSION};
 
 pub fn main() {
-    let args = RailShell::parse();
+    let args = DtShell::parse();
 
-    let state = RailState::new_with_libs(args.no_stdlib, args.lib_list);
+    let state = DtState::new_with_libs(args.no_stdlib, args.lib_list);
 
     match args.mode {
-        Some(Mode::Interactive) | None => RailPrompt::default().run(state),
+        Some(Mode::Interactive) | None => DtPrompt::default().run(state),
         Some(Mode::Run { file }) => {
-            let tokens = loading::from_rail_source_file(file);
+            let tokens = loading::from_dt_source_file(file);
             state.run_tokens(tokens);
         }
         Some(Mode::RunStdin) => unimplemented!("I don't know how to run stdin yet"),
@@ -19,14 +19,14 @@ pub fn main() {
 }
 
 #[derive(Parser)]
-#[clap(name = "railsh", version = RAIL_VERSION)]
-/// Rail Shell. A straightforward programming language
-struct RailShell {
+#[clap(name = "dtsh", version = DT_VERSION)]
+/// dt shell. It's duck tape for your unix pipes
+struct DtShell {
     #[clap(subcommand)]
     mode: Option<Mode>,
 
     #[clap(long)]
-    /// Disable loading the Rail standard library.
+    /// Disable loading the dt standard library.
     no_stdlib: bool,
 
     #[clap(short = 'l', long)]

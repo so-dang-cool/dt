@@ -1,4 +1,4 @@
-use crate::rail_machine::{self, Dictionary};
+use crate::dt_machine::{self, Dictionary};
 
 mod bool;
 mod choice;
@@ -16,7 +16,7 @@ mod string;
 mod test;
 
 pub fn corelib_dictionary() -> Dictionary {
-    rail_machine::dictionary_of(
+    dt_machine::dictionary_of(
         bool::builtins()
             .into_iter()
             .chain(choice::builtins())
