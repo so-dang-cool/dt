@@ -20,20 +20,20 @@ pub fn builtins() -> Vec<Definition<'static>> {
             let (b1, quote) = quote.pop_bool("and");
             quote.push_bool(b1 && b2)
         }),
-        equality("==", Equality::Equal),
-        equality("!=", Equality::NotEqual),
-        binary_numeric_pred(">", |a, b| a > b, |a, b| a > b),
-        binary_numeric_pred("<", |a, b| a < b, |a, b| a < b),
-        binary_numeric_pred(">=", |a, b| a >= b, |a, b| a >= b),
-        binary_numeric_pred("<=", |a, b| a <= b, |a, b| a <= b),
-        Definition::on_state("any", &[Quote, Quote], &[Quote], |state| {
-            let (predicate, state) = state.pop_quote("any");
-            let (sequence, state) = state.pop_quote("any");
+        equality("eq?", Equality::Equal),
+        equality("neq?", Equality::NotEqual),
+        binary_numeric_pred("gt?", |a, b| b > a, |a, b| b > a),
+        binary_numeric_pred("lt?", |a, b| b < a, |a, b| b < a),
+        binary_numeric_pred("gte?", |a, b| b >= a, |a, b| b >= a),
+        binary_numeric_pred("lte?", |a, b| b <= a, |a, b| b <= a),
+        Definition::on_state("any?", &[Quote, Quote], &[Quote], |state| {
+            let (predicate, state) = state.pop_quote("any?");
+            let (sequence, state) = state.pop_quote("any?");
 
             for term in sequence.stack.values {
                 let substate = state.child().push(term);
                 let substate = predicate.clone().run_in_state(substate);
-                let (pass, _) = substate.stack.pop_bool("any");
+                let (pass, _) = substate.stack.pop_bool("any?");
                 if pass {
                     return state.push_bool(true);
                 }

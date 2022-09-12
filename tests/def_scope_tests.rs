@@ -235,7 +235,7 @@ fn shadowing_in_filter() {
 
         happy-word println
 
-        [ "yay" "hurray" "whoo" "huzzah" ] [ [ happy-word ] -> happy-word len 4 > ] filter println
+        [ "yay" "hurray" "whoo" "huzzah" ] [ [ happy-word ] -> 4 happy-word len gt? ] filter println
 
         happy-word println
     "#;

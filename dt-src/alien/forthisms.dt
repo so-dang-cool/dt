@@ -2,4 +2,4 @@
 [ nl ]      [ endl ]  def
 [ p space ] [ . ]     def
 [ status ]  [ .s ]    def
-[ == ]      [ = ]     def
+[ eq? ]     [ = ]     def

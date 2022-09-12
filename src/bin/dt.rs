@@ -7,7 +7,19 @@ pub fn main() {
 
     let state = DtState::new_with_libs(args.no_stdlib, args.lib_list);
 
+    // Consume stdin by default when stdin is not a TTY (e.g. in a unix pipe)
+    let state = if atty::isnt(atty::Stream::Stdin) {
+        state
+            .run_term("stdin")
+            .run_term("quote-all")
+            .run_term("prune")
+            .run_term("...")
+    } else {
+        state
+    };
+
     let tokens = loading::from_dt_source(args.dt_code.join(" "));
+
     state.run_tokens(tokens);
 }
 

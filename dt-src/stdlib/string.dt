@@ -6,5 +6,5 @@
 
 [ "" split [ pop drop rev ] 2 times ] [ chars ] def
 
-[ [ s ] -> s upcase s == ]   [ upcase? ]   def
-[ [ s ] -> s downcase s == ] [ downcase? ] def
+[ [ s ] -> s upcase s eq? ]   [ upcase? ]   def
+[ [ s ] -> s downcase s eq? ] [ downcase? ] def

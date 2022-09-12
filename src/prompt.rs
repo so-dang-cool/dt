@@ -12,8 +12,8 @@ pub struct DtPrompt {
 
 impl DtPrompt {
     pub fn new() -> DtPrompt {
-        let mut editor = Editor::<()>::new().expect("Unable to boot editor");
-        let is_tty = editor.dimensions().is_some();
+        let editor = Editor::<()>::new().expect("Unable to boot editor");
+        let is_tty = atty::is(atty::Stream::Stdin);
         let terms = vec![];
         DtPrompt {
             is_tty,
@@ -24,11 +24,16 @@ impl DtPrompt {
 
     pub fn run(self, state: DtState) {
         let name_and_version = format!("dt {}", DT_VERSION);
-        eprintln!("{}", name_and_version.dimmed().red());
+
+        let is_tty = self.is_tty;
+
+        if is_tty {
+            eprintln!("{}", name_and_version.dimmed().red());
+        }
 
         let end_state = self.fold(state, |state, term| state.run_term(term));
 
-        if !end_state.stack.is_empty() {
+        if !end_state.stack.is_empty() && is_tty {
             let end_state_msg = format!("State dump: {}", end_state.stack);
             eprintln!("{}", end_state_msg.dimmed().red());
         }

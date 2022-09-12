@@ -1,7 +1,7 @@
 # Find the largest palindrome made from the product of two 3-digit numbers.
 # https://projecteuler.net/problem=4
 
-[ digits dup rev == ] [ palin? ] def
+[ digits dup rev eq? ] [ palin? ] def
 
 [ 999 999 [ ] ]
 
@@ -11,7 +11,7 @@
                                b 1 - push
                                ps a b * push push ]
         # Assuming both factors will be in the 900s...
-        [ b 900 == ]     [ [ ] a 1 - push
+        [ b 900 eq? ]    [ [ ] a 1 - push
                                999 push
                                ps push ]
         [ otherwise ]    [ [ ] a push

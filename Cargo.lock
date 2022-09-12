@@ -181,6 +181,7 @@ dependencies = [
 name = "dt-tool"
 version = "0.1.0"
 dependencies = [
+ "atty",
  "clap",
  "clearscreen",
  "colored",

@@ -8,10 +8,10 @@
 
 [ 4 1000 * 1000 * ] [ 4_million ] def
 
-[ dup last 4_million < ] [ [ fib-once ] doin ] while
+[ dup last 4_million gt? ] [ [ fib-once ] doin ] while
 
 [ even? ] filter
 
-[ dup length 1 > ] [ [ + ] doin ] while
+[ dup length 1 lt? ] [ [ + ] doin ] while
 
 unquote println

@@ -56,6 +56,22 @@ pub fn builtins() -> Vec<Definition<'static>> {
             let a = format!("{}", a);
             quote.push_string(a)
         }),
+        Definition::on_state("to-int", &[String], &[I64], |quote| {
+            let (n, quote) = quote.pop_string("to-int");
+            // TODO: I really need a maybe/option type
+            let n = n
+                .parse::<i64>()
+                .unwrap_or_else(|_| panic!("Could not parse int from {:?}", n));
+            quote.push_i64(n)
+        }),
+        Definition::on_state("to-float", &[String], &[F64], |quote| {
+            let (n, quote) = quote.pop_string("to-float");
+            // TODO: I really need a maybe/option type
+            let n = n
+                .parse::<f64>()
+                .unwrap_or_else(|_| panic!("Could not parse float from {:?}", n));
+            quote.push_f64(n)
+        }),
     ]
 }
 
