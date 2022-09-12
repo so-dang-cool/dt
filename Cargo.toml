@@ -1,6 +1,6 @@
 [package]
 name = "dt-tool"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["J.R. Hill <hiljusti@so.dang.cool>"]
 description = "dt - it's duck tape for your unix pipes"
 license = "GPL-2.0-only"
