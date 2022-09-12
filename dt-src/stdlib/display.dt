@@ -1,2 +1,5 @@
-[ p ]  [ print ]   def
-[ pl ] [ println ] def
+[ [ pl ] each ] [ pls ] def
+
+[ p ]           [ print ]   def
+[ pl ]          [ println ] def
+[ pls ]         [ printlns ] def

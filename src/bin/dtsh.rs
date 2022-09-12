@@ -9,12 +9,11 @@ pub fn main() {
     let state = DtState::new_with_libs(args.no_stdlib, args.lib_list);
 
     match args.mode {
-        Some(Mode::Interactive) | None => DtPrompt::default().run(state),
+        Some(Mode::Interactive) | Some(Mode::RunStdin) | None => DtPrompt::default().run(state),
         Some(Mode::Run { file }) => {
             let tokens = loading::from_dt_source_file(file);
             state.run_tokens(tokens);
         }
-        Some(Mode::RunStdin) => unimplemented!("I don't know how to run stdin yet"),
     }
 }
 
@@ -45,6 +44,6 @@ enum Mode {
     Run { file: String },
 
     #[clap(name = "-")]
-    /// Read from standard input.
+    /// Interpret code from standard input.
     RunStdin,
 }
