@@ -7,7 +7,7 @@ pub fn main() {
     let args = parse_args();
 
     match args.subcommand() {
-        Some(("bootstrap", _)) => {
+        Some(("bootstrap", _)) | None => {
             let path = dt_lib_path();
             fs::create_dir_all(path.clone())
                 .unwrap_or_else(|e| panic!("Couldn't create {:?} : {}", path, e));
@@ -41,7 +41,6 @@ pub fn main() {
         Some((unknown_cmd, _)) => {
             panic!("Unknown command: {}", unknown_cmd);
         }
-        None => (),
     }
 }
 
@@ -54,6 +53,7 @@ fn parse_args() -> ArgMatches {
     );
 
     Command::new("dtup")
+        .version(DT_VERSION)
         .about("dt updater. Provides updates for the dt utility")
         .subcommand(
             Command::new("bootstrap")
