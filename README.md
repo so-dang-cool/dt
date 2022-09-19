@@ -1,4 +1,3 @@
-
 ![License](https://img.shields.io/github/license/hiljusti/dt)
 ![Lines of code](https://img.shields.io/tokei/lines/github/hiljusti/dt)
 ![GitHub repo size](https://img.shields.io/github/repo-size/hiljusti/dt)
@@ -13,7 +12,7 @@ versions is guaranteed.
 
 ```
 $ dtsh
-dt 0.20.3
+dt 0.3.0
 
 > 1 1 + print
 2
