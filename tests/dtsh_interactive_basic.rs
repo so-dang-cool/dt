@@ -3,7 +3,10 @@ use dt_test_utils::{dtsh, DtPipedResult};
 
 fn assert_two(result: DtPipedResult) {
     assert_eq!("2\n", result.stdout);
-    assert_eq!("RIP: End of input\n", result.stderr);
+
+    let stderr_lines = result.stderr.split('\n').collect::<Vec<_>>();
+    assert!(stderr_lines[0].starts_with("dtsh"));
+    assert_eq!("RIP: End of input", stderr_lines[1]);
 }
 
 #[test]

@@ -1,24 +1,33 @@
 use clap::{Parser, Subcommand};
-use dt_tool::dt_machine::DtState;
-use dt_tool::prompt::DtPrompt;
-use dt_tool::{loading, DT_VERSION};
+use dt_tool::{DT_FATAL_PREFIX, DT_VERSION, DT_WARN_PREFIX};
+
+const EXE_NAME: &str = "dtsh";
+
+const CONVENTIONS: dt_tool::RunConventions = dt_tool::RunConventions {
+    exe_name: EXE_NAME,
+    exe_version: DT_VERSION,
+    warn_prefix: DT_WARN_PREFIX,
+    fatal_prefix: DT_FATAL_PREFIX,
+};
 
 pub fn main() {
     let args = DtShell::parse();
 
-    let state = DtState::new_with_libs(args.no_stdlib, args.lib_list);
+    let state = dt_tool::initial_state(args.no_stdlib, args.lib_list, &CONVENTIONS);
 
     match args.mode {
-        Some(Mode::Interactive) | Some(Mode::RunStdin) | None => DtPrompt::default().run(state),
+        Some(Mode::Interactive) | Some(Mode::RunStdin) | None => {
+            dt_tool::run_prompt(state, &CONVENTIONS)
+        }
         Some(Mode::Run { file }) => {
-            let tokens = loading::from_dt_source_file(file);
+            let tokens = dt_tool::load_from_source_file(file);
             state.run_tokens(tokens);
         }
     }
 }
 
 #[derive(Parser)]
-#[clap(name = "dtsh", version = DT_VERSION)]
+#[clap(name = EXE_NAME, version = DT_VERSION)]
 /// dt shell. It's duck tape for your unix pipes
 struct DtShell {
     #[clap(subcommand)]

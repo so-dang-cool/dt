@@ -185,7 +185,7 @@ dependencies = [
  "clap",
  "clearscreen",
  "colored",
- "im",
+ "rail-lang",
  "regex",
  "rustyline",
 ]
@@ -492,6 +492,20 @@ checksum = "c069c179fcdc6a2fe24d8d18305cf085fdbd4f922c041943e203685d6a1c58fd"
 dependencies = [
  "endian-type",
  "nibble_vec",
+]
+
+[[package]]
+name = "rail-lang"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e68ad27567175f263fed0f763ddaca9b13b7aab3ac29b8ecef92dd834041426"
+dependencies = [
+ "clap",
+ "clearscreen",
+ "colored",
+ "im",
+ "regex",
+ "rustyline",
 ]
 
 [[package]]

@@ -1,11 +1,19 @@
 use clap::Parser;
-use dt_tool::dt_machine::DtState;
-use dt_tool::{loading, DT_VERSION};
+use dt_tool::{DT_FATAL_PREFIX, DT_VERSION, DT_WARN_PREFIX};
+
+const EXE_NAME: &str = "dt";
+
+const CONVENTIONS: dt_tool::RunConventions = dt_tool::RunConventions {
+    exe_name: EXE_NAME,
+    exe_version: DT_VERSION,
+    warn_prefix: DT_WARN_PREFIX,
+    fatal_prefix: DT_FATAL_PREFIX,
+};
 
 pub fn main() {
     let args = DtEvaluator::parse();
 
-    let state = DtState::new_with_libs(args.no_stdlib, args.lib_list);
+    let state = dt_tool::initial_state(args.no_stdlib, args.lib_list, &CONVENTIONS);
 
     // Consume stdin by default when stdin is not a TTY (e.g. in a unix pipe)
     let state = if atty::isnt(atty::Stream::Stdin) {
@@ -18,13 +26,13 @@ pub fn main() {
         state
     };
 
-    let tokens = loading::from_dt_source(args.dt_code.join(" "));
+    let tokens = dt_tool::load_from_source(args.dt_code.join(" "));
 
     state.run_tokens(tokens);
 }
 
 #[derive(Parser)]
-#[clap(name = "dt", version = DT_VERSION)]
+#[clap(name = EXE_NAME, version = DT_VERSION)]
 /// dt evaluator. It's duck tape for your unix pipes
 struct DtEvaluator {
     #[clap(long)]

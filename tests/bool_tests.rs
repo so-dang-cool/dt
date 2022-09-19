@@ -27,7 +27,9 @@ fn test_not() {
 
 #[test]
 fn test_bool_equality() {
-    assert_eq!("true", &dt_oneliner("true true eq? print").stdout);
+    let first_result = dt_oneliner("true true eq? print");
+    assert_eq!("", &first_result.stderr);
+    assert_eq!("true", &first_result.stdout);
     assert_eq!("true", &dt_oneliner("false false eq? print").stdout);
     assert_eq!("true", &dt_oneliner("true false neq? print").stdout);
     assert_eq!("true", &dt_oneliner("false true neq? print").stdout);
