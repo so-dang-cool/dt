@@ -4,6 +4,6 @@
   ] opt ]
 [ pls ] def
 
-[ p ]           [ print ]   def
-[ pl ]          [ println ] def
-[ pls ]         [ printlns ] def
+[ p ]   [ print ]    def
+[ pl ]  [ println ]  def
+[ pls ] [ printlns ] def
