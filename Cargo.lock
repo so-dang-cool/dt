@@ -183,11 +183,7 @@ version = "0.3.2"
 dependencies = [
  "atty",
  "clap",
- "clearscreen",
- "colored",
  "rail-lang",
- "regex",
- "rustyline",
 ]
 
 [[package]]
