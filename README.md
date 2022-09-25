@@ -12,7 +12,7 @@ versions is guaranteed.
 
 ```
 $ dtsh
-dt 0.3.1
+dt 0.3.2
 
 > 1 1 + print
 2
