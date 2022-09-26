@@ -1,0 +1,28 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #333;
+  font-family: Hack, monospace;
+}
+
+a {
+  color: #600;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #822;
+}
+
+#strip {
+  margin: 0 auto;
+  padding: 2ch;
+  width: 512px;
+  color: #333;
+  background-color: #AAA;
+}
+
+#logo {
+  font-size: 4ch;
+}
