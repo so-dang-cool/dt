@@ -18,9 +18,13 @@ a:hover {
 #strip {
   margin: 0 auto;
   padding: 2ch;
-  width: 512px;
+  width: 48ch;
   color: #333;
   background-color: #AAA;
+}
+
+.lighter {
+  color: #666;
 }
 
 #logo {
