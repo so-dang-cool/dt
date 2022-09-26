@@ -24,14 +24,14 @@ pub fn dt_lib_path() -> PathBuf {
 }
 
 fn stdlib_tokens(conv: &'static RunConventions) -> Vec<String> {
-    let path = dt_lib_path().join("dt-src/stdlib/all");
+    let path = dt_lib_path().join("dt-src/stdlib/all.txt");
 
     if path.is_file() {
         return loading::from_lib_list(path, &DT_SOURCE_CONVENTIONS);
     }
 
     let message = format!(
-        "Unable to load stdlib. Wanted to find it at {:?}\nDo you need to run 'railup bootstrap'?",
+        "Unable to load stdlib. Wanted to find it at {:?}\nDo you need to run 'dtup bootstrap'?",
         path
     );
     rail_machine::log_warn(conv, message);
