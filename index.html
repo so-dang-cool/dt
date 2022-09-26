@@ -7,10 +7,10 @@
   </head>
   <body>
     <div id="strip">
-      <header>
-        <center><h1 id="logo">dt</h1></center>
-        <center><h2><pre>duck tape for your unix pipes</pre></h2></center>
-      <header>
+      <header><center>
+        <h1 id="logo">dt</h1>
+        <h2><pre>duck tape for your unix pipes</pre></h2>
+      </center></header>
 
       <main>
         <hr>
@@ -30,7 +30,6 @@
 <!-- intro -->
 
         <h2 id="intro">What's dt? <a href="#intro">⌾</a></h2>
-        <p style="warn">!! It's all experimental right now, but... !!</p>
         <p>
           dt is a utility and programming language. The utility is intended for
           ergonomic in-the-shell execution. The language is straightforward
@@ -38,19 +37,18 @@
           and higher-order concatenative programming.
         </p>
         <p>
-          It's meant to be a supplement (<i>not a replacement!</i>) for other
-          tools like awk, sed, xargs, and shell built-ins. Something like the
-          Perl one-liners popular yesteryear, but hopefully easier to read and
-          reason through.
+          It's meant to supplement (<i>not replace!</i>) other tools like awk,
+          sed, xargs, and shell built-ins. Something like the Perl one-liners
+          popular yesteryear, but hopefully easier to read and reason through.
         </p>
         <p>
-          In particular dt is intended to be generally handy, without zero
+          In particular dt is intended to be generally useful, with zero
           pretense of elegance. The philosophy might be summed up with some
           <a href="https://www.redgreen.com">Red Green</a> quotes:
         </p>
         <ul>
           <li>If it ain't broke, you're not trying.</li>
-          <li>..the handyman's secret weapon, duct tape.</li>
+          <li>...the handyman's secret weapon, duct tape.</li>
           <li>This is only temporary, unless it works.</li>
           <li>Spare the duct tape, spoil the job.</li>
         </ul>
@@ -76,8 +74,24 @@
 <!-- install -->
 
         <h2 id="install">Installing <a href="#install">⌾</a></h2>
-        <p>Coming soon...</p>
-        
+        <p>
+          While dt is still experimental, installation will require
+          <a href="https://doc.rust-lang.org/cargo/getting-started/installation.html">
+          installing cargo</a>. After that, run the following commands:
+        </p>
+        <pre>
+        cargo install dt-tool
+        dtup boostrap
+        </pre>
+
+        You can confirm that it worked with something like this:
+
+        <pre>
+        echo it worked yay! | dt ... upcase words pls
+        </pre>
+
+        <p>It should print an enthusiastic three lines saying it worked. (Yay!)</p>
+
         <hr>
 
 <!-- quick-start -->
@@ -101,6 +115,12 @@
         
         <hr>
       </main>
+
+      <footer class="lighter"><center>
+        <br>
+        <p>Remember, I'm pullin' for ya,<br>we're all in this together.</p>
+        <p>2022 <a href="https://so.dang.cool">J.R. Hill</a></p>
+      </center></footer>
     </div>
   </body>
 </html>
