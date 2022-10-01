@@ -3,8 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use rail_lang::rail_machine::{self, RailState};
 pub use rail_lang::RunConventions;
+use rail_lang::{
+    corelib::rail_builtin_dictionary,
+    rail_machine::{self, RailState},
+};
 use rail_lang::{loading, prompt::RailPrompt, SourceConventions};
 
 pub const DT_VERSION: &str = std::env!("CARGO_PKG_VERSION");
@@ -44,7 +47,12 @@ pub fn initial_state(
     lib_list: Option<String>,
     conv: &'static RunConventions,
 ) -> RailState {
-    let state = RailState::new_main(conv);
+    let definitions = rail_builtin_dictionary();
+    let definitions = definitions
+        .values()
+        .map(|def| def.to_owned().rename(namespace_most_rail_things));
+
+    let state = RailState::new_main(rail_machine::dictionary_of(definitions), conv);
 
     let state = match skip_stdlib {
         true => state,
@@ -54,6 +62,13 @@ pub fn initial_state(
     match lib_list {
         Some(ll) => state.run_tokens(loading::from_lib_list(ll, &DT_SOURCE_CONVENTIONS)),
         None => state,
+    }
+}
+
+pub fn namespace_most_rail_things(name: String) -> String {
+    match name.as_str() {
+        "do!" | "doin!" | "def!" | "each!" => name,
+        _ => String::from("rail/") + &name,
     }
 }
 

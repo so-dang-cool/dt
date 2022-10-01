@@ -5,7 +5,7 @@ use dt_test_utils::dtsh_run_file;
 pub fn say_hello() {
     let res = dtsh_run_file("tests/basic.dt");
 
+    assert_eq!("", res.stderr);
     assert!(res.status.success());
     assert_eq!("Hello world!\n", res.stdout);
-    assert_eq!("", res.stderr);
 }
