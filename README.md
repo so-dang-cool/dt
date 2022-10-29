@@ -4,25 +4,45 @@
 
 # `dt`
 
-It's duck tape for your unix pipe.
+It's duck tape for your unix pipes. Use it when you don't have a better tool.
+
+In the words of [Red Green](https://www.redgreen.com):
+
+> Remember, it's only temporary... unless it works!
+
+## For pipes:
+
+```
+$ echo -e "3\n2\n1" | dt rev pls
+1
+2
+3
+
+$ alias scream-lines="dt [upcase words unlines] map pls"
+$ echo "hey you pikachu" | scream-lines
+HEY
+YOU
+PIKACHU
+```
+
+## Running as an interactive shell:
 
 `dt` is an experimental [concatenative](https://concatenative.org/wiki/view/Concatenative%20language)
-programming language. It is under wild development and zero stability between
-versions is guaranteed.
+programming language.
 
 ```
 $ dtsh
-dt 0.3.4
+dt 0.4.0
 
 > 1 1 + print
 2
 
-> [ [ n ] -> n print " " print n 2 * ] "print-and-double" def
+> [[ n ]: n print " " print n 2 *] [print-and-double] def
 
-> 1 [ print-and-double ] 7 times
+> 1 [print-and-double] 7 times
 1 2 4 8 16 32 64 
 
-> [ [ false ] [ "bye" ] [ true ] [ "hi" ] ] opt println
+> [[false] ["bye"] [true] ["hi"]] opt println
 hi
 ```
 
@@ -35,6 +55,6 @@ $ dtup bootstrap
 
 ## Credits
 
-Available under GPL v2.
+Shared under GPL v2.
 
 A side quest of J.R. Hill | https://so.dang.cool | https://github.com/hiljusti
