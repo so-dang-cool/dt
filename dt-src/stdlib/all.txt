@@ -2,7 +2,7 @@
 0_bootstrap-def.dt
 1_bootstrap-rail-builtins.dt
 
-# Must be second, as it provides "->"
+# Must be second, as it provides ":"
 command.dt
 
 bool.dt

@@ -1,11 +1,11 @@
-[ pop swap drop ] [ last ]   def
-[ len ]           [ length ] def
-[ len 0 eq? ]     [ empty? ] def
+[pop swap drop] [last]   def
+[len]           [length] def
+[len 0 eq?]     [empty?] def
 
-[ [ empty? not ] filter ] [ prune ] def
+[[empty? not] filter] [prune] def
 
-[ [ start end step ] :
+[[start end step]:
     start quote
-    [ [ dup step + ] doin ]
+    [[dup step +] doin]
     end start - step / floor times
-] [ range ] def
+] [range] def

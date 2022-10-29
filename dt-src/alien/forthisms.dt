@@ -1,5 +1,5 @@
-[ " " p ]   [ space ] def
-[ nl ]      [ endl ]  def
-[ p space ] [ . ]     def
-[ status ]  [ .s ]    def
-[ eq? ]     [ = ]     def
+[" " p]   [space] def
+[nl]      [endl]  def
+[p space] [.]     def
+[status]  [.s]    def
+[eq?]     [=]     def

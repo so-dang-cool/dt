@@ -1,13 +1,13 @@
-[ [ a b ] ->
-  [ [ b a gte? ]  [ a ]
-    [ otherwise ] [ b ] ] opt
-] [ max ] def
+[[a b]:
+  [[b a gte?]  [a]
+   [otherwise] [b]] opt
+] [max] def
 
-[ [ dup length 1 lt? ] [ [ max ] doin ] while ... ] [ maximum ] def
+[[dup length 1 lt?] [[max] doin] while ...] [maximum] def
 
-[ [ a b ] ->
-  [ [ b a lte? ]  [ a ]
-    [ otherwise ] [ b ] ] opt
-] [ min ] def
+[[a b]:
+  [[b a lte?]  [a]
+   [otherwise] [b]] opt
+] [min] def
 
-[ [ dup length 1 lt? ] [ [ min ] doin ] while ... ] [ minimum ] def
+[[dup length 1 lt?] [[min] doin] while ...] [minimum] def

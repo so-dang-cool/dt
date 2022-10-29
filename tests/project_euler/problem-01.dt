@@ -1,17 +1,17 @@
 # Find the sum of all the multiples of 3 or 5 below 1000.
 # https://projecteuler.net/problem=1
 
-# TODO: Builtin for range? [ lower upper step ] -> etc...
+# TODO: Builtin for range? [ lower upper step ] : etc...
 [ [ 1 ] [ [ dup 1 + ] doin ] 998 times ] "range" def
 
 range
 
-[ [ n ] ->
+[ [ n ] :
     n 3 divisor?
     n 5 divisor? or
 ] filter
 
-dup len 1 - [ k ] ->
+dup len 1 - [ k ] :
 
 [ [ + ] doin ] k times
 

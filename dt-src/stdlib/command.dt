@@ -1,4 +1,3 @@
-[ rev [ swap quote swap def ] each! ] [ : ] def!
-[ : ] [ -> ] def!
+[rev [swap quote swap def] each!] [:] def!
 
-[ def? not ] [ undef? ] def
+[def? not] [undef?] def

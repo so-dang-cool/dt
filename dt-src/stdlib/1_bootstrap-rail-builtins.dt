@@ -4,116 +4,116 @@
 # 2. A place to make better-for-dt naming choices.
 
 # bool :: https://github.com/hiljusti/rail/blob/core/src/corelib/bool.rs
-[ rail/true ]  [ true ]  def
-[ rail/false ] [ false ] def
-[ rail/not ]   [ not ]   def
-[ rail/or ]    [ or ]    def
-[ rail/and ]   [ and ]   def
-[ rail/eq? ]   [ eq? ]   def
-[ rail/neq? ]  [ neq? ]  def
-[ rail/gt? ]   [ gt? ]   def
-[ rail/lt? ]   [ lt? ]   def
-[ rail/gte? ]  [ gte? ]  def
-[ rail/lte? ]  [ lte? ]  def
-[ rail/any ]   [ any ]   def
+[rail/true]  [true]  def
+[rail/false] [false] def
+[rail/not]   [not]   def
+[rail/or]    [or]    def
+[rail/and]   [and]   def
+[rail/eq?]   [eq?]   def
+[rail/neq?]  [neq?]  def
+[rail/gt?]   [gt?]   def
+[rail/lt?]   [lt?]   def
+[rail/gte?]  [gte?]  def
+[rail/lte?]  [lte?]  def
+[rail/any]   [any]   def
 
 # choice :: https://github.com/hiljusti/rail/blob/core/src/corelib/choice.rs
-[ rail/opt ] [ opt ] def
+[rail/opt] [opt] def
 
 # command :: https://github.com/hiljusti/rail/blob/core/src/corelib/command.rs
-[ rail/do ]    [ do ]    def
-[ rail/doin ]  [ doin ]  def
-[ rail/def? ]  [ def? ]  def
+[rail/do]    [do]    def
+[rail/doin]  [doin]  def
+[rail/def?]  [def?]  def
 
 # display :: https://github.com/hiljusti/rail/blob/core/src/corelib/display.rs
-[ rail/p ]       [ p ]       def
-[ rail/pl ]      [ pl ]      def
-[ rail/nl ]      [ nl ]      def
-[ rail/status ]  [ status ]  def
-[ rail/clear ]   [ clear ]   def
-[ rail/version ] [ version ] def
+[rail/p]       [p]       def
+[rail/pl]      [pl]      def
+[rail/nl]      [nl]      def
+[rail/status]  [status]  def
+[rail/clear]   [clear]   def
+[rail/version] [version] def
 
 # filesystem :: https://github.com/hiljusti/rail/blob/core/src/corelib/filesystem.rs
-[ rail/cd ]     [ cd ]     def
-[ rail/ls ]     [ ls ]     def
-[ rail/pwd ]    [ pwd ]    def
-[ rail/dir? ]   [ dir? ]   def
-[ rail/file? ]  [ file? ]  def
-[ rail/mkdir ]  [ mkdir ]  def
-[ rail/readf ]  [ readf ]  def
-[ rail/writef ] [ writef ] def
+[rail/cd]     [cd]     def
+[rail/ls]     [ls]     def
+[rail/pwd]    [pwd]    def
+[rail/dir?]   [dir?]   def
+[rail/file?]  [file?]  def
+[rail/mkdir]  [mkdir]  def
+[rail/readf]  [readf]  def
+[rail/writef] [writef] def
 
 # math :: https://github.com/hiljusti/rail/blob/core/src/corelib/math.rs
-[ rail/abs ]       [ abs ]       def
-[ rail/negate ]    [ negate ]    def
-[ rail/sqrt ]      [ sqrt ]      def
-[ rail/floor ]     [ floor ]     def
-[ rail/+ ]         [ + ]         def
-[ rail/- ]         [ - ]         def
-[ rail/* ]         [ * ]         def
-[ rail// ]         [ / ]         def
-[ rail/mod ]       [ mod ]       def
-[ rail/int-max ]   [ int-max ]   def
-[ rail/int-min ]   [ int-min ]   def
-[ rail/float-max ] [ float-max ] def
-[ rail/float-min ] [ float-min ] def
-[ rail/digits ]    [ digits ]    def
+[rail/abs]       [abs]       def
+[rail/negate]    [negate]    def
+[rail/sqrt]      [sqrt]      def
+[rail/floor]     [floor]     def
+[rail/+]         [+]         def
+[rail/-]         [-]         def
+[rail/*]         [*]         def
+[rail//]         [/]         def
+[rail/mod]       [mod]       def
+[rail/int-max]   [int-max]   def
+[rail/int-min]   [int-min]   def
+[rail/float-max] [float-max] def
+[rail/float-min] [float-min] def
+[rail/digits]    [digits]    def
 
 # meta :: https://github.com/hiljusti/rail/blob/core/src/corelib/meta.rs
-[ rail/type ]      [ type ]      def
-[ rail/defs ]      [ defs ]      def
-[ rail/quote-all ] [ quote-all ] def
+[rail/type]      [type]      def
+[rail/defs]      [defs]      def
+[rail/quote-all] [quote-all] def
 
 # process :: https://github.com/hiljusti/rail/blob/core/src/corelib/process.rs
-[ rail/exec ]   [ exec ]   def
-[ rail/env ]    [ env ]    def
-[ rail/envget ] [ envget ] def
-[ rail/envset ] [ envset ] def
-[ rail/stdin ]  [ stdin ]  def
+[rail/exec]   [exec]   def
+[rail/env]    [env]    def
+[rail/envget] [envget] def
+[rail/envset] [envset] def
+[rail/stdin]  [stdin]  def
 
 # repeat :: https://github.com/hiljusti/rail/blob/core/src/corelib/repeat.rs
-[ rail/times ] [ times ]  def
+[rail/times] [times]  def
 
 # sequence :: https://github.com/hiljusti/rail/blob/core/src/corelib/sequence.rs
-[ rail/len ]      [ len ]      def
-[ rail/quote ]    [ quote ]    def
-[ rail/unquote ]  [ unquote ]  def
-[ rail/as-quote ] [ as-quote ] def
-[ rail/push ]     [ push ]     def
-[ rail/pop ]      [ pop ]      def
-[ rail/enq ]      [ enq ]      def
-[ rail/nth ]      [ nth ]      def
-[ rail/deq ]      [ deq ]      def
-[ rail/rev ]      [ rev ]      def
-[ rail/concat ]   [ concat ]   def
-[ rail/filter ]   [ filter ]   def
-[ rail/map ]      [ map ]      def
-[ rail/each ]     [ each ]     def
-[ rail/zip ]      [ zip ]      def
-[ rail/zip-with ] [ zip-with ] def
+[rail/len]      [len]      def
+[rail/quote]    [quote]    def
+[rail/unquote]  [unquote]  def
+[rail/as-quote] [as-quote] def
+[rail/push]     [push]     def
+[rail/pop]      [pop]      def
+[rail/enq]      [enq]      def
+[rail/nth]      [nth]      def
+[rail/deq]      [deq]      def
+[rail/rev]      [rev]      def
+[rail/concat]   [concat]   def
+[rail/filter]   [filter]   def
+[rail/map]      [map]      def
+[rail/each]     [each]     def
+[rail/zip]      [zip]      def
+[rail/zip-with] [zip-with] def
 
 # shuffle :: https://github.com/hiljusti/rail/blob/core/src/corelib/shuffle.rs
-[ rail/drop ] [ drop ] def
-[ rail/dup ]  [ dup ]  def
-[ rail/dup2 ] [ dup2 ] def
-[ rail/swap ] [ swap ] def
-[ rail/rot ]  [ rot ]  def
+[rail/drop] [drop] def
+[rail/dup]  [dup]  def
+[rail/dup2] [dup2] def
+[rail/swap] [swap] def
+[rail/rot]  [rot]  def
 
 # stab :: https://github.com/hiljusti/rail/blob/core/src/corelib/stab.rs
-[ rail/stab ]    [ stab ]    def
-[ rail/insert ]  [ insert ]  def
-[ rail/extract ] [ extract ] def
+[rail/stab]    [stab]    def
+[rail/insert]  [insert]  def
+[rail/extract] [extract] def
 
 # string :: https://github.com/hiljusti/rail/blob/core/src/corelib/string.rs
-[ rail/upcase ]      [ upcase ]      def
-[ rail/downcase ]    [ downcase ]    def
-[ rail/trim ]        [ trim ]        def
-[ rail/split ]       [ split ]       def
-[ rail/join ]        [ join ]        def
-[ rail/contains? ]   [ contains? ]   def
-[ rail/starts-wth? ] [ starts-wth? ] def
-[ rail/ends-with? ]  [ ends-with? ]  def
-[ rail/to-string ]   [ to-string ]   def
+[rail/upcase]      [upcase]      def
+[rail/downcase]    [downcase]    def
+[rail/trim]        [trim]        def
+[rail/split]       [split]       def
+[rail/join]        [join]        def
+[rail/contains?]   [contains?]   def
+[rail/starts-wth?] [starts-wth?] def
+[rail/ends-with?]  [ends-with?]  def
+[rail/to-string]   [to-string]   def
 
 # test :: https://github.com/hiljusti/rail/blob/core/src/corelib/test.rs
-[ rail/assert-true ] [ assert-true ] def
+[rail/assert-true] [assert-true] def
