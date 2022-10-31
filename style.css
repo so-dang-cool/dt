@@ -2,37 +2,41 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: url("pipes-texture.jpg");
-  background-color: #333;
+  background: url("new-glarus-dark-brewing-room-with-pipes.jpg");
+  background-attachment: fixed;
+  background-position: center;
   font-family: Hack, monospace;
 }
 
 a {
-  color: #600;
+  color: #C66;
   text-decoration: none;
 }
 
 a:hover {
-  color: #822;
+  color: #933;
 }
 
 #strip {
   margin: 0 auto;
   padding: 2ch;
+  min-height: 1vh;
   width: 48ch;
-  color: #333;
-  background-color: #AAA;
+  color: #CCC;
+  background-color: #222;
 }
 
 header h1 {
+  color: #300;
   padding: 3ch 0;
   background: url("duct-tape.png");
-  background-size: 100%;
+  background-size: contain;
+  background-position: center;
   background-repeat: no-repeat;
 }
 
 .lighter {
-  color: #666;
+  color: #999;
 }
 
 #logo {
