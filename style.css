@@ -2,6 +2,7 @@ html,
 body {
   margin: 0;
   padding: 0;
+  background: url("pipes-texture.jpg");
   background-color: #333;
   font-family: Hack, monospace;
 }
@@ -21,6 +22,13 @@ a:hover {
   width: 48ch;
   color: #333;
   background-color: #AAA;
+}
+
+header h1 {
+  padding: 3ch 0;
+  background: url("duct-tape.png");
+  background-size: 100%;
+  background-repeat: no-repeat;
 }
 
 .lighter {
