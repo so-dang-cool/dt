@@ -9,7 +9,7 @@
     <div id="strip">
       <header><center>
         <h1 id="logo">dt</h1>
-        <h2><pre>duck tape for your unix pipes</pre></h2>
+        <h2><pre>duct tape for your unix pipes</pre></h2>
       </center></header>
 
       <main>
@@ -53,7 +53,7 @@
           <li>Spare the duct tape, spoil the job.</li>
         </ul>
 
-        <h4>Excuse me, is it "duck" or "duct" tape?</h4>
+        <h4>Excuse me, is it "duct" or "duck" tape?</h4>
         <p>
           I mean sure, "duct tape" and "duck tape" are both fine. "Duct tape"
           is the more common name today. The older name is "duck tape" after
@@ -97,8 +97,84 @@
 <!-- quick-start -->
 
         <h2 id="quick-start">Quick start <a href="#quick-start">⌾</a></h2>
-        <p>Coming soon...</p>
-        
+
+        <p>
+          Use <span class="lighter">status</span> to see the state of dt.
+          Here we see piped standard input is a list of strings.
+        </p>
+        <pre>
+        $ echo -e "one\ntwo\nthree! | dt status
+        [ [ "3" "2" "1" ] ]
+        </pre>
+
+        <p>
+          Print lines to stdout with <span class="lighter">pls</span> or
+          <span class="lighter">printlns</span>.
+        </p>
+        <pre>
+        $ echo -e "one\ntwo\nthree! | dt pls
+        one
+        two
+        three!
+        </pre>
+        <p>
+          (See also: <span class='lighter'>p</span>,
+          <span class=lighter>print</span>, <span class='lighter'>pl</span>,
+          <span class=lighter>println</span>)
+        </p>
+
+        <p>
+          Explore definitions with <span class="lighter">defs</span> and
+          <span class='lighter'>describe</span>.
+        </p>
+        <pre>
+        $ dt defs pl | tail -n 3
+        *
+        +
+        -
+
+        $ dt [not] describe pls
+        Consumes one boolean value and produces its inverse.
+        </pre>
+
+        <p>
+          In dt, everything is evaluated left-to-right. This means we don't
+          write "3 + 4" because the "+" wouldn't have enough information to add
+          yet. Instead we write <span class="lighter">3 4 +</span>.
+        </p>
+        <pre>
+        $ dt 3 4 + pl
+        7
+        </pre>
+
+        <p>
+          All commands operate in the same left-to-right way, including
+          <span class="lighter">def</span> which is a command that defines
+          more commands. In dt, a command covers what other languages might
+          call functions, variables, procedures, subroutines, bindings, etc.
+          Some commands are built-in, and others are defined in dt source code.
+          Anyway let's <span class="lighter">def</span> some stuff and use it.
+        </p>
+        <pre>
+        $ dt [3] [three] def \
+             [4] [four] def \
+             [+ pl] [add-and-print] def \
+             three four add-and-print
+        7
+        </pre>
+        <p>
+          Above you can see we bound <span class="lighter">3</span> to a new
+          command <span class="lighter">three</span> and did similar for
+          <span class="lighter">four</span>. These are like variables, but
+          can also be thought of as a command that produces a single value.
+        </p>
+        <p>
+          Above you can also see we bound <span class="lighter">+</span> and
+          <span class="lighter">pl</span> in sequence to a new command
+          <span class="lighter">add-and-print</span>. Calling this performed
+          its two commands.
+        </p>
+
         <hr>
 
 <!-- syntax -->
