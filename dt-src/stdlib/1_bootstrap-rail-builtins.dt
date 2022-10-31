@@ -24,6 +24,7 @@
 [rail/do]    [do]    def
 [rail/doin]  [doin]  def
 [rail/def?]  [def?]  def
+[rail/describe] [describe] def
 
 # display :: https://github.com/hiljusti/rail/blob/core/src/corelib/display.rs
 [rail/p]       [p]       def
