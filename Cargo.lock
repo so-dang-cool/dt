@@ -179,7 +179,7 @@ dependencies = [
 
 [[package]]
 name = "dt-tool"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "atty",
  "clap",
