@@ -106,15 +106,15 @@
 [rail/extract] [extract] def
 
 # string :: https://github.com/hiljusti/rail/blob/core/src/corelib/string.rs
-[rail/upcase]      [upcase]      def
-[rail/downcase]    [downcase]    def
-[rail/trim]        [trim]        def
-[rail/split]       [split]       def
-[rail/join]        [join]        def
-[rail/contains?]   [contains?]   def
-[rail/starts-wth?] [starts-wth?] def
-[rail/ends-with?]  [ends-with?]  def
-[rail/to-string]   [to-string]   def
+[rail/upcase]       [upcase]       def
+[rail/downcase]     [downcase]     def
+[rail/trim]         [trim]         def
+[rail/split]        [split]        def
+[rail/join]         [join]         def
+[rail/contains?]    [contains?]    def
+[rail/starts-with?] [starts-with?] def
+[rail/ends-with?]   [ends-with?]   def
+[rail/to-string]    [to-string]    def
 
 # test :: https://github.com/hiljusti/rail/blob/core/src/corelib/test.rs
 [rail/assert-true] [assert-true] def
