@@ -1,4 +1,4 @@
-[[cond action]:
+[[cond action]::
   cond do
     [action do cond action while]
     []

@@ -5,7 +5,7 @@
 
 [ 999 999 [ ] ]
 
-[ ... [ a b ps ] :
+[...[ a b ps ]::
     [
         [ a b * palin? ] [ [ ] a push
                                b 1 - push

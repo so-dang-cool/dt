@@ -12,7 +12,7 @@
 
 [ even? ] filter
 
-[ ns ] :
+[ns]::
     ns [ [ + ] doin ]
     ns length 1 - times
 

@@ -7,6 +7,7 @@ pub use rail_lang::RunConventions;
 use rail_lang::{
     corelib::rail_builtin_dictionary,
     rail_machine::{self, RailState},
+    tokens::Token,
 };
 use rail_lang::{loading, prompt::RailPrompt, SourceConventions};
 
@@ -26,7 +27,7 @@ pub fn dt_lib_path() -> PathBuf {
     Path::new(&path).to_owned()
 }
 
-fn stdlib_tokens(conv: &'static RunConventions) -> Vec<String> {
+fn stdlib_tokens(conv: &'static RunConventions) -> Vec<Token> {
     let path = dt_lib_path().join("dt-src/stdlib/all.txt");
 
     if path.is_file() {
@@ -67,16 +68,19 @@ pub fn initial_state(
 
 pub fn namespace_most_rail_things(name: String) -> String {
     match name.as_str() {
-        "do!" | "doin!" | "def!" | "each!" => name,
+        // These do not get namespaced at all, and we rely on Rail to be backward-compatible with these.
+        "do!" | "doin!" | "alias" | "def!" | "each!" | "->" | "=>" => name,
+        // These get namespaced. Some are re-exported in 'dt-src/stdlib/1_bootstrap_rail_defs.dt'
+        // but that area is preserved in case Rail behavior changes.
         _ => String::from("rail/") + &name,
     }
 }
 
-pub fn load_from_source(source: String) -> Vec<String> {
+pub fn load_from_source(source: String) -> Vec<Token> {
     loading::get_source_as_tokens(source)
 }
 
-pub fn load_from_source_file(file: String) -> Vec<String> {
+pub fn load_from_source_file(file: String) -> Vec<Token> {
     loading::get_source_file_as_tokens(file)
 }
 

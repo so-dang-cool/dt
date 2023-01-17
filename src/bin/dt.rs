@@ -1,5 +1,6 @@
 use clap::Parser;
 use dt_tool::{DT_FATAL_PREFIX, DT_VERSION, DT_WARN_PREFIX};
+use rail_lang::tokens::Token;
 
 const EXE_NAME: &str = "dt";
 
@@ -17,11 +18,10 @@ pub fn main() {
 
     // Consume stdin by default when stdin is not a TTY (e.g. in a unix pipe)
     let state = if atty::isnt(atty::Stream::Stdin) {
-        state
-            .run_term("stdin")
-            .run_term("quote-all")
-            .run_term("prune")
-            .run_term("...")
+        ["stdin", "quote-all", "prune", "..."]
+            .into_iter()
+            .map(|s| Token::from(s.to_string()))
+            .fold(state, |state, tok| state.run_token(tok))
     } else {
         state
     };
