@@ -1,0 +1,54 @@
+#!/usr/bin/env -S dtsh run
+
+# TODO: Why don't multiline strings work?
+
+[quote [do] doin] \eval def
+
+[
+  "<!doctype html>"
+  "<html>"
+  "<head>"
+    "<title>dt: standard library</title>"
+    "<link rel='stylesheet' href='//cdn.jsdelivr.net/npm/hack-font@3/build/web/hack.css'>"
+    "<link rel='stylesheet' href='style.css'>"
+  "</head>"
+  "<body>"
+    "<div id='wide-strip'>"
+    "<header><center><a href='index.html'>"
+      "<h1 id='logo'>dt</h1>"
+      "<h2><pre>duct tape for your unix pipes</pre></h2>"
+    "</a></center></header>"
+    "<main>"
+      "<hr>"
+      ["<center><h2>dt " version " standard library</h2></center>"] eval "" join
+      "<table id='stdlib'>"
+] eval
+
+[[cmd]:
+  "<tr>"
+    "<td class='lighter'>" cmd "</td>"
+    "<td>" cmd describe "</td>"
+  "</tr>"
+] \cmd-row def
+
+defs
+  ["rail" starts-with? not] filter
+  [quote \cmd-row doin
+    "" join
+  ] map
+  "\n  " join
+  push
+
+[
+  "</table></main>"
+  "</div>"
+  "</body>"
+  "</html>"
+] concat
+
+"\n" join
+
+\html :
+  html "stdlib.html" writef
+  html ["archive/stdlib-"] version push ".html" push "" join writef
+

@@ -18,13 +18,37 @@ a:hover {
   color: #933;
 }
 
-#strip {
+#strip, #wide-strip {
   margin: 0 auto;
   padding: 2ch;
   min-height: 1vh;
-  width: 48ch;
   color: #CCC;
   background-color: #222;
+}
+
+#strip {
+  width: 48ch;
+}
+
+#wide-strip {
+  width: 96ch;
+}
+
+#stdlib * {
+  border: 0 none;
+}
+
+#stdlib tr td {
+  padding: 2ch;
+}
+
+#stdlib tr td:nth-child(1) {
+  min-width: 16ch;
+  text-align: right;
+}
+
+#stdlib tr:nth-child(even) {
+  background-color: #333;
 }
 
 header h1 {

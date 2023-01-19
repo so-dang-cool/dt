@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+<head>
+<title>dt: standard library</title>
+<link rel='stylesheet' href='//cdn.jsdelivr.net/npm/hack-font@3/build/web/hack.css'>
+<link rel='stylesheet' href='style.css'>
+</head>
+<body>
+<div id='wide-strip'>
+<header><center><a href='index.html'>
+<h1 id='logo'>dt</h1>
+<h2><pre>duct tape for your unix pipes</pre></h2>
+</a></center></header>
+<main>
+<hr>
+<center><h2>dt 0.25.0 standard library</h2></center>
+<table id='stdlib'>
+<tr><td class='lighter'>*</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>+</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>-</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>-></td><td>Consumes a variable number of values, and binds them as one or more commands.</td></tr>
+  <tr><td class='lighter'>...</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>/</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>:</td><td>Consumes a variable number of values, and binds them as one or more commands.</td></tr>
+  <tr><td class='lighter'>::</td><td>Consumes a variable number of values, and binds them as one or more commands. Quotes are not expanded.</td></tr>
+  <tr><td class='lighter'>=></td><td>Consumes a variable number of values, and binds them as one or more commands. Quotes are not expanded.</td></tr>
+  <tr><td class='lighter'>abs</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>alias</td><td>Consumes two commands, and binds the latter to the former. Any new definitions are preserved in the calling context.</td></tr>
+  <tr><td class='lighter'>and</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>any</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>as-quote</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>assert-true</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>bool?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>cd</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>chars</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>choose</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>clear</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>cmd-row</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>command?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>concat</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>contains?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>def</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>def!</td><td>Consumes one quote and a quoted command or string. The latter quoted command or string becomes a command that executes the first quote. Any new definitions are preserved in the calling context.</td></tr>
+  <tr><td class='lighter'>def?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>defs</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>deq</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>describe</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>digits</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>dir?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>divisor?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>do</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>do!</td><td>Consumes a quote or command and executes it, producing any output(s) of the quote or command. Any new definitions are preserved in the calling context.</td></tr>
+  <tr><td class='lighter'>doin</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>doin!</td><td>Consumes one quote and one quote or command. The latter quote or command is executed inside the first quote, producing any output(s) of the quote or command inside it. Any new definitions are preserved in the calling context.</td></tr>
+  <tr><td class='lighter'>downcase</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>downcase?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>drop</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>dup</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>dup2</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>each</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>each!</td><td>FIXME</td></tr>
+  <tr><td class='lighter'>empty?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>ends-with?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>enq</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>env</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>envget</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>envset</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>eq?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>equal?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>eval</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>even?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>exec</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>extract</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>f64?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>false</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>file?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>filter</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>float-max</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>float-min</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>floor</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>greater-than?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>greater?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>gt?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>gte?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>i64?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>inequal?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>insert</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>int-max</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>int-min</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>join</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>last</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>len</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>length</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>less-than?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>lesser?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>lines</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>ls</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>lt?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>lte?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>map</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>max</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>maximum</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>min</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>minimum</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>mkdir</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>mod</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>negate</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>neq?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>nl</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>none</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>not</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>not-equal?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>nth</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>odd?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>opt</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>or</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>otherwise</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>p</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>pl</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>pls</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>pop</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>print</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>println</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>printlns</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>prune</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>push</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>pwd</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>quote</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>quote-all</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>quote?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>range</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>readf</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>rev</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>rot</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>split</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>sqrt</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>stab</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>stab?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>starts-with?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>status</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>stdin</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>string?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>swap</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>times</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>to-string</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>trim</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>true</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>type</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>undef?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>unlines</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>unquote</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>unwords</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>upcase</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>upcase?</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>version</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>while</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>words</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>writef</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>zip</td><td>FIXME: Undocumented</td></tr>
+  <tr><td class='lighter'>zip-with</td><td>FIXME: Undocumented</td></tr>
+</table></main>
+</div>
+</body>
+</html>
