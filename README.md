@@ -32,7 +32,7 @@ programming language.
 
 ```
 $ dtsh
-dt 0.5.0
+dt 0.5.1
 
 > 1 1 + print
 2

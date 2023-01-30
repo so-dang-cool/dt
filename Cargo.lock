@@ -179,7 +179,7 @@ dependencies = [
 
 [[package]]
 name = "dt-tool"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "atty",
  "clap",
@@ -492,9 +492,9 @@ dependencies = [
 
 [[package]]
 name = "rail-lang"
-version = "0.25.0"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "889571bf0c2c3918ad412978a22e399cd59b287c292f043ae3b55ce4501be0c2"
+checksum = "f47212813567877ea4b2385971a9231e3c00863b3df20e452b702bbbcd27dee2"
 dependencies = [
  "clap",
  "clearscreen",
