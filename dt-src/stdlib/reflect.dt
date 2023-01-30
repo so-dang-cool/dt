@@ -10,4 +10,4 @@
 ] map
 [[def] concat do!] each!
 
-[unquote] [...] def
+[unquote] [...] alias

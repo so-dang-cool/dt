@@ -6,6 +6,6 @@
 ]
 [pls] def
 
-[p]   [print]    def
-[pl]  [println]  def
-[pls] [printlns] def
+[p]   [print]    alias
+[pl]  [println]  alias
+[pls] [printlns] alias

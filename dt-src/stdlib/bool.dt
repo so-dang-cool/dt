@@ -1,12 +1,12 @@
 [2 mod 0 eq?] [even?]         def
 [2 mod 1 eq?] [odd?]          def
 [mod 0 eq?]   [divisor?]      def
-[true]        [otherwise]     def
+[true]        [otherwise]     alias
 [any not]     [none]          def
-[eq?]         [equal?]        def
-[neq?]        [not-equal?]    def
-[neq?]        [inequal?]      def
-[gt?]         [greater?]      def
-[gt?]         [greater-than?] def
-[lt?]         [lesser?]       def
-[lt?]         [less-than?]    def
+[eq?]         [equal?]        alias
+[neq?]        [not-equal?]    alias
+[neq?]        [inequal?]      alias
+[gt?]         [greater?]      alias
+[gt?]         [greater-than?] alias
+[lt?]         [lesser?]       alias
+[lt?]         [less-than?]    alias
