@@ -32,7 +32,6 @@
 [rail/nl]      [nl]      def
 [rail/status]  [status]  def
 [rail/clear]   [clear]   def
-[rail/version] [version] def
 
 # filesystem :: https://github.com/hiljusti/rail/blob/core/src/corelib/filesystem.rs
 [rail/cd]     [cd]     def

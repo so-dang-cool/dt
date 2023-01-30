@@ -1,12 +1,12 @@
 use std::{
-    env,
+    env, iter,
     path::{Path, PathBuf},
 };
 
 pub use rail_lang::RunConventions;
 use rail_lang::{
     corelib::rail_builtin_dictionary,
-    rail_machine::{self, RailState},
+    rail_machine::{self, RailDef, RailState, RailType},
     tokens::Token,
 };
 use rail_lang::{loading, prompt::RailPrompt, SourceConventions};
@@ -51,7 +51,14 @@ pub fn initial_state(
     let definitions = rail_builtin_dictionary();
     let definitions = definitions
         .values()
-        .map(|def| def.to_owned().rename(namespace_most_rail_things));
+        .map(|def| def.to_owned().rename(namespace_most_rail_things))
+        .chain(iter::once(RailDef::on_state(
+            "version",
+            "Produces the version of dt currently in use.",
+            &[],
+            &[RailType::String],
+            |quote| quote.push_str(DT_VERSION),
+        )));
 
     let state = RailState::new_main(rail_machine::dictionary_of(definitions), conv);
 
