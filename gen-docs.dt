@@ -6,8 +6,7 @@ defs \FROZEN_DEFS =>
 [quote [do] doin] \eval ->
 
 # TODO: Why don't multiline strings work?
-[
-  "<!doctype html>"
+[ "<!doctype html>"
   "<html>"
   "<head>"
     "<title>dt: standard library</title>"
@@ -26,10 +25,17 @@ defs \FROZEN_DEFS =>
       "<table id='stdlib'>"
 ] eval
 
+[ describe \text ->
+    [
+        [text "FIXME" contains?] ["<i>" text "</i>"]
+        [otherwise]              [text]
+    ] opt
+] \fmt-describe def
+
 [[cmd]:
   "<tr>"
     "<td class='lighter'>" cmd "</td>"
-    "<td>" cmd describe "</td>"
+    "<td>" cmd fmt-describe "</td>"
   "</tr>"
 ] \cmd-row def
 
@@ -41,8 +47,7 @@ FROZEN_DEFS
   "\n  " join
   push
 
-[
-  "</table></main>"
+[ "</table></main>"
   "</div>"
   "</body>"
   "</html>"
