@@ -4,7 +4,7 @@
 
 # `dt`
 
-It's duck tape for your unix pipes. Use it when you don't have a better tool.
+It's duct tape for your unix pipes. Use it when you don't have a better tool.
 
 In the words of [Red Green](https://www.redgreen.com):
 
