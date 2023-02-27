@@ -3,22 +3,35 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub use rail_lang::RunConventions;
 use rail_lang::{
     corelib::rail_builtin_dictionary,
-    rail_machine::{self, RailDef, RailState, RailType},
+    rail_machine::{self, RailDef, RailRunResult, RailState, RailType},
     tokens::Token,
 };
 use rail_lang::{loading, prompt::RailPrompt, SourceConventions};
+pub use rail_lang::{log, RunConventions};
 
 pub const DT_VERSION: &str = std::env!("CARGO_PKG_VERSION");
-pub const DT_WARN_PREFIX: &str = "WARN";
-pub const DT_FATAL_PREFIX: &str = "RIP";
+pub const DT_INFO_PREFIX: &str = "";
+pub const DT_WARN_PREFIX: &str = "WARN: ";
+pub const DT_ERR_PREFIX: &str = "ERR: ";
+pub const DT_FATAL_PREFIX: &str = "RIP: ";
 
 const DT_SOURCE_CONVENTIONS: SourceConventions = SourceConventions {
     lib_exts: &[".dt"],
     lib_list_exts: &[".txt"],
 };
+
+pub const fn dt_exe_conventions(exe_name: &str) -> RunConventions {
+    RunConventions {
+        exe_name,
+        exe_version: DT_VERSION,
+        info_prefix: DT_INFO_PREFIX,
+        warn_prefix: DT_WARN_PREFIX,
+        error_prefix: DT_ERR_PREFIX,
+        fatal_prefix: DT_FATAL_PREFIX,
+    }
+}
 
 // pub for dtup
 pub fn dt_lib_path() -> PathBuf {
@@ -34,11 +47,8 @@ fn stdlib_tokens(conv: &'static RunConventions) -> Vec<Token> {
         return loading::from_lib_list(path, &DT_SOURCE_CONVENTIONS);
     }
 
-    let message = format!(
-        "Unable to load stdlib. Wanted to find it at {:?}\nDo you need to run 'dtup bootstrap'?",
-        path
-    );
-    rail_machine::log_warn(conv, message);
+    log::error(conv, format!("Unable to load stdlib. Wanted to find it at {:?}\nDo you need to run 'dtup bootstrap'?",
+    path));
 
     vec![]
 }
@@ -47,7 +57,7 @@ pub fn initial_state(
     skip_stdlib: bool,
     lib_list: Option<String>,
     conv: &'static RunConventions,
-) -> RailState {
+) -> RailRunResult {
     let definitions = rail_builtin_dictionary();
     let definitions = definitions
         .values()
@@ -57,19 +67,21 @@ pub fn initial_state(
             "Produces the version of dt currently in use.",
             &[],
             &[RailType::String],
-            |quote| quote.push_str(DT_VERSION),
+            |quote| Ok(quote.push_str(DT_VERSION)),
         )));
 
     let state = RailState::new_main(rail_machine::dictionary_of(definitions), conv);
 
     let state = match skip_stdlib {
-        true => state,
+        true => Ok(state),
         false => state.run_tokens(stdlib_tokens(conv)),
     };
 
+    let state = log::error_coerce(state);
+
     match lib_list {
         Some(ll) => state.run_tokens(loading::from_lib_list(ll, &DT_SOURCE_CONVENTIONS)),
-        None => state,
+        None => Ok(state),
     }
 }
 
@@ -91,6 +103,6 @@ pub fn load_from_source_file(file: String) -> Vec<Token> {
     loading::get_source_file_as_tokens(file)
 }
 
-pub fn run_prompt(state: RailState, conv: &'static RunConventions) {
+pub fn run_prompt(state: RailState, conv: &'static RunConventions) -> RailRunResult {
     RailPrompt::new(conv).run(state)
 }

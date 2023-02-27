@@ -58,8 +58,8 @@ fn parse_args() -> ArgMatches {
         .subcommand(
             Command::new("bootstrap")
                 .short_flag('b')
-                .about(bootstrap_help.as_str()),
+                .about(bootstrap_help),
         )
-        .subcommand(Command::new("zap").about(zap_help.as_str()))
+        .subcommand(Command::new("zap").about(zap_help))
         .get_matches()
 }

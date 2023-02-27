@@ -1,29 +1,30 @@
 use clap::{Parser, Subcommand};
-use dt_tool::{DT_FATAL_PREFIX, DT_VERSION, DT_WARN_PREFIX};
+use dt_tool::{dt_exe_conventions, RunConventions, DT_VERSION};
 
 const EXE_NAME: &str = "dtsh";
-
-const CONVENTIONS: dt_tool::RunConventions = dt_tool::RunConventions {
-    exe_name: EXE_NAME,
-    exe_version: DT_VERSION,
-    warn_prefix: DT_WARN_PREFIX,
-    fatal_prefix: DT_FATAL_PREFIX,
-};
+const CONV: RunConventions = dt_exe_conventions(EXE_NAME);
 
 pub fn main() {
     let args = DtShell::parse();
 
-    let state = dt_tool::initial_state(args.no_stdlib, args.lib_list, &CONVENTIONS);
+    let result =
+        dt_tool::initial_state(args.no_stdlib, args.lib_list, &CONV).map(|state| match args.mode {
+            Some(Mode::Interactive) | Some(Mode::RunStdin) | None => {
+                dt_tool::run_prompt(state, &CONV)
+            }
+            Some(Mode::Run { file }) => {
+                let tokens = dt_tool::load_from_source_file(file);
+                state.run_tokens(tokens)
+            }
+        });
 
-    match args.mode {
-        Some(Mode::Interactive) | Some(Mode::RunStdin) | None => {
-            dt_tool::run_prompt(state, &CONVENTIONS)
-        }
-        Some(Mode::Run { file }) => {
-            let tokens = dt_tool::load_from_source_file(file);
-            state.run_tokens(tokens);
-        }
-    }
+    if let Err((state, err)) = result {
+        let stack_dump = match state.len() {
+            0 => String::from(""),
+            _ => format!("\nStack dump: {}", state.stack),
+        };
+        rail_lang::log::error(&CONV, format!("Ended with error: {:?}{}", err, stack_dump));
+    };
 }
 
 #[derive(Parser)]

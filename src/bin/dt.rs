@@ -1,34 +1,42 @@
 use clap::Parser;
-use dt_tool::{DT_FATAL_PREFIX, DT_VERSION, DT_WARN_PREFIX};
+use dt_tool::{dt_exe_conventions, log, RunConventions, DT_VERSION};
 use rail_lang::tokens::Token;
 
 const EXE_NAME: &str = "dt";
-
-const CONVENTIONS: dt_tool::RunConventions = dt_tool::RunConventions {
-    exe_name: EXE_NAME,
-    exe_version: DT_VERSION,
-    warn_prefix: DT_WARN_PREFIX,
-    fatal_prefix: DT_FATAL_PREFIX,
-};
+const CONV: RunConventions = dt_exe_conventions(EXE_NAME);
 
 pub fn main() {
     let args = DtEvaluator::parse();
 
-    let state = dt_tool::initial_state(args.no_stdlib, args.lib_list, &CONVENTIONS);
+    let state = dt_tool::initial_state(args.no_stdlib, args.lib_list, &CONV);
 
     // Consume stdin by default when stdin is not a TTY (e.g. in a unix pipe)
     let state = if atty::isnt(atty::Stream::Stdin) {
         ["stdin", "quote-all", "prune", "..."]
             .into_iter()
             .map(|s| Token::from(s.to_string()))
-            .fold(state, |state, tok| state.run_token(tok))
+            .fold(state, |res, tok| match res {
+                Ok(state) => state.run_token(tok),
+                Err((state, err)) => {
+                    log::error(&CONV, format!("{:?}", err));
+                    Ok(state)
+                }
+            })
     } else {
         state
     };
 
+    let state = log::error_coerce(state);
+
     let tokens = dt_tool::load_from_source(args.dt_code.join(" "));
 
-    state.run_tokens(tokens);
+    if let Err((state, err)) = state.run_tokens(tokens) {
+        let stack_dump = match state.len() {
+            0 => String::from(""),
+            _ => format!("\nStack dump: {}", state.stack),
+        };
+        rail_lang::log::error(&CONV, format!("Ended with error: {:?}{}", err, stack_dump));
+    };
 }
 
 #[derive(Parser)]
