@@ -98,7 +98,7 @@ version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "41aa24cc5e1d6b3fc49ad4cd540b522fedcbe88bc6f259ff16e20e7010b6f8c7"
 dependencies = [
- "nix 0.26.2",
+ "nix",
  "terminfo",
  "thiserror",
  "which",
@@ -180,7 +180,7 @@ dependencies = [
 
 [[package]]
 name = "dt-tool"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "atty",
  "clap",
@@ -382,17 +382,6 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.24.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f17df307904acd05aa8e32e97bb20f2a0df1728bbc2d771ae8f9a90463441e9"
-dependencies = [
- "bitflags",
- "cfg-if 1.0.0",
- "libc",
-]
-
-[[package]]
-name = "nix"
 version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfdda3d196821d6af13126e40375cdf7da646a96114af134d5f417a9a1dc8e1a"
@@ -523,9 +512,9 @@ dependencies = [
 
 [[package]]
 name = "rail-lang"
-version = "0.28.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c4f8aaa0ebd42fd572da5415369a3bb421a4e020b866291cf60d27c4f432844"
+checksum = "ce40e27cf736cc42e8bb5379b5601a9d64bc7ed613d591133bc46e6239692ace"
 dependencies = [
  "clap",
  "clearscreen",
@@ -669,9 +658,9 @@ dependencies = [
 
 [[package]]
 name = "rustyline"
-version = "10.0.0"
+version = "11.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d1cd5ae51d3f7bf65d7969d579d502168ef578f289452bd8ccc91de28fda20e"
+checksum = "5dfc8644681285d1fb67a467fb3021bfea306b99b4146b166a1fe3ada965eece"
 dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
@@ -681,7 +670,7 @@ dependencies = [
  "libc",
  "log",
  "memchr",
- "nix 0.24.1",
+ "nix",
  "radix_trie",
  "scopeguard",
  "unicode-segmentation",

@@ -1,7 +1,7 @@
 [2 mod 0 eq?] [even?]         def
 [2 mod 1 eq?] [odd?]          def
 [mod 0 eq?]   [divisor?]      def
-[true]        [otherwise]     alias
+[true]        [otherwise]     def
 [any not]     [none]          def
 [eq?]         [equal?]        alias
 [neq?]        [not-equal?]    alias

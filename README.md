@@ -30,7 +30,7 @@ programming language.
 
 ```
 $ dtsh
-dt 0.6.0
+dt 0.7.0
 
 > 1 1 + print
 2
@@ -40,7 +40,7 @@ dt 0.6.0
 > 1 [print-and-double] 7 times
 1 2 4 8 16 32 64 
 
-> [[false] ["bye"] [true] ["hi"]] opt println
+> [[false] ["bye"] [true] ["hi"]] ? println
 hi
 ```
 

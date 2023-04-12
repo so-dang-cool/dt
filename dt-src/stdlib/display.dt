@@ -2,7 +2,7 @@
 [
   [ [dup type "quote" eq?] [[pl] each]
     [otherwise]            [pl]
-  ] opt
+  ] ?
 ]
 [pls] def
 

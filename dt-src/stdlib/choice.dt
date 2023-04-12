@@ -1,4 +1,4 @@
 [[case when-true when-false]::
   [[case]      [when-true]
-   [otherwise] [when-false]] opt do
+   [otherwise] [when-false]] ? do
 ] [choose] def

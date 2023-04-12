@@ -17,7 +17,7 @@
         [ otherwise ]    [ [ ] a push
                                b 1 - push
                                ps push ]
-    ] opt
+    ] ?
 ] [ palin-once ] def
 
 [ palin-once ] 10000 times

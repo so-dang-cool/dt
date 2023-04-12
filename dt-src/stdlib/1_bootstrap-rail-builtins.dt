@@ -4,8 +4,6 @@
 # 2. A place to make better-for-dt naming choices.
 
 # bool :: https://github.com/hiljusti/rail/blob/core/src/corelib/bool.rs
-[rail/true]  [true]  alias
-[rail/false] [false] alias
 [rail/not]   [not]   alias
 [rail/or]    [or]    alias
 [rail/and]   [and]   alias
@@ -18,7 +16,7 @@
 [rail/any]   [any]   alias
 
 # choice :: https://github.com/hiljusti/rail/blob/core/src/corelib/choice.rs
-[rail/opt] [opt] alias
+[rail/?] [?] alias
 
 # command :: https://github.com/hiljusti/rail/blob/core/src/corelib/command.rs
 [rail/do]    [do]    alias
