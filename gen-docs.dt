@@ -29,7 +29,7 @@ defs \FROZEN_DEFS =>
     [
         [text "FIXME" contains?] ["<i>" text "</i>"]
         [otherwise]              [text]
-    ] opt
+    ] ?
 ] \fmt-describe def
 
 [[cmd]:
