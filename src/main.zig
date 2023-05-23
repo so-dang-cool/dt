@@ -26,7 +26,7 @@ fn prompt(alloc: Allocator) ![]const u8 {
         try stderr.print("\nERROR: {s} ({any})\n", .{ message, err });
         std.os.exit(1);
     } orelse {
-        try stdout.print("\nBye now.\n", .{});
+        try stderr.print("\nBye now.\n", .{});
         std.os.exit(0);
     };
 }
