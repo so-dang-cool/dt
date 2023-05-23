@@ -1,24 +1,34 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
+const stdin = std.io.getStdIn().reader();
+const stdout = std.io.getStdOut().writer();
+const stderr = std.io.getStdErr().writer();
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    var stop = false;
+    var alloc = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    while (!stop) {
+        try stdout.print("> ", .{});
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+        const input = try prompt(alloc.allocator());
 
-    try bw.flush(); // don't forget to flush!
+        try stdout.print("Ok smart guy, you said: {s}\n", .{input});
+    }
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+fn prompt(alloc: Allocator) ![]const u8 {
+    return stdin.readUntilDelimiterOrEofAlloc(alloc, '\n', 128) catch |err| {
+        const message = switch (err) {
+            error.StreamTooLong => "Response was too many characters.",
+            else => "Unable to read response.",
+        };
+        try stderr.print("\nERROR: {s} ({any})\n", .{ message, err });
+        std.os.exit(1);
+    } orelse {
+        try stdout.print("\nBye now.\n", .{});
+        std.os.exit(0);
+    };
 }
+
+test "simple test" {}
