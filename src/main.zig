@@ -4,6 +4,18 @@ const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
+const Token = union(enum) {
+    left_bracket: void,
+    right_bracket: void,
+    bool: bool,
+    i64: i64,
+    f64: f64,
+    term: []const u8,
+    deferred_term: []const u8,
+    string: []const u8,
+    none: void,
+};
+
 pub fn main() !void {
     var stop = false;
     var alloc = std.heap.ArenaAllocator.init(std.heap.page_allocator);
