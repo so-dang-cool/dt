@@ -4,6 +4,10 @@ const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
+const version = "0.1";
+
+const helloLines = @embedFile("test/hello.rock");
+
 const Token = union(enum) {
     left_bracket: void,
     right_bracket: void,
@@ -19,6 +23,10 @@ const Token = union(enum) {
 pub fn main() !void {
     var stop = false;
     var alloc = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+
+    try stderr.print("rock {s}\n", .{version});
+
+    try stderr.print("Definitions: {s}\n", .{helloLines});
 
     while (!stop) {
         try stdout.print("> ", .{});
