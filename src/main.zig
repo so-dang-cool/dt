@@ -1,12 +1,13 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
 const version = "0.1";
 
-const helloLines = @embedFile("test/hello.rock");
+const helloFile = @embedFile("test/hello.rock");
 
 const Token = union(enum) {
     left_bracket: void,
@@ -18,6 +19,23 @@ const Token = union(enum) {
     deferred_term: []const u8,
     string: []const u8,
     none: void,
+
+    fn parseAlloc(alloc: Allocator, raw: []const u8) !ArrayList(Token) {
+        var tokens = ArrayList(Token).init(alloc);
+
+        var parts = std.mem.split(u8, raw, " ");
+
+        while (parts.next()) |part| {
+            const token: Token = if (std.mem.eql(u8, part, "["))
+                .left_bracket
+            else if (std.mem.eql(u8, part, "]"))
+                .right_bracket
+            else if (std.mem.eql(u8, part, "true")) .{ .bool = true } else if (std.mem.eql(u8, part, "false")) .{ .bool = false } else .{ .term = part };
+            try tokens.append(token);
+        }
+
+        return tokens;
+    }
 };
 
 pub fn main() !void {
@@ -26,7 +44,10 @@ pub fn main() !void {
 
     try stderr.print("rock {s}\n", .{version});
 
-    try stderr.print("Definitions: {s}\n", .{helloLines});
+    const tokens = try Token.parseAlloc(alloc.allocator(), helloFile);
+    for (tokens.items) |token| {
+        try stderr.print("Token: {any}\n", .{token});
+    }
 
     while (!stop) {
         try stdout.print("> ", .{});
