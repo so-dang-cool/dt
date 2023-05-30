@@ -16,19 +16,20 @@ pub const Token = union(enum) {
     pub fn parseAlloc(alloc: Allocator, raw: []const u8) !ArrayList(Token) {
         var tokens = ArrayList(Token).init(alloc);
 
-        var sections = std.mem.split(u8, raw, "\"");
+        var sections = std.mem.tokenize(u8, raw, "\"");
         var i: u64 = 0;
         while (sections.next()) |contents| {
             if (i % 2 == 1) {
                 try tokens.append(.{ .string = contents });
             } else {
-                var parts = std.mem.split(u8, raw, " ");
+                var parts = std.mem.tokenize(u8, raw, " ");
 
                 while (parts.next()) |part| {
                     const token: Token = parse(part);
                     try tokens.append(token);
                 }
             }
+            i += 1;
         }
 
         return tokens;
@@ -60,3 +61,9 @@ pub const Token = union(enum) {
         return .{ .term = part };
     }
 };
+
+test "parse hello.rock" {
+    const helloFile = @embedFile("test/hello.rock");
+    const tokens = try Token.parseAlloc(std.testing.allocator(), helloFile);
+    std.debug.assert(tokens == .{});
+}
