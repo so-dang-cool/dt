@@ -6,9 +6,5 @@
         //     .url = "https://github.com/Hejsil/zig-clap/archive/05a50fe7fe833059db8550c34bc69fedd8bb0af8.tar.gz",
         //     .hash = "12201b9998ae15edcf8f348e69531d650ad4983a94f442d3c228f4171a62e8ec8bf2",
         // },
-        .mecha = .{
-            .url = "https://github.com/Hejsil/mecha/archive/dacf54ca3291c899297366053812b2c5237cb06c.tar.gz",
-            .hash = "12205ba139e0c244d34a82701b4373c1c54428441f6515635e5df4d49d9cc3e74bc6",
-        },
     },
 }

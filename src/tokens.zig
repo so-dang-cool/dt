@@ -22,11 +22,11 @@ pub const Token = union(enum) {
             if (i % 2 == 1) {
                 try tokens.append(.{ .string = contents });
             } else {
-                var parts = std.mem.tokenize(u8, raw, " ");
+                var parts = std.mem.tokenize(u8, contents, " \t,\r\n");
 
                 while (parts.next()) |part| {
-                    const token: Token = parse(part);
-                    try tokens.append(token);
+                    const tok = parse(part);
+                    try tokens.append(tok);
                 }
             }
             i += 1;
@@ -62,8 +62,25 @@ pub const Token = union(enum) {
     }
 };
 
+// Testing!
+
 test "parse hello.rock" {
+    var expected = ArrayList(Token).init(std.testing.allocator);
+    try expected.append(Token.left_bracket);
+    try expected.append(Token{ .string = "hello" });
+    try expected.append(Token{ .term = "pl" });
+    try expected.append(Token.right_bracket);
+    try expected.append(Token{ .deferred_term = "greet" });
+    try expected.append(Token{ .term = "def" });
+
     const helloFile = @embedFile("test/hello.rock");
-    const tokens = try Token.parseAlloc(std.testing.allocator(), helloFile);
-    std.debug.assert(tokens == .{});
+    const tokens = try Token.parseAlloc(std.testing.allocator, helloFile);
+
+    std.debug.assert(tokens.items.len == 6);
+    var i: u8 = 0;
+    while (i < 6) {
+        // TODO: Switch an test equality? How do tagged unions work?
+        // std.debug.assert(tokens.items[i] == expected.items[i]);
+        i += 1;
+    }
 }
