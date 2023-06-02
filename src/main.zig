@@ -46,5 +46,3 @@ fn prompt(alloc: Allocator) ![]const u8 {
         std.os.exit(0);
     };
 }
-
-test "simple test" {}

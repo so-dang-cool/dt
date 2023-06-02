@@ -49,7 +49,8 @@ pub const Token = union(enum) {
             return .{ .bool = false };
         }
         if (std.mem.startsWith(u8, part, "\\")) {
-            return .{ .deferred_term = part };
+            const deferredTerm = part[1..];
+            return .{ .deferred_term = deferredTerm };
         }
         if (std.fmt.parseInt(i64, part, 10)) |i| {
             return .{ .i64 = i };
@@ -59,6 +60,20 @@ pub const Token = union(enum) {
         } else |_| {}
 
         return .{ .term = part };
+    }
+
+    fn assertEql(self: Token, other: Token) void {
+        switch (self) {
+            Token.left_bracket => std.debug.assert(other == Token.left_bracket),
+            Token.right_bracket => std.debug.assert(other == Token.right_bracket),
+            Token.bool => |b| std.debug.assert(other.bool == b),
+            Token.i64 => |i| std.debug.assert(other.i64 == i),
+            Token.f64 => |f| std.debug.assert(other.f64 == f),
+            Token.string => |s| std.debug.assert(std.mem.eql(u8, other.string, s)),
+            Token.term => |t| std.debug.assert(std.mem.eql(u8, other.term, t)),
+            Token.deferred_term => |t| std.debug.assert(std.mem.eql(u8, other.deferred_term, t)),
+            Token.none => std.debug.assert(other == Token.none),
+        }
     }
 };
 
@@ -79,8 +94,12 @@ test "parse hello.rock" {
     std.debug.assert(tokens.items.len == 6);
     var i: u8 = 0;
     while (i < 6) {
-        // TODO: Switch an test equality? How do tagged unions work?
-        // std.debug.assert(tokens.items[i] == expected.items[i]);
+        std.debug.print("Expected: {any}, Actual: {any} ... ", .{ expected.items[i], tokens.items[i] });
+        expected.items[i].assertEql(tokens.items[i]);
+        std.debug.print("PASS\n", .{});
         i += 1;
     }
+
+    expected.deinit();
+    tokens.deinit();
 }
