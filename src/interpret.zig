@@ -45,26 +45,11 @@ pub const RockMachine = struct {
             .right_bracket => {
                 self.curr = self.nest.popOrNull() orelse return RockError.TooManyRightBrackets;
             },
-            .bool => |b| {
-                var node = RockNode{ .data = RockVal{ .boolean = b } };
-                self.curr.prepend(&node);
-            },
-            .i64 => |i| {
-                var node = RockNode{ .data = RockVal{ .i64 = i } };
-                self.curr.prepend(&node);
-            },
-            .f64 => |f| {
-                var node = RockNode{ .data = RockVal{ .f64 = f } };
-                self.curr.prepend(&node);
-            },
-            .string => |s| {
-                var node = RockNode{ .data = RockVal{ .string = s } };
-                self.curr.prepend(&node);
-            },
-            .deferred_term => |cmd| {
-                var node = RockNode{ .data = RockVal{ .command = cmd } };
-                self.curr.prepend(&node);
-            },
+            .bool => |b| self.push(RockVal{ .boolean = b }),
+            .i64 => |i| self.push(RockVal{ .i64 = i }),
+            .f64 => |f| self.push(RockVal{ .f64 = f }),
+            .string => |s| self.push(RockVal{ .string = s }),
+            .deferred_term => |cmd| self.push(RockVal{ .command = cmd }),
             .none => {},
         }
         return self.*;
@@ -73,18 +58,14 @@ pub const RockMachine = struct {
     fn handle(self: *RockMachine, val: RockVal) anyerror!RockMachine {
         switch (val) {
             .command => |cmdName| return self.handleCmd(cmdName),
-            else => {
-                var node = RockNode{ .data = val };
-                self.curr.prepend(&node);
-            },
+            else => self.push(val),
         }
         return self.*;
     }
 
     fn handleCmd(self: *RockMachine, cmdName: RockString) !RockMachine {
         if (self.isNested()) {
-            var node = RockNode{ .data = RockVal{ .command = cmdName } };
-            self.curr.prepend(&node);
+            self.push(RockVal{ .command = cmdName });
             return self.*;
         }
 
@@ -93,6 +74,11 @@ pub const RockMachine = struct {
             return RockError.CommandUndefined;
         };
         return cmd.run(self);
+    }
+
+    pub fn push(self: *RockMachine, val: RockVal) void {
+        var node = RockNode{ .data = val };
+        self.curr.prepend(&node);
     }
 
     fn isNested(self: RockMachine) bool {

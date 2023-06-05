@@ -74,26 +74,22 @@ fn def(state: *RockMachine) !RockMachine {
         .command => |c| c,
         .string => |s| s,
         else => {
-            var node = RockNode{ .data = nameVal };
-            state.curr.prepend(&node);
+            state.push(nameVal);
             return state.*;
         },
     };
 
     const cmdVal = (state.curr.popFirst() orelse {
         try stderr.print("USAGE: QUOTE TERM/STRING def\n", .{});
-        var node = RockNode{ .data = nameVal };
-        state.curr.prepend(&node);
+        state.push(nameVal);
         return state.*;
     }).data;
     const cmd = switch (cmdVal) {
         .quote => |q| q,
         else => {
             try stderr.print("USAGE: QUOTE TERM/STRING def\n", .{});
-            var node1 = RockNode{ .data = cmdVal };
-            state.curr.prepend(&node1);
-            var node2 = RockNode{ .data = nameVal };
-            state.curr.prepend(&node2);
+            state.push(cmdVal);
+            state.push(nameVal);
             return state.*;
         },
     };
