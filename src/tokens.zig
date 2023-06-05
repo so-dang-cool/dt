@@ -64,15 +64,15 @@ pub const Token = union(enum) {
 
     fn assertEql(self: Token, other: Token) void {
         switch (self) {
-            Token.left_bracket => std.debug.assert(other == Token.left_bracket),
-            Token.right_bracket => std.debug.assert(other == Token.right_bracket),
-            Token.bool => |b| std.debug.assert(other.bool == b),
-            Token.i64 => |i| std.debug.assert(other.i64 == i),
-            Token.f64 => |f| std.debug.assert(other.f64 == f),
-            Token.string => |s| std.debug.assert(std.mem.eql(u8, other.string, s)),
-            Token.term => |t| std.debug.assert(std.mem.eql(u8, other.term, t)),
-            Token.deferred_term => |t| std.debug.assert(std.mem.eql(u8, other.deferred_term, t)),
-            Token.none => std.debug.assert(other == Token.none),
+            .left_bracket => std.debug.assert(other == Token.left_bracket),
+            .right_bracket => std.debug.assert(other == Token.right_bracket),
+            .bool => |b| std.debug.assert(other.bool == b),
+            .i64 => |i| std.debug.assert(other.i64 == i),
+            .f64 => |f| std.debug.assert(other.f64 == f),
+            .string => |s| std.debug.assert(std.mem.eql(u8, other.string, s)),
+            .term => |t| std.debug.assert(std.mem.eql(u8, other.term, t)),
+            .deferred_term => |t| std.debug.assert(std.mem.eql(u8, other.deferred_term, t)),
+            .none => std.debug.assert(other == Token.none),
         }
     }
 };
@@ -81,6 +81,7 @@ pub const Token = union(enum) {
 
 test "parse hello.rock" {
     var expected = ArrayList(Token).init(std.testing.allocator);
+    defer expected.deinit();
     try expected.append(Token.left_bracket);
     try expected.append(Token{ .string = "hello" });
     try expected.append(Token{ .term = "pl" });
@@ -90,6 +91,7 @@ test "parse hello.rock" {
 
     const helloFile = @embedFile("test/hello.rock");
     const tokens = try Token.parseAlloc(std.testing.allocator, helloFile);
+    defer tokens.deinit();
 
     std.debug.assert(tokens.items.len == 6);
     var i: u8 = 0;
@@ -99,7 +101,4 @@ test "parse hello.rock" {
         std.debug.print("PASS\n", .{});
         i += 1;
     }
-
-    expected.deinit();
-    tokens.deinit();
 }
