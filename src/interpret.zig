@@ -81,6 +81,26 @@ pub const RockMachine = struct {
         self.curr.prepend(&node);
     }
 
+    pub fn push2(self: *RockMachine, vals: RockVal2) void {
+        self.push(vals.b);
+        self.push(vals.a);
+    }
+
+    pub fn pop(self: *RockMachine) !RockVal {
+        const top = self.curr.popFirst() orelse return RockError.StackUnderflow;
+        return top.data;
+    }
+
+    // Returns tuple with most recent val in zero, next most in 1.
+    pub fn pop2(self: *RockMachine) !RockVal2 {
+        const a = try self.pop();
+        const b = self.pop() catch |e| {
+            self.push(a);
+            return e;
+        };
+        return .{ .a = a, .b = b };
+    }
+
     fn isNested(self: RockMachine) bool {
         return self.nest.items.len > 0;
     }
@@ -97,6 +117,11 @@ pub const RockVal = union(enum) {
     quote: *RockStack,
     string: RockString,
     // TODO: HashMap<RockVal, RockVal, ..., ...>
+};
+
+pub const RockVal2 = struct {
+    a: RockVal,
+    b: RockVal,
 };
 
 pub const RockCommand = struct {
