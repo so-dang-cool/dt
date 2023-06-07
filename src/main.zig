@@ -27,7 +27,7 @@ pub fn main() !void {
     try dict.put("def", RockCommand{ .name = "def", .description = "define a new command", .action = RockAction{ .builtin = builtins.def } });
     try dict.put("pl", RockCommand{ .name = "pl", .description = "print a value and a newline", .action = RockAction{ .builtin = builtins.pl } });
 
-    var machine = try RockMachine.init(arena.allocator(), dict);
+    var machine = try RockMachine.init(dict);
 
     try stderr.print("rock {s}\n", .{version});
 

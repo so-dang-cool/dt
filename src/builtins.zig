@@ -42,6 +42,7 @@ pub fn def(state: *RockMachine) !RockMachine {
 
 pub fn pl(state: *RockMachine) !RockMachine {
     const val = try state.pop();
-    try stdout.print("{any}\n", .{val});
+    try val.print();
+    try stdout.print("\n", .{});
     return state.*;
 }

@@ -12,6 +12,7 @@ const Token = tokens.Token;
 
 const RockString = []const u8;
 pub const RockDictionary = StringHashMap(RockCommand);
+pub const RockNest = SinglyLinkedList(*RockStack);
 
 pub const RockError = error{
     TooManyRightBrackets,
@@ -23,14 +24,16 @@ pub const RockError = error{
 
 pub const RockMachine = struct {
     curr: *RockStack,
-    nest: ArrayList(*RockStack),
+    nest: RockNest,
+    depth: u8,
     dictionary: RockDictionary,
 
-    pub fn init(alloc: Allocator, dict: RockDictionary) !RockMachine {
+    pub fn init(dict: RockDictionary) !RockMachine {
         var stack = RockStack{};
         return .{
             .curr = &stack,
-            .nest = ArrayList(*RockStack).init(alloc),
+            .nest = RockNest{},
+            .depth = 0,
             .dictionary = dict,
         };
     }
@@ -39,12 +42,19 @@ pub const RockMachine = struct {
         switch (tok) {
             .term => |cmdName| return self.handleCmd(cmdName),
             .left_bracket => {
-                try self.nest.append(self.curr);
+                var node = RockNest.Node{ .data = self.curr };
+                self.nest.prepend(&node);
                 var newCurr = RockStack{};
                 self.curr = &newCurr;
+                self.depth += 1;
             },
             .right_bracket => {
-                self.curr = self.nest.popOrNull() orelse return RockError.TooManyRightBrackets;
+                self.depth -= 1;
+                if (self.depth < 0) {
+                    return RockError.TooManyRightBrackets;
+                }
+                var node = self.nest.popFirst().?;
+                self.curr = node.data;
             },
             .bool => |b| self.push(RockVal{ .bool = b }),
             .i64 => |i| self.push(RockVal{ .i64 = i }),
@@ -65,7 +75,7 @@ pub const RockMachine = struct {
     }
 
     fn handleCmd(self: *RockMachine, cmdName: RockString) !RockMachine {
-        if (self.isNested()) {
+        if (self.depth > 0) {
             self.push(RockVal{ .command = cmdName });
             return self.*;
         }
@@ -81,7 +91,7 @@ pub const RockMachine = struct {
         stderr.print("STACK:", .{}) catch {};
         var node = self.curr.first;
         while (node) |n| {
-            stderr.print(" {any}", .{n.data}) catch {};
+            stderr.print(" {any}", .{n}) catch {};
             node = n.next;
         }
         stderr.print("\n", .{}) catch {};
@@ -90,7 +100,6 @@ pub const RockMachine = struct {
     pub fn push(self: *RockMachine, val: RockVal) void {
         var node = RockNode{ .data = val };
         self.curr.prepend(&node);
-        self.debug();
     }
 
     pub fn push2(self: *RockMachine, vals: RockVal2) void {
@@ -111,10 +120,6 @@ pub const RockMachine = struct {
             return e;
         };
         return .{ .a = a, .b = b };
-    }
-
-    fn isNested(self: RockMachine) bool {
-        return self.nest.items.len > 0;
     }
 };
 
@@ -170,6 +175,25 @@ pub const RockVal = union(enum) {
             .string => |s| s,
             else => null,
         };
+    }
+
+    pub fn print(self: RockVal) !void {
+        switch (self) {
+            .bool => |b| try stdout.print("{}", .{b}),
+            .i64 => |i| try stdout.print("{}", .{i}),
+            .f64 => |f| try stdout.print("{}", .{f}),
+            .command => |cmd| try stdout.print("\\{s}", .{cmd}),
+            .quote => |q| {
+                try stdout.print("[ ", .{});
+                var node = q.first;
+                while (node) |n| {
+                    try n.data.print();
+                    node = n.next;
+                }
+                try stdout.print(" ]", .{});
+            },
+            .string => |s| try stdout.print("{s}", .{s}),
+        }
     }
 };
 
