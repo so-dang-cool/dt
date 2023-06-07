@@ -17,6 +17,7 @@ pub const RockError = error{
     TooManyRightBrackets,
     CommandUndefined,
     StackUnderflow,
+    WrongArguments,
     ToDont, // Something is unimplemented
 };
 
@@ -45,7 +46,7 @@ pub const RockMachine = struct {
             .right_bracket => {
                 self.curr = self.nest.popOrNull() orelse return RockError.TooManyRightBrackets;
             },
-            .bool => |b| self.push(RockVal{ .boolean = b }),
+            .bool => |b| self.push(RockVal{ .bool = b }),
             .i64 => |i| self.push(RockVal{ .i64 = i }),
             .f64 => |f| self.push(RockVal{ .f64 = f }),
             .string => |s| self.push(RockVal{ .string = s }),
@@ -76,9 +77,20 @@ pub const RockMachine = struct {
         return cmd.run(self);
     }
 
+    fn debug(self: RockMachine) void {
+        stderr.print("STACK:", .{}) catch {};
+        var node = self.curr.first;
+        while (node) |n| {
+            stderr.print(" {any}", .{n.data}) catch {};
+            node = n.next;
+        }
+        stderr.print("\n", .{}) catch {};
+    }
+
     pub fn push(self: *RockMachine, val: RockVal) void {
         var node = RockNode{ .data = val };
         self.curr.prepend(&node);
+        self.debug();
     }
 
     pub fn push2(self: *RockMachine, vals: RockVal2) void {
@@ -110,13 +122,55 @@ pub const RockStack = SinglyLinkedList(RockVal);
 pub const RockNode = RockStack.Node;
 
 pub const RockVal = union(enum) {
-    boolean: bool,
+    bool: bool,
     i64: i64,
     f64: f64,
     command: RockString,
     quote: *RockStack,
     string: RockString,
     // TODO: HashMap<RockVal, RockVal, ..., ...>
+
+    pub fn asBool(self: RockVal) ?bool {
+        return switch (self) {
+            .bool => |b| b,
+            else => null,
+        };
+    }
+
+    pub fn asI64(self: RockVal) ?i64 {
+        return switch (self) {
+            .i64 => |i| i,
+            else => null,
+        };
+    }
+
+    pub fn asF64(self: RockVal) ?f64 {
+        return switch (self) {
+            .f64 => |f| f,
+            else => null,
+        };
+    }
+
+    pub fn asCommand(self: RockVal) ?RockString {
+        return switch (self) {
+            .command => |cmd| cmd,
+            else => null,
+        };
+    }
+
+    pub fn asQuote(self: RockVal) ?RockStack {
+        return switch (self) {
+            .quote => |q| q.*,
+            else => null,
+        };
+    }
+
+    pub fn asString(self: RockVal) ?RockString {
+        return switch (self) {
+            .string => |s| s,
+            else => null,
+        };
+    }
 };
 
 pub const RockVal2 = struct {

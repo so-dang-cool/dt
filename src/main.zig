@@ -8,6 +8,7 @@ const stderr = std.io.getStdErr().writer();
 const Token = @import("tokens.zig").Token;
 
 const interpret = @import("interpret.zig");
+const RockError = interpret.RockError;
 const RockDictionary = interpret.RockDictionary;
 const RockCommand = interpret.RockCommand;
 const RockAction = interpret.RockAction;
@@ -47,7 +48,10 @@ pub fn main() !void {
         const tokens = try Token.parseAlloc(arena.allocator(), input);
         for (tokens.items) |token| {
             try stderr.print("Token: {any}\n", .{token});
-            machine = try machine.interpret(token);
+            machine = machine.interpret(token) catch |e| {
+                try stderr.print("OOPS {any} caused error: {any}\n", .{ token, e });
+                break;
+            };
         }
     }
 }
