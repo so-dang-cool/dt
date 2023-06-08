@@ -13,10 +13,10 @@ const RockAction = interpret.RockAction;
 const RockMachine = interpret.RockMachine;
 
 pub fn def(state: *RockMachine) !RockMachine {
-    const usage = "USAGE: QUOTE TERM def\n";
+    const usage = "USAGE: QUOTE TERM def ({any})\n";
 
-    const vals = state.pop2() catch {
-        try stderr.print(usage, .{});
+    const vals = state.pop2() catch |e| {
+        try stderr.print(usage, .{e});
         return state.*;
     };
 
@@ -24,7 +24,7 @@ pub fn def(state: *RockMachine) !RockMachine {
     const quote = vals.b.asQuote();
 
     if (name == null or quote == null) {
-        try stderr.print(usage, .{});
+        try stderr.print(usage, .{.{ name, quote }});
         state.push2(vals);
         return RockError.WrongArguments;
     }

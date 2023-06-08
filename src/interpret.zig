@@ -17,6 +17,7 @@ pub const RockNest = SinglyLinkedList(*RockStack);
 pub const RockError = error{
     TooManyRightBrackets,
     CommandUndefined,
+    ContextStackUnderflow,
     StackUnderflow,
     WrongArguments,
     ToDont, // Something is unimplemented
@@ -42,10 +43,7 @@ pub const RockMachine = struct {
         switch (tok) {
             .term => |cmdName| return self.handleCmd(cmdName),
             .left_bracket => {
-                var node = RockNest.Node{ .data = self.curr };
-                self.nest.prepend(&node);
-                var newCurr = RockStack{};
-                self.curr = &newCurr;
+                self.pushContext();
                 self.depth += 1;
             },
             .right_bracket => {
@@ -53,8 +51,8 @@ pub const RockMachine = struct {
                 if (self.depth < 0) {
                     return RockError.TooManyRightBrackets;
                 }
-                var node = self.nest.popFirst().?;
-                self.curr = node.data;
+                var quote = try self.popContext();
+                self.push(RockVal{ .quote = quote });
             },
             .bool => |b| self.push(RockVal{ .bool = b }),
             .i64 => |i| self.push(RockVal{ .i64 = i }),
@@ -90,9 +88,8 @@ pub const RockMachine = struct {
     fn debug(self: RockMachine) void {
         stderr.print("STACK:", .{}) catch {};
         var node = self.curr.first;
-        while (node) |n| {
+        while (node) |n| : (node = n.next) {
             stderr.print(" {any}", .{n}) catch {};
-            node = n.next;
         }
         stderr.print("\n", .{}) catch {};
     }
@@ -120,6 +117,22 @@ pub const RockMachine = struct {
             return e;
         };
         return .{ .a = a, .b = b };
+    }
+
+    pub fn pushContext(self: *RockMachine) void {
+        var prev = self.curr;
+        var node = RockNest.Node{ .data = prev };
+        self.nest.prepend(&node);
+
+        var curr = RockStack{};
+        self.curr = &curr;
+    }
+
+    pub fn popContext(self: *RockMachine) !*RockStack {
+        const curr = self.curr;
+        const next = self.nest.popFirst() orelse return RockError.ContextStackUnderflow;
+        self.curr = next.data;
+        return curr;
     }
 };
 
