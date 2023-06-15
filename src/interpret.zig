@@ -13,6 +13,8 @@ const Token = tokens.Token;
 const RockString = []const u8;
 pub const RockDictionary = StringHashMap(RockCommand);
 pub const RockNest = SinglyLinkedList(*RockStack);
+pub const RockStack = SinglyLinkedList(RockVal);
+pub const RockNode = RockStack.Node;
 
 pub const RockError = error{
     TooManyRightBrackets,
@@ -135,9 +137,6 @@ pub const RockMachine = struct {
         return curr;
     }
 };
-
-pub const RockStack = SinglyLinkedList(RockVal);
-pub const RockNode = RockStack.Node;
 
 pub const RockVal = union(enum) {
     bool: bool,
