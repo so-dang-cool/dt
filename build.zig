@@ -15,7 +15,7 @@ pub fn build(b: *std.build.Builder) void {
 
     const test_step = b.step("test", "Run all tests");
     const test_exe = b.addTest(.{
-        .root_source_file = .{ .path = "src/tokens.zig" },
+        .root_source_file = .{ .path = "src/interpret.zig" },
         .optimize = optimize,
         .target = target,
     });

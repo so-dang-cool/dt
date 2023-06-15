@@ -12,7 +12,7 @@ const Token = tokens.Token;
 
 const RockString = []const u8;
 pub const RockDictionary = StringHashMap(RockCommand);
-pub const RockNest = SinglyLinkedList(*RockStack);
+pub const RockNest = SinglyLinkedList(RockStack);
 pub const RockStack = SinglyLinkedList(RockVal);
 pub const RockNode = RockStack.Node;
 
@@ -26,15 +26,14 @@ pub const RockError = error{
 };
 
 pub const RockMachine = struct {
-    curr: *RockStack,
+    curr: RockStack,
     nest: RockNest,
     depth: u8,
     dictionary: RockDictionary,
 
     pub fn init(dict: RockDictionary) !RockMachine {
-        var stack = RockStack{};
         return .{
-            .curr = &stack,
+            .curr = RockStack{},
             .nest = RockNest{},
             .depth = 0,
             .dictionary = dict,
@@ -59,7 +58,7 @@ pub const RockMachine = struct {
             .bool => |b| self.push(RockVal{ .bool = b }),
             .i64 => |i| self.push(RockVal{ .i64 = i }),
             .f64 => |f| self.push(RockVal{ .f64 = f }),
-            .string => |s| self.push(RockVal{ .string = s }),
+            .string => |s| self.push(RockVal{ .string = s[0..] }),
             .deferred_term => |cmd| self.push(RockVal{ .command = cmd }),
             .none => {},
         }
@@ -84,19 +83,14 @@ pub const RockMachine = struct {
             try stderr.print("Undefined: {s}\n", .{cmdName});
             return RockError.CommandUndefined;
         };
+
+        try stderr.print("Running command: {s}\n", .{cmd.name});
+
         return cmd.run(self);
     }
 
-    fn debug(self: RockMachine) void {
-        stderr.print("STACK:", .{}) catch {};
-        var node = self.curr.first;
-        while (node) |n| : (node = n.next) {
-            stderr.print(" {any}", .{n}) catch {};
-        }
-        stderr.print("\n", .{}) catch {};
-    }
-
     pub fn push(self: *RockMachine, val: RockVal) void {
+        stderr.print("Pushn: {any}\n", .{val}) catch {};
         var node = RockNode{ .data = val };
         self.curr.prepend(&node);
     }
@@ -107,7 +101,7 @@ pub const RockMachine = struct {
     }
 
     pub fn pop(self: *RockMachine) !RockVal {
-        const top = self.curr.popFirst() orelse return RockError.StackUnderflow;
+        var top = self.curr.popFirst() orelse return RockError.StackUnderflow;
         return top.data;
     }
 
@@ -126,11 +120,10 @@ pub const RockMachine = struct {
         var node = RockNest.Node{ .data = prev };
         self.nest.prepend(&node);
 
-        var curr = RockStack{};
-        self.curr = &curr;
+        self.curr = RockStack{};
     }
 
-    pub fn popContext(self: *RockMachine) !*RockStack {
+    pub fn popContext(self: *RockMachine) !RockStack {
         const curr = self.curr;
         const next = self.nest.popFirst() orelse return RockError.ContextStackUnderflow;
         self.curr = next.data;
@@ -143,7 +136,7 @@ pub const RockVal = union(enum) {
     i64: i64,
     f64: f64,
     command: RockString,
-    quote: *RockStack,
+    quote: RockStack,
     string: RockString,
     // TODO: HashMap<RockVal, RockVal, ..., ...>
 
@@ -177,7 +170,7 @@ pub const RockVal = union(enum) {
 
     pub fn asQuote(self: RockVal) ?RockStack {
         return switch (self) {
-            .quote => |q| q.*,
+            .quote => |q| q,
             else => null,
         };
     }
@@ -238,3 +231,34 @@ pub const RockAction = union(enum) {
     builtin: *const fn (*RockMachine) anyerror!RockMachine,
     quote: RockStack,
 };
+
+test "can I even list?" {
+    const S = RockStack;
+    var stack = S{};
+
+    try std.testing.expect(stack.len() == 0);
+
+    var tok = Token{ .string = "sup" };
+
+    var s = S.Node{ .data = RockVal{ .string = tok.string } };
+    stack.prepend(&s);
+
+    try std.testing.expect(stack.len() == 1);
+
+    var c = S.Node{ .data = RockVal{ .command = "pl" } };
+    stack.prepend(&c);
+
+    try std.testing.expect(stack.len() == 2);
+
+    var c2 = stack.popFirst();
+    try std.testing.expect(stack.len() == 1);
+    try std.testing.expect(std.mem.eql(u8, c2.?.data.command, "pl"));
+
+    var s2 = stack.popFirst();
+    try std.testing.expect(stack.len() == 0);
+    try std.testing.expect(std.mem.eql(u8, s2.?.data.string, "sup"));
+
+    var n = stack.popFirst();
+    try std.testing.expect(stack.len() == 0);
+    try std.testing.expect(n == null);
+}
