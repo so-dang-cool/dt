@@ -7,9 +7,6 @@ const stderr = std.io.getStdErr().writer();
 
 const interpret = @import("interpret.zig");
 const RockError = interpret.Error;
-const Dictionary = interpret.Dictionary;
-const RockCommand = interpret.RockCommand;
-const RockAction = interpret.RockAction;
 const RockMachine = interpret.RockMachine;
 
 pub fn def(state: *RockMachine) !void {
@@ -36,4 +33,33 @@ pub fn pl(state: *RockMachine) !void {
     const val = try state.pop();
     try val.print();
     try stdout.print("\n", .{});
+}
+
+pub fn add(state: *RockMachine) !void {
+    const usage = "USAGE: a b + -> a+b ({any})\n";
+
+    const ns = state.pop2() catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    { // Both integers
+        const a = ns.a.asI64();
+        const b = ns.b.asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .i64 = a.? + b.? });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = ns.a.asF64();
+        const b = ns.b.asF64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .f64 = a.? + b.? });
+            return;
+        }
+    }
 }

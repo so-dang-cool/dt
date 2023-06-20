@@ -27,6 +27,7 @@ pub fn main() !void {
 
     try machine.define("def", "define a new command", .{ .builtin = builtins.def });
     try machine.define("pl", "print a value and a newline", .{ .builtin = builtins.pl });
+    try machine.define("+", "add two numeric values", .{ .builtin = builtins.add });
 
     try stderr.print("rock {s}\n", .{version});
 
@@ -48,7 +49,10 @@ pub fn main() !void {
         for (tokens.items) |token| {
             //try stderr.print("Token: {any}\n", .{token});
             machine.interpret(token) catch |e| {
-                try stderr.print("OOPS {any} caused error: {any}\n", .{ token, e });
+                switch (token) {
+                    .term => |term| try stderr.print("OOPS {s} caused error: {any}\n", .{ term, e }),
+                    else => try stderr.print("OOPS {any} caused error: {any}\n", .{ token, e }),
+                }
                 break;
             };
         }
