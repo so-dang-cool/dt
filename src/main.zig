@@ -9,7 +9,7 @@ const Token = @import("tokens.zig").Token;
 
 const interpret = @import("interpret.zig");
 const RockError = interpret.RockError;
-const RockDictionary = interpret.RockDictionary;
+const RockDictionary = interpret.Dictionary;
 const RockCommand = interpret.RockCommand;
 const RockAction = interpret.RockAction;
 const RockMachine = interpret.RockMachine;
@@ -23,19 +23,18 @@ const helloFile = @embedFile("test/hello.rock");
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
-    var dict = RockDictionary.init(arena.allocator());
-    try dict.put("def", RockCommand{ .name = "def", .description = "define a new command", .action = RockAction{ .builtin = builtins.def } });
-    try dict.put("pl", RockCommand{ .name = "pl", .description = "print a value and a newline", .action = RockAction{ .builtin = builtins.pl } });
+    var machine = try RockMachine.init(arena.allocator());
 
-    var machine = try RockMachine.init(dict);
+    try machine.define("def", "define a new command", .{ .builtin = builtins.def });
+    try machine.define("pl", "print a value and a newline", .{ .builtin = builtins.pl });
 
     try stderr.print("rock {s}\n", .{version});
 
     const helloTokens = try Token.parseAlloc(arena.allocator(), helloFile);
     defer helloTokens.deinit();
     for (helloTokens.items) |token| {
-        try stderr.print("Token: {any}\n", .{token});
-        machine = try machine.interpret(token);
+        // try stderr.print("Token: {any}\n", .{token});
+        try machine.interpret(token);
         // try stderr.print("STATE: {any}\n\n", .{machine.curr.});
     }
 
@@ -47,8 +46,8 @@ pub fn main() !void {
 
         const tokens = try Token.parseAlloc(arena.allocator(), input);
         for (tokens.items) |token| {
-            try stderr.print("Token: {any}\n", .{token});
-            machine = machine.interpret(token) catch |e| {
+            //try stderr.print("Token: {any}\n", .{token});
+            machine.interpret(token) catch |e| {
                 try stderr.print("OOPS {any} caused error: {any}\n", .{ token, e });
                 break;
             };

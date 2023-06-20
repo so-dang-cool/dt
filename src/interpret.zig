@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
-const SinglyLinkedList = std.SinglyLinkedList;
+const Stack = std.SinglyLinkedList;
 const StringHashMap = std.StringHashMap;
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
@@ -11,123 +11,147 @@ const tokens = @import("tokens.zig");
 const Token = tokens.Token;
 
 const RockString = []const u8;
-pub const RockDictionary = StringHashMap(RockCommand);
-pub const RockNest = SinglyLinkedList(RockStack);
-pub const RockStack = SinglyLinkedList(RockVal);
-pub const RockNode = RockStack.Node;
+pub const Dictionary = StringHashMap(RockCommand);
 
-pub const RockError = error{
+pub const Context = struct {
+    stack: Stack(RockVal),
+    defs: Dictionary,
+
+    pub fn init(dict: Dictionary) Context {
+        return .{
+            .stack = .{},
+            .defs = dict,
+        };
+    }
+};
+
+pub const Error = error{
     TooManyRightBrackets,
     CommandUndefined,
     ContextStackUnderflow,
     StackUnderflow,
     WrongArguments,
-    ToDont, // Something is unimplemented
 };
 
 pub const RockMachine = struct {
-    curr: RockStack,
-    nest: RockNest,
+    alloc: Allocator,
+    nest: Stack(Context),
     depth: u8,
-    dictionary: RockDictionary,
 
-    pub fn init(dict: RockDictionary) !RockMachine {
+    pub fn init(alloc: Allocator) !RockMachine {
+        var nest = Stack(Context){};
+        var mainNode = try alloc.create(Stack(Context).Node);
+        mainNode.* = Stack(Context).Node{ .data = Context.init(Dictionary.init(alloc)) };
+        nest.prepend(mainNode);
+
         return .{
-            .curr = RockStack{},
-            .nest = RockNest{},
+            .alloc = alloc,
+            .nest = nest,
             .depth = 0,
-            .dictionary = dict,
         };
     }
 
-    pub fn interpret(self: *RockMachine, tok: Token) !RockMachine {
+    pub fn interpret(self: *RockMachine, tok: Token) !void {
         switch (tok) {
-            .term => |cmdName| return self.handleCmd(cmdName),
+            .term => |cmdName| try self.handleCmd(cmdName),
             .left_bracket => {
-                self.pushContext();
+                try self.pushContext();
                 self.depth += 1;
             },
             .right_bracket => {
                 self.depth -= 1;
+
                 if (self.depth < 0) {
-                    return RockError.TooManyRightBrackets;
+                    return Error.TooManyRightBrackets;
                 }
-                var quote = try self.popContext();
-                self.push(RockVal{ .quote = quote });
+
+                // TODO: Keep track of context length and store as array in RockVal (Avoid this reversal; faster forward traversal).
+                var context = try self.popContext();
+                var reversed = context.stack;
+                var quote = Stack(RockVal){};
+
+                while (reversed.popFirst()) |node| {
+                    quote.prepend(node);
+                }
+
+                try self.push(RockVal{ .quote = quote });
             },
-            .bool => |b| self.push(RockVal{ .bool = b }),
-            .i64 => |i| self.push(RockVal{ .i64 = i }),
-            .f64 => |f| self.push(RockVal{ .f64 = f }),
-            .string => |s| self.push(RockVal{ .string = s[0..] }),
-            .deferred_term => |cmd| self.push(RockVal{ .command = cmd }),
+            .bool => |b| try self.push(RockVal{ .bool = b }),
+            .i64 => |i| try self.push(RockVal{ .i64 = i }),
+            .f64 => |f| try self.push(RockVal{ .f64 = f }),
+            .string => |s| try self.push(RockVal{ .string = s[0..] }),
+            .deferred_term => |cmd| try self.push(RockVal{ .command = cmd }),
             .none => {},
         }
-        return self.*;
     }
 
-    fn handle(self: *RockMachine, val: RockVal) anyerror!RockMachine {
+    fn handle(self: *RockMachine, val: RockVal) anyerror!void {
         switch (val) {
-            .command => |cmdName| return self.handleCmd(cmdName),
-            else => self.push(val),
+            .command => |cmdName| try self.handleCmd(cmdName),
+            else => try self.push(val),
         }
-        return self.*;
     }
 
-    fn handleCmd(self: *RockMachine, cmdName: RockString) !RockMachine {
+    fn handleCmd(self: *RockMachine, cmdName: RockString) !void {
         if (self.depth > 0) {
-            self.push(RockVal{ .command = cmdName });
-            return self.*;
+            try self.push(RockVal{ .command = cmdName });
+            return;
         }
 
-        const cmd = self.dictionary.get(cmdName) orelse {
-            try stderr.print("Undefined: {s}\n", .{cmdName});
-            return RockError.CommandUndefined;
-        };
+        var node = self.nest.first;
+        while (node) |n| : (node = n.next) {
+            if (n.data.defs.get(cmdName)) |cmd| {
+                // try stderr.print("Running command: {s}\n", .{cmd.name});
+                try cmd.run(self);
+                return;
+            }
+        }
 
-        try stderr.print("Running command: {s}\n", .{cmd.name});
-
-        return cmd.run(self);
+        try stderr.print("Undefined: {s}\n", .{cmdName});
+        return Error.CommandUndefined;
     }
 
-    pub fn push(self: *RockMachine, val: RockVal) void {
-        stderr.print("Pushn: {any}\n", .{val}) catch {};
-        var node = RockNode{ .data = val };
-        self.curr.prepend(&node);
+    pub fn define(self: *RockMachine, name: RockString, description: RockString, action: RockAction) !void {
+        try self.nest.first.?.data.defs.put(name, RockCommand{ .name = name, .description = description, .action = action });
     }
 
-    pub fn push2(self: *RockMachine, vals: RockVal2) void {
-        self.push(vals.b);
-        self.push(vals.a);
+    pub fn push(self: *RockMachine, val: RockVal) !void {
+        var node = try self.alloc.create(Stack(RockVal).Node);
+        node.* = .{ .data = val };
+        var top = self.nest.first orelse return Error.ContextStackUnderflow;
+        top.data.stack.prepend(node);
+    }
+
+    pub fn push2(self: *RockMachine, vals: RockVal2) !void {
+        try self.push(vals.b);
+        try self.push(vals.a);
     }
 
     pub fn pop(self: *RockMachine) !RockVal {
-        var top = self.curr.popFirst() orelse return RockError.StackUnderflow;
-        return top.data;
+        var top = self.nest.first orelse return Error.ContextStackUnderflow;
+        var topVal = top.data.stack.popFirst() orelse return Error.StackUnderflow;
+        return topVal.data;
     }
 
     // Returns tuple with most recent val in zero, next most in 1.
     pub fn pop2(self: *RockMachine) !RockVal2 {
         const a = try self.pop();
         const b = self.pop() catch |e| {
-            self.push(a);
+            try self.push(a);
             return e;
         };
         return .{ .a = a, .b = b };
     }
 
-    pub fn pushContext(self: *RockMachine) void {
-        var prev = self.curr;
-        var node = RockNest.Node{ .data = prev };
-        self.nest.prepend(&node);
-
-        self.curr = RockStack{};
+    pub fn pushContext(self: *RockMachine) !void {
+        var node = try self.alloc.create(Stack(Context).Node);
+        node.* = .{ .data = .{ .stack = .{}, .defs = Dictionary.init(self.alloc) } };
+        self.nest.prepend(node);
     }
 
-    pub fn popContext(self: *RockMachine) !RockStack {
-        const curr = self.curr;
-        const next = self.nest.popFirst() orelse return RockError.ContextStackUnderflow;
-        self.curr = next.data;
-        return curr;
+    pub fn popContext(self: *RockMachine) !Context {
+        var node = self.nest.popFirst() orelse return Error.ContextStackUnderflow;
+        return node.data;
     }
 };
 
@@ -136,7 +160,7 @@ pub const RockVal = union(enum) {
     i64: i64,
     f64: f64,
     command: RockString,
-    quote: RockStack,
+    quote: Stack(RockVal),
     string: RockString,
     // TODO: HashMap<RockVal, RockVal, ..., ...>
 
@@ -168,7 +192,7 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn asQuote(self: RockVal) ?RockStack {
+    pub fn asQuote(self: RockVal) ?Stack(RockVal) {
         return switch (self) {
             .quote => |q| q,
             else => null,
@@ -212,53 +236,22 @@ pub const RockCommand = struct {
     description: RockString,
     action: RockAction,
 
-    fn run(self: RockCommand, state: *RockMachine) !RockMachine {
+    fn run(self: RockCommand, state: *RockMachine) !void {
         switch (self.action) {
-            .builtin => |b| return b(state),
-            .quote => |q| {
-                var nextState = state.*;
-                var curr = q;
-                while (curr.popFirst()) |val| {
-                    nextState = try nextState.handle(val.data);
+            .builtin => |b| return try b(state),
+            .quote => |quote| {
+                var node = quote.first;
+                while (node) |n| : (node = n.next) {
+                    state.handle(n.data) catch |e| {
+                        return e;
+                    };
                 }
-                return nextState;
             },
         }
     }
 };
 
 pub const RockAction = union(enum) {
-    builtin: *const fn (*RockMachine) anyerror!RockMachine,
-    quote: RockStack,
+    builtin: *const fn (*RockMachine) anyerror!void,
+    quote: Stack(RockVal),
 };
-
-test "can I even list?" {
-    const S = RockStack;
-    var stack = S{};
-
-    try std.testing.expect(stack.len() == 0);
-
-    var tok = Token{ .string = "sup" };
-
-    var s = S.Node{ .data = RockVal{ .string = tok.string } };
-    stack.prepend(&s);
-
-    try std.testing.expect(stack.len() == 1);
-
-    var c = S.Node{ .data = RockVal{ .command = "pl" } };
-    stack.prepend(&c);
-
-    try std.testing.expect(stack.len() == 2);
-
-    var c2 = stack.popFirst();
-    try std.testing.expect(stack.len() == 1);
-    try std.testing.expect(std.mem.eql(u8, c2.?.data.command, "pl"));
-
-    var s2 = stack.popFirst();
-    try std.testing.expect(stack.len() == 0);
-    try std.testing.expect(std.mem.eql(u8, s2.?.data.string, "sup"));
-
-    var n = stack.popFirst();
-    try std.testing.expect(stack.len() == 0);
-    try std.testing.expect(n == null);
-}

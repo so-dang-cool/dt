@@ -16,6 +16,7 @@ pub const Token = union(enum) {
     pub fn parseAlloc(alloc: Allocator, raw: []const u8) !ArrayList(Token) {
         var tokens = ArrayList(Token).init(alloc);
 
+        // TODO: Handle starts/ends with \"
         var sections = std.mem.tokenize(u8, raw, "\"");
         var i: u64 = 0;
         while (sections.next()) |contents| {

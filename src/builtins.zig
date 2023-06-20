@@ -6,18 +6,18 @@ const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
 const interpret = @import("interpret.zig");
-const RockError = interpret.RockError;
-const RockDictionary = interpret.RockDictionary;
+const RockError = interpret.Error;
+const Dictionary = interpret.Dictionary;
 const RockCommand = interpret.RockCommand;
 const RockAction = interpret.RockAction;
 const RockMachine = interpret.RockMachine;
 
-pub fn def(state: *RockMachine) !RockMachine {
+pub fn def(state: *RockMachine) !void {
     const usage = "USAGE: QUOTE TERM def ({any})\n";
 
     const vals = state.pop2() catch |e| {
         try stderr.print(usage, .{e});
-        return state.*;
+        return RockError.WrongArguments;
     };
 
     const name = vals.a.asCommand();
@@ -25,24 +25,15 @@ pub fn def(state: *RockMachine) !RockMachine {
 
     if (name == null or quote == null) {
         try stderr.print(usage, .{.{ name, quote }});
-        state.push2(vals);
+        try state.push2(vals);
         return RockError.WrongArguments;
     }
 
-    try state.dictionary.put(name.?, RockCommand{
-        .name = name.?,
-        .description = "TODO",
-        .action = RockAction{
-            .quote = quote.?,
-        },
-    });
-
-    return state.*;
+    try state.define(name.?, "TODO", .{ .quote = quote.? });
 }
 
-pub fn pl(state: *RockMachine) !RockMachine {
+pub fn pl(state: *RockMachine) !void {
     const val = try state.pop();
     try val.print();
     try stdout.print("\n", .{});
-    return state.*;
 }
