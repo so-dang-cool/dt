@@ -66,6 +66,7 @@ pub const RockMachine = struct {
                 }
 
                 // TODO: Keep track of context length and store as array in RockVal (Avoid this reversal; faster forward traversal).
+                // Or should it just be an ArrayList after all?
                 var context = try self.popContext();
                 var reversed = context.stack;
                 var quote = Stack(RockVal){};
@@ -133,11 +134,11 @@ pub const RockMachine = struct {
         return topVal.data;
     }
 
-    // Returns tuple with most recent val in zero, next most in 1.
+    // Returns tuple with a=older, b=newer
     pub fn pop2(self: *RockMachine) !RockVal2 {
-        const a = try self.pop();
-        const b = self.pop() catch |e| {
-            try self.push(a);
+        const b = try self.pop();
+        const a = self.pop() catch |e| {
+            try self.push(b);
             return e;
         };
         return .{ .a = a, .b = b };
@@ -217,11 +218,12 @@ pub const RockVal = union(enum) {
                 var node = q.first;
                 while (node) |n| {
                     try n.data.print();
+                    try stdout.print(" ", .{});
                     node = n.next;
                 }
-                try stdout.print(" ]", .{});
+                try stdout.print("]", .{});
             },
-            .string => |s| try stdout.print("{s}", .{s}),
+            .string => |s| try stdout.print("\"{s}\"", .{s}),
         }
     }
 };

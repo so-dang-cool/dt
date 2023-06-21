@@ -28,6 +28,8 @@ pub fn main() !void {
     try machine.define("def", "define a new command", .{ .builtin = builtins.def });
     try machine.define("pl", "print a value and a newline", .{ .builtin = builtins.pl });
     try machine.define("+", "add two numeric values", .{ .builtin = builtins.add });
+    try machine.define("-", "subtract two numeric values", .{ .builtin = builtins.subtract });
+    try machine.define(".s", "print the stack", .{ .builtin = builtins.dotS });
 
     try stderr.print("rock {s}\n", .{version});
 
