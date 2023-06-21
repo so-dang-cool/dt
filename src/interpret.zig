@@ -113,7 +113,8 @@ pub const RockMachine = struct {
     }
 
     pub fn define(self: *RockMachine, name: RockString, description: RockString, action: RockAction) !void {
-        try self.nest.first.?.data.defs.put(name, RockCommand{ .name = name, .description = description, .action = action });
+        const cmd = RockCommand{ .name = name, .description = description, .action = action };
+        try self.nest.first.?.data.defs.put(name, cmd);
     }
 
     pub fn push(self: *RockMachine, val: RockVal) !void {
@@ -123,9 +124,10 @@ pub const RockMachine = struct {
         top.data.stack.prepend(node);
     }
 
-    pub fn push2(self: *RockMachine, vals: RockVal2) !void {
-        try self.push(vals.b);
-        try self.push(vals.a);
+    pub fn pushN(self: *RockMachine, comptime n: comptime_int, vals: [n]RockVal) !void {
+        for (vals) |val| {
+            try self.push(val);
+        }
     }
 
     pub fn pop(self: *RockMachine) !RockVal {
@@ -134,14 +136,22 @@ pub const RockMachine = struct {
         return topVal.data;
     }
 
-    // Returns tuple with a=older, b=newer
-    pub fn pop2(self: *RockMachine) !RockVal2 {
-        const b = try self.pop();
-        const a = self.pop() catch |e| {
-            try self.push(b);
-            return e;
-        };
-        return .{ .a = a, .b = b };
+    // Removes and returns top N values from the stack from oldest to youngest. Last index is the most recent, 0 is the oldest.
+    pub fn popN(self: *RockMachine, comptime n: comptime_int) ![n]RockVal {
+        var vals: [n]RockVal = .{};
+
+        comptime var i = n - 1;
+        inline while (i >= 0) : (i -= 1) {
+            vals[i] = self.pop() catch |e| {
+                comptime var j = i;
+                inline while (j > n) : (j += 1) {
+                    try self.push(vals[j]);
+                }
+                return e;
+            };
+        }
+
+        return vals;
     }
 
     pub fn pushContext(self: *RockMachine) !void {

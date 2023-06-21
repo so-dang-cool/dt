@@ -13,17 +13,17 @@ const RockMachine = interpret.RockMachine;
 pub fn def(state: *RockMachine) !void {
     const usage = "USAGE: QUOTE TERM def ({any})\n";
 
-    const vals = state.pop2() catch |e| {
+    const vals = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
         return RockError.WrongArguments;
     };
 
-    const name = vals.b.asCommand();
-    const quote = vals.a.asQuote();
+    const quote = vals[0].asQuote();
+    const name = vals[1].asCommand();
 
     if (name == null or quote == null) {
         try stderr.print(usage, .{.{ name, quote }});
-        try state.push2(vals);
+        try state.pushN(2, vals);
         return RockError.WrongArguments;
     }
 
@@ -39,19 +39,21 @@ pub fn pl(state: *RockMachine) !void {
 pub fn dotS(state: *RockMachine) !void {
     try stdout.print("[ ", .{});
 
-    var valNode = state.nest.first.?.data.stack.first;
+    var ctxNode = state.nest.first orelse return;
+
+    var valNode = ctxNode.data.stack.first;
     var printOrder = Stack(RockVal){};
 
     while (valNode) |node| : (valNode = node.next) {
-        try node.data.print();
-        var printNode = Stack(RockVal).Node{ .data = node.data, .next = null };
-        printOrder.prepend(&printNode);
+        var printNode = try state.alloc.create(Stack(RockVal).Node);
+        printNode.* = Stack(RockVal).Node{ .data = node.data, .next = null };
+        printOrder.prepend(printNode);
     }
 
-    var printme = printOrder.first;
-
-    while (printme) |node| : (printme = node.next) {
+    while (printOrder.popFirst()) |node| {
         try node.data.print();
+        state.alloc.destroy(node);
+        try stdout.print(" ", .{});
     }
 
     try stdout.print("]\n", .{});
@@ -60,14 +62,14 @@ pub fn dotS(state: *RockMachine) !void {
 pub fn add(state: *RockMachine) !void {
     const usage = "USAGE: a b + -> a+b ({any})\n";
 
-    const ns = state.pop2() catch |e| {
+    const ns = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
         return RockError.WrongArguments;
     };
 
     { // Both integers
-        const a = ns.a.asI64();
-        const b = ns.b.asI64();
+        const a = ns[0].asI64();
+        const b = ns[1].asI64();
 
         if (a != null and b != null) {
             try state.push(.{ .i64 = a.? + b.? });
@@ -76,8 +78,8 @@ pub fn add(state: *RockMachine) !void {
     }
 
     { // Both floats
-        const a = ns.a.asF64();
-        const b = ns.b.asF64();
+        const a = ns[0].asF64();
+        const b = ns[1].asF64();
 
         if (a != null and b != null) {
             try state.push(.{ .f64 = a.? + b.? });
@@ -89,14 +91,14 @@ pub fn add(state: *RockMachine) !void {
 pub fn subtract(state: *RockMachine) !void {
     const usage = "USAGE: a b - -> a+b ({any})\n";
 
-    const ns = state.pop2() catch |e| {
+    const ns = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
         return RockError.WrongArguments;
     };
 
     { // Both integers
-        const a = ns.a.asI64();
-        const b = ns.b.asI64();
+        const a = ns[0].asI64();
+        const b = ns[1].asI64();
 
         if (a != null and b != null) {
             try state.push(.{ .i64 = a.? - b.? });
@@ -105,8 +107,8 @@ pub fn subtract(state: *RockMachine) !void {
     }
 
     { // Both floats
-        const a = ns.a.asF64();
-        const b = ns.b.asF64();
+        const a = ns[0].asF64();
+        const b = ns[1].asF64();
 
         if (a != null and b != null) {
             try state.push(.{ .f64 = a.? - b.? });

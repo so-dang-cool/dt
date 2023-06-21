@@ -18,7 +18,7 @@ pub const Token = union(enum) {
 
         // TODO: Handle starts/ends with \"
         var sections = std.mem.tokenize(u8, raw, "\"");
-        var i: u64 = 0;
+        var i: u64 = if (raw[0] == '"') 1 else 0;
         while (sections.next()) |contents| {
             if (i % 2 == 1) {
                 try tokens.append(.{ .string = contents });

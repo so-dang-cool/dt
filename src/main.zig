@@ -16,7 +16,7 @@ const RockMachine = interpret.RockMachine;
 
 const builtins = @import("builtins.zig");
 
-const version = "0.1";
+const version = "0.1.1";
 
 const helloFile = @embedFile("test/hello.rock");
 
