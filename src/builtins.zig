@@ -30,6 +30,22 @@ pub fn def(state: *RockMachine) !void {
     try state.define(name.?, "TODO", .{ .quote = quote.? });
 }
 
+pub fn dup(state: *RockMachine) !void {
+    const val = try state.pop();
+    try state.push(val);
+    try state.push(val);
+}
+
+pub fn drop(state: *RockMachine) !void {
+    _ = try state.pop();
+}
+
+pub fn swap(state: *RockMachine) !void {
+    const vals = try state.popN(2);
+    try state.push(vals[0]);
+    try state.push(vals[1]);
+}
+
 pub fn pl(state: *RockMachine) !void {
     const val = try state.pop();
     try val.print();

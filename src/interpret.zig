@@ -143,7 +143,7 @@ pub const RockMachine = struct {
         comptime var i = n - 1;
         inline while (i >= 0) : (i -= 1) {
             vals[i] = self.pop() catch |e| {
-                comptime var j = i;
+                comptime var j = i + 1;
                 inline while (j > n) : (j += 1) {
                     try self.push(vals[j]);
                 }
@@ -236,11 +236,6 @@ pub const RockVal = union(enum) {
             .string => |s| try stdout.print("\"{s}\"", .{s}),
         }
     }
-};
-
-pub const RockVal2 = struct {
-    a: RockVal,
-    b: RockVal,
 };
 
 pub const RockCommand = struct {
