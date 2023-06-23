@@ -46,6 +46,15 @@ pub fn swap(state: *RockMachine) !void {
     try state.push(vals[1]);
 }
 
+// ... a b c (rot) ... c a b
+//   [ 0 1 2 ]       [ 2 0 1 ]
+pub fn rot(state: *RockMachine) !void {
+    const vals = try state.popN(3);
+    try state.push(vals[2]);
+    try state.push(vals[0]);
+    try state.push(vals[1]);
+}
+
 pub fn pl(state: *RockMachine) !void {
     const val = try state.pop();
     try val.print();
