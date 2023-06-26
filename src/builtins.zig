@@ -43,8 +43,8 @@ pub fn drop(state: *RockMachine) !void {
 
 pub fn swap(state: *RockMachine) !void {
     const vals = try state.popN(2);
-    try state.push(vals[0]);
     try state.push(vals[1]);
+    try state.push(vals[0]);
 }
 
 // ... a b c (rot) ... c a b
@@ -147,6 +147,105 @@ pub fn subtract(state: *RockMachine) !void {
     return RockError.WrongArguments;
 }
 
+pub fn multiply(state: *RockMachine) !void {
+    const usage = "USAGE: a b * -> a*b ({any})\n";
+
+    const ns = state.popN(2) catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    { // Both integers
+        const a = ns[0].asI64();
+        const b = ns[1].asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .i64 = a.? * b.? });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = ns[0].asF64();
+        const b = ns[1].asF64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .f64 = a.? * b.? });
+            return;
+        }
+    }
+
+    try state.pushN(2, ns);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
+}
+
+pub fn divide(state: *RockMachine) !void {
+    const usage = "USAGE: a b / -> a/b ({any})\n";
+
+    const ns = state.popN(2) catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    { // Both integers
+        const a = ns[0].asI64();
+        const b = ns[1].asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .i64 = @divTrunc(a.?, b.?) });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = ns[0].asF64();
+        const b = ns[1].asF64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .f64 = a.? / b.? });
+            return;
+        }
+    }
+
+    try state.pushN(2, ns);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
+}
+
+pub fn modulo(state: *RockMachine) !void {
+    const usage = "USAGE: a b % -> a%b ({any})\n";
+
+    const ns = state.popN(2) catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    { // Both integers
+        const a = ns[0].asI64();
+        const b = ns[1].asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .i64 = @mod(a.?, b.?) });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = ns[0].asF64();
+        const b = ns[1].asF64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .f64 = @mod(a.?, b.?) });
+            return;
+        }
+    }
+
+    try state.pushN(2, ns);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
+}
+
 pub fn map(state: *RockMachine) !void {
     const usage = "USAGE: [as] term(a->b) map -> [bs] ({any})\n";
 
@@ -172,4 +271,33 @@ pub fn map(state: *RockMachine) !void {
 
         try state.push(RockVal{ .quote = newQuote });
     }
+}
+
+pub fn pop(state: *RockMachine) !void {
+    const val = try state.pop();
+    var quote: ArrayList(RockVal) = val.asQuote() orelse {
+        return RockError.WrongArguments;
+    };
+
+    if (quote.items.len > 0) {
+        const lastVal = quote.pop();
+        try state.push(RockVal{ .quote = quote });
+        try state.push(lastVal);
+        return;
+    }
+
+    try state.push(val);
+}
+
+pub fn push(state: *RockMachine) !void {
+    const vals = try state.popN(2);
+
+    var pushMe = vals[1];
+    var quote: ArrayList(RockVal) = vals[0].asQuote() orelse {
+        try state.push(pushMe);
+        return RockError.WrongArguments;
+    };
+
+    try quote.append(pushMe);
+    try state.push(RockVal{ .quote = quote });
 }

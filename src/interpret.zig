@@ -59,11 +59,11 @@ pub const RockMachine = struct {
                 self.depth += 1;
             },
             .right_bracket => {
-                self.depth -= 1;
-
-                if (self.depth < 0) {
+                if (self.depth == 0) {
                     return Error.TooManyRightBrackets;
                 }
+
+                self.depth -= 1;
 
                 var context = try self.popContext();
                 try self.push(RockVal{ .quote = context.stack });

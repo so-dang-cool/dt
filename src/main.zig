@@ -33,8 +33,13 @@ pub fn main() !void {
     try machine.define("pl", "print a value and a newline", .{ .builtin = builtins.pl });
     try machine.define("+", "add two numeric values", .{ .builtin = builtins.add });
     try machine.define("-", "subtract two numeric values", .{ .builtin = builtins.subtract });
+    try machine.define("*", "multiply two numeric values", .{ .builtin = builtins.multiply });
+    try machine.define("/", "divide two numeric values", .{ .builtin = builtins.divide });
+    try machine.define("%", "modulo two numeric values", .{ .builtin = builtins.modulo });
     try machine.define(".s", "print the stack", .{ .builtin = builtins.dotS });
     try machine.define("map", "apply a command to all values in a stack", .{ .builtin = builtins.map });
+    try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = builtins.pop });
+    try machine.define("push", "move an item into a quote", .{ .builtin = builtins.push });
 
     try stderr.print("rock {s}\n", .{version});
 
