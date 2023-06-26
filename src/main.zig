@@ -26,6 +26,7 @@ pub fn main() !void {
     var machine = try RockMachine.init(arena.allocator());
 
     try machine.define("def", "define a new command", .{ .builtin = builtins.def });
+    try machine.define(":", "bind variables", .{ .builtin = builtins.colon });
     try machine.define("dup", "duplicate the top value", .{ .builtin = builtins.dup });
     try machine.define("drop", "drop the top value", .{ .builtin = builtins.drop });
     try machine.define("swap", "swap the top two values", .{ .builtin = builtins.swap });

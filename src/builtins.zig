@@ -12,7 +12,7 @@ const RockVal = interpret.RockVal;
 const RockMachine = interpret.RockMachine;
 
 pub fn def(state: *RockMachine) !void {
-    const usage = "USAGE: QUOTE TERM def ({any})\n";
+    const usage = "USAGE: quote term def ({any})\n";
 
     const vals = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
@@ -29,6 +29,34 @@ pub fn def(state: *RockMachine) !void {
     }
 
     try state.define(name.?, "TODO", .{ .quote = quote.? });
+}
+
+// Variable binding
+pub fn colon(state: *RockMachine) !void {
+    const usage = "USAGE: ...vals terms : ({any})\n";
+    _ = usage;
+
+    var terms = try state.pop();
+
+    { // Single term
+        const term = terms.asCommand();
+        if (term != null) {
+            const val = try state.pop();
+            var quote = ArrayList(RockVal).init(state.alloc);
+            try quote.append(val);
+            try state.define(term.?, term.?, .{ .quote = quote });
+            return;
+        }
+    }
+
+    // Assume multiple terms
+    for (terms.asQuote().?.items) |termVal| {
+        const term = termVal.asCommand();
+        const val = try state.pop();
+        var quote = ArrayList(RockVal).init(state.alloc);
+        try quote.append(val);
+        try state.define(term.?, term.?, .{ .quote = quote });
+    }
 }
 
 pub fn dup(state: *RockMachine) !void {
