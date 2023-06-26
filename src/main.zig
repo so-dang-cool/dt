@@ -34,6 +34,7 @@ pub fn main() !void {
     try machine.define("+", "add two numeric values", .{ .builtin = builtins.add });
     try machine.define("-", "subtract two numeric values", .{ .builtin = builtins.subtract });
     try machine.define(".s", "print the stack", .{ .builtin = builtins.dotS });
+    try machine.define("map", "apply a command to all values in a stack", .{ .builtin = builtins.map });
 
     try stderr.print("rock {s}\n", .{version});
 

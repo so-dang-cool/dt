@@ -93,7 +93,7 @@ pub const RockMachine = struct {
         }
     }
 
-    fn handleCmd(self: *RockMachine, cmdName: RockString) !void {
+    pub fn handleCmd(self: *RockMachine, cmdName: RockString) !void {
         if (self.depth > 0) {
             try self.push(RockVal{ .command = cmdName });
             return;

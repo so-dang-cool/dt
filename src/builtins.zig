@@ -111,6 +111,10 @@ pub fn add(state: *RockMachine) !void {
             return;
         }
     }
+
+    try state.pushN(2, ns);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
 }
 
 pub fn subtract(state: *RockMachine) !void {
@@ -139,5 +143,36 @@ pub fn subtract(state: *RockMachine) !void {
             try state.push(.{ .f64 = a.? - b.? });
             return;
         }
+    }
+
+    try state.pushN(2, ns);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
+}
+
+pub fn map(state: *RockMachine) !void {
+    const usage = "USAGE: [as] term(a->b) map -> [bs] ({any})\n";
+
+    const vals = state.popN(2) catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    const quote = vals[0].asQuote();
+    const f = vals[1].asCommand();
+
+    if (quote != null and f != null) {
+        var as = quote.?;
+        var newQuote = Stack(RockVal){};
+        while (as.popFirst()) |a| {
+            try state.push(a.data);
+            try state.handleCmd(f.?);
+            var newVal = try state.pop();
+            var newNode = try state.alloc.create(Stack(RockVal).Node);
+            newNode.* = Stack(RockVal).Node{ .data = newVal };
+            newQuote.prepend(newNode);
+        }
+        // TODO: Oops it's reversed!
+        try state.push(RockVal{ .quote = newQuote });
     }
 }
