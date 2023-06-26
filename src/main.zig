@@ -39,8 +39,10 @@ pub fn main() !void {
     try machine.define("%", "modulo two numeric values", .{ .builtin = builtins.modulo });
     try machine.define(".s", "print the stack", .{ .builtin = builtins.dotS });
     try machine.define("map", "apply a command to all values in a stack", .{ .builtin = builtins.map });
-    try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = builtins.pop });
     try machine.define("push", "move an item into a quote", .{ .builtin = builtins.push });
+    try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = builtins.pop });
+    try machine.define("enq", "move an item into the first position of a quote", .{ .builtin = builtins.enq });
+    try machine.define("deq", "remove an item from the first position of a quote", .{ .builtin = builtins.deq });
 
     try stderr.print("rock {s}\n", .{version});
 

@@ -322,10 +322,39 @@ pub fn push(state: *RockMachine) !void {
 
     var pushMe = vals[1];
     var quote: ArrayList(RockVal) = vals[0].asQuote() orelse {
-        try state.push(pushMe);
+        try state.pushN(2, vals);
         return RockError.WrongArguments;
     };
 
     try quote.append(pushMe);
+    try state.push(RockVal{ .quote = quote });
+}
+
+pub fn deq(state: *RockMachine) !void {
+    const val = try state.pop();
+    var quote: ArrayList(RockVal) = val.asQuote() orelse {
+        return RockError.WrongArguments;
+    };
+
+    if (quote.items.len > 0) {
+        const firstVal = quote.orderedRemove(0);
+        try state.push(firstVal);
+        try state.push(RockVal{ .quote = quote });
+        return;
+    }
+
+    try state.push(val);
+}
+
+pub fn enq(state: *RockMachine) !void {
+    const vals = try state.popN(2);
+
+    var pushMe = vals[0];
+    var quote: ArrayList(RockVal) = vals[1].asQuote() orelse {
+        try state.pushN(2, vals);
+        return RockError.WrongArguments;
+    };
+
+    try quote.insert(0, pushMe);
     try state.push(RockVal{ .quote = quote });
 }
