@@ -114,6 +114,7 @@ pub const RockMachine = struct {
     }
 
     pub fn pushN(self: *RockMachine, comptime n: comptime_int, vals: [n]RockVal) !void {
+        // TODO: push as slice
         for (vals) |val| {
             try self.push(val);
         }
