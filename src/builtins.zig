@@ -1,5 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
 const Stack = std.SinglyLinkedList;
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
@@ -57,27 +58,23 @@ pub fn rot(state: *RockMachine) !void {
 
 pub fn pl(state: *RockMachine) !void {
     const val = try state.pop();
-    try val.print();
-    try stdout.print("\n", .{});
+
+    switch (val) {
+        .string => |s| try stdout.print("{s}\n", .{s}),
+        else => {
+            try val.print();
+            try stdout.print("\n", .{});
+        },
+    }
 }
 
 pub fn dotS(state: *RockMachine) !void {
     try stdout.print("[ ", .{});
 
-    var ctxNode = state.nest.first orelse return;
+    var top = state.nest.first orelse return;
 
-    var valNode = ctxNode.data.stack.first;
-    var printOrder = Stack(RockVal){};
-
-    while (valNode) |node| : (valNode = node.next) {
-        var printNode = try state.alloc.create(Stack(RockVal).Node);
-        printNode.* = Stack(RockVal).Node{ .data = node.data, .next = null };
-        printOrder.prepend(printNode);
-    }
-
-    while (printOrder.popFirst()) |node| {
-        try node.data.print();
-        state.alloc.destroy(node);
+    for (top.data.stack.items) |val| {
+        try val.print();
         try stdout.print(" ", .{});
     }
 
@@ -163,16 +160,16 @@ pub fn map(state: *RockMachine) !void {
 
     if (quote != null and f != null) {
         var as = quote.?;
-        var newQuote = Stack(RockVal){};
-        while (as.popFirst()) |a| {
-            try state.push(a.data);
-            try state.handleCmd(f.?);
+
+        var newQuote = ArrayList(RockVal).init(state.alloc);
+
+        for (as.items) |a| {
+            try state.push(a);
+            try state.handleCmd(f.?); // This should be performed in a new context where only the first item is present
             var newVal = try state.pop();
-            var newNode = try state.alloc.create(Stack(RockVal).Node);
-            newNode.* = Stack(RockVal).Node{ .data = newVal };
-            newQuote.prepend(newNode);
+            try newQuote.append(newVal);
         }
-        // TODO: Oops it's reversed!
+
         try state.push(RockVal{ .quote = newQuote });
     }
 }

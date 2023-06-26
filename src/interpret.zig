@@ -14,13 +14,13 @@ const RockString = []const u8;
 pub const Dictionary = StringHashMap(RockCommand);
 
 pub const Context = struct {
-    stack: Stack(RockVal),
+    stack: ArrayList(RockVal),
     defs: Dictionary,
 
-    pub fn init(dict: Dictionary) Context {
+    pub fn init(alloc: Allocator) Context {
         return .{
-            .stack = .{},
-            .defs = dict,
+            .stack = ArrayList(RockVal).init(alloc),
+            .defs = Dictionary.init(alloc),
         };
     }
 };
@@ -41,7 +41,7 @@ pub const RockMachine = struct {
     pub fn init(alloc: Allocator) !RockMachine {
         var nest = Stack(Context){};
         var mainNode = try alloc.create(Stack(Context).Node);
-        mainNode.* = Stack(Context).Node{ .data = Context.init(Dictionary.init(alloc)) };
+        mainNode.* = Stack(Context).Node{ .data = Context.init(alloc) };
         nest.prepend(mainNode);
 
         return .{
@@ -65,17 +65,8 @@ pub const RockMachine = struct {
                     return Error.TooManyRightBrackets;
                 }
 
-                // TODO: Keep track of context length and store as array in RockVal (Avoid this reversal; faster forward traversal).
-                // Or should it just be an ArrayList after all?
                 var context = try self.popContext();
-                var reversed = context.stack;
-                var quote = Stack(RockVal){};
-
-                while (reversed.popFirst()) |node| {
-                    quote.prepend(node);
-                }
-
-                try self.push(RockVal{ .quote = quote });
+                try self.push(RockVal{ .quote = context.stack });
             },
             .bool => |b| try self.push(RockVal{ .bool = b }),
             .i64 => |i| try self.push(RockVal{ .i64 = i }),
@@ -118,10 +109,8 @@ pub const RockMachine = struct {
     }
 
     pub fn push(self: *RockMachine, val: RockVal) !void {
-        var node = try self.alloc.create(Stack(RockVal).Node);
-        node.* = .{ .data = val };
         var top = self.nest.first orelse return Error.ContextStackUnderflow;
-        top.data.stack.prepend(node);
+        try top.data.stack.append(val);
     }
 
     pub fn pushN(self: *RockMachine, comptime n: comptime_int, vals: [n]RockVal) !void {
@@ -132,8 +121,7 @@ pub const RockMachine = struct {
 
     pub fn pop(self: *RockMachine) !RockVal {
         var top = self.nest.first orelse return Error.ContextStackUnderflow;
-        var topVal = top.data.stack.popFirst() orelse return Error.StackUnderflow;
-        return topVal.data;
+        return top.data.stack.pop();
     }
 
     // Removes and returns top N values from the stack from oldest to youngest. Last index is the most recent, 0 is the oldest.
@@ -156,7 +144,7 @@ pub const RockMachine = struct {
 
     pub fn pushContext(self: *RockMachine) !void {
         var node = try self.alloc.create(Stack(Context).Node);
-        node.* = .{ .data = .{ .stack = .{}, .defs = Dictionary.init(self.alloc) } };
+        node.* = .{ .data = Context.init(self.alloc) };
         self.nest.prepend(node);
     }
 
@@ -171,7 +159,7 @@ pub const RockVal = union(enum) {
     i64: i64,
     f64: f64,
     command: RockString,
-    quote: Stack(RockVal),
+    quote: ArrayList(RockVal),
     string: RockString,
     // TODO: HashMap<RockVal, RockVal, ..., ...>
 
@@ -203,7 +191,7 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn asQuote(self: RockVal) ?Stack(RockVal) {
+    pub fn asQuote(self: RockVal) ?ArrayList(RockVal) {
         return switch (self) {
             .quote => |q| q,
             else => null,
@@ -225,11 +213,9 @@ pub const RockVal = union(enum) {
             .command => |cmd| try stdout.print("\\{s}", .{cmd}),
             .quote => |q| {
                 try stdout.print("[ ", .{});
-                var node = q.first;
-                while (node) |n| {
-                    try n.data.print();
+                for (q.items) |val| {
+                    try val.print();
                     try stdout.print(" ", .{});
-                    node = n.next;
                 }
                 try stdout.print("]", .{});
             },
@@ -247,9 +233,8 @@ pub const RockCommand = struct {
         switch (self.action) {
             .builtin => |b| return try b(state),
             .quote => |quote| {
-                var node = quote.first;
-                while (node) |n| : (node = n.next) {
-                    state.handle(n.data) catch |e| {
+                for (quote.items) |val| {
+                    state.handle(val) catch |e| {
                         return e;
                     };
                 }
@@ -260,5 +245,5 @@ pub const RockCommand = struct {
 
 pub const RockAction = union(enum) {
     builtin: *const fn (*RockMachine) anyerror!void,
-    quote: Stack(RockVal),
+    quote: ArrayList(RockVal),
 };
