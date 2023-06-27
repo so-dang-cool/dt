@@ -13,6 +13,8 @@ const RockVal = interpret.RockVal;
 const RockMachine = interpret.RockMachine;
 
 pub fn defineAll(machine: *RockMachine) !void {
+    try machine.define(".q", "quit", .{ .builtin = quit });
+
     try machine.define("def", "define a new command", .{ .builtin = def });
     try machine.define(":", "bind variables", .{ .builtin = colon });
 
@@ -21,7 +23,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("swap", "swap the top two values", .{ .builtin = swap });
     try machine.define("rot", "rotate the top three values", .{ .builtin = rot });
 
-    try machine.define("pl", "print a value and a newline", .{ .builtin = pl });
+    try machine.define("p", "print a value", .{ .builtin = p });
+    try machine.define("nl", "print a newline", .{ .builtin = nl });
     try machine.define(".s", "print the stack", .{ .builtin = dotS });
 
     try machine.define("+", "add two numeric values", .{ .builtin = add });
@@ -31,6 +34,12 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("%", "modulo two numeric values", .{ .builtin = modulo });
     try machine.define("abs", "consume a number and produce its absolute value", .{ .builtin = abs });
 
+    try machine.define("and", "consume two booleans and produce their logical and", .{ .builtin = boolAnd });
+    try machine.define("or", "consume two booleans and produce their logical or", .{ .builtin = boolOr });
+    try machine.define("not", "consume a booleans and produce its logical not", .{ .builtin = not });
+
+    try machine.define("?", "consumes a command/quote and a boolean and performs the quote if the boolean is true", .{ .builtin = opt });
+
     try machine.define("do", "execute a command or quote", .{ .builtin = do });
     try machine.define("map", "apply a command to all values in a stack", .{ .builtin = map });
 
@@ -39,6 +48,21 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = pop });
     try machine.define("enq", "move an item into the first position of a quote", .{ .builtin = enq });
     try machine.define("deq", "remove an item from the first position of a quote", .{ .builtin = deq });
+}
+
+pub fn quit(state: *RockMachine) !void {
+    const ctx = try state.popContext();
+
+    if (ctx.items.len > 0) {
+        try stderr.print("Warning: Exited with unused values: [ ", .{});
+        for (ctx.items) |item| {
+            try item.print();
+            try stderr.print(" ", .{});
+        }
+        try stderr.print("] \n", .{});
+    }
+
+    std.os.exit(0);
 }
 
 pub fn def(state: *RockMachine) !void {
@@ -114,16 +138,20 @@ pub fn rot(state: *RockMachine) !void {
     try state.push(vals[1]);
 }
 
-pub fn pl(state: *RockMachine) !void {
+pub fn p(state: *RockMachine) !void {
     const val = try state.pop();
 
     switch (val) {
-        .string => |s| try stdout.print("{s}\n", .{s}),
+        .string => |s| try stdout.print("{s}", .{s}),
         else => {
             try val.print();
-            try stdout.print("\n", .{});
         },
     }
+}
+
+pub fn nl(state: *RockMachine) !void {
+    _ = state;
+    try stdout.print("\n", .{});
 }
 
 pub fn dotS(state: *RockMachine) !void {
@@ -330,6 +358,76 @@ pub fn abs(state: *RockMachine) !void {
     try state.push(n);
     try stderr.print(usage, .{RockError.WrongArguments});
     return RockError.WrongArguments;
+}
+
+pub fn boolAnd(state: *RockMachine) !void {
+    const usage = "USAGE: a b and -> a&b ({any})\n";
+
+    var vals = try state.popN(2);
+
+    var a = vals[0].asBool();
+    var b = vals[1].asBool();
+
+    if (a != null and b != null) {
+        try state.push(.{ .bool = a.? and b.? });
+    } else {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    }
+}
+
+pub fn boolOr(state: *RockMachine) !void {
+    const usage = "USAGE: a b or -> a|b ({any})\n";
+
+    var vals = try state.popN(2);
+
+    var a = vals[0].asBool();
+    var b = vals[1].asBool();
+
+    if (a != null and b != null) {
+        try state.push(.{ .bool = a.? or b.? });
+    } else {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    }
+}
+
+pub fn not(state: *RockMachine) !void {
+    const usage = "USAGE: a b or -> a|b ({any})\n";
+
+    var val = try state.pop();
+
+    var a = val.asBool();
+
+    if (a != null) {
+        try state.push(.{ .bool = !a.? });
+    } else {
+        try state.push(val);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    }
+}
+
+pub fn opt(state: *RockMachine) !void {
+    const usage = "USAGE: cmd|quote b opt -> ... ({any})\n";
+
+    var val = try state.pop();
+
+    var cond = val.asBool();
+
+    if (cond != null) {
+        if (cond.?) {
+            try do(state);
+        } else {
+            try drop(state);
+        }
+    } else {
+        try state.push(val);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    }
 }
 
 pub fn do(state: *RockMachine) !void {

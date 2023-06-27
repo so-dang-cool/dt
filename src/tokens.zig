@@ -16,20 +16,25 @@ pub const Token = union(enum) {
     pub fn parseAlloc(alloc: Allocator, raw: []const u8) !ArrayList(Token) {
         var tokens = ArrayList(Token).init(alloc);
 
-        var sections = std.mem.tokenize(u8, raw, "\"");
-        var i: u64 = if (raw[0] == '"') 1 else 0;
-        while (sections.next()) |contents| {
-            if (i % 2 == 1) {
+        var stringSplits = std.mem.tokenize(u8, raw, "\"");
+        var inString: bool = raw[0] == '"';
+        while (stringSplits.next()) |contents| : (inString = !inString) {
+            if (inString) {
                 try tokens.append(.{ .string = contents });
             } else {
-                var parts = std.mem.tokenize(u8, contents, " \t,\r\n");
+                var lineSplits = std.mem.tokenize(u8, contents, "\r\n");
 
-                while (parts.next()) |part| {
-                    const tok = parse(part);
-                    try tokens.append(tok);
+                while (lineSplits.next()) |line| {
+                    var wsSplits = std.mem.tokenize(u8, line, " \t,");
+
+                    while (wsSplits.next()) |rawTok| {
+                        // Comments end a line
+                        if (rawTok[0] == '#') break;
+
+                        try tokens.append(parse(rawTok));
+                    }
                 }
             }
-            i += 1;
         }
 
         return tokens;

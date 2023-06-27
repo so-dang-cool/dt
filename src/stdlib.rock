@@ -1,0 +1,6 @@
+# Display
+[ p nl ] \pl def
+
+# Boolean operators
+[ and not ] \nand def
+[ or not ] \nor def

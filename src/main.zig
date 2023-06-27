@@ -18,7 +18,7 @@ const builtins = @import("builtins.zig");
 
 const version = "0.1.1";
 
-const helloFile = @embedFile("test/hello.rock");
+const rockStdlib = @embedFile("stdlib.rock");
 
 pub fn main() !void {
     try stderr.print("rock {s}\n", .{version});
@@ -28,16 +28,13 @@ pub fn main() !void {
     var machine = try RockMachine.init(arena.allocator());
     try builtins.defineAll(&machine);
 
-    const helloTokens = try Token.parseAlloc(arena.allocator(), helloFile);
-    defer helloTokens.deinit();
-    for (helloTokens.items) |token| {
-        // try stderr.print("Token: {any}\n", .{token});
+    const toks = try Token.parseAlloc(arena.allocator(), rockStdlib);
+    defer toks.deinit();
+    for (toks.items) |token| {
         try machine.interpret(token);
-        // try stderr.print("STATE: {any}\n\n", .{machine.curr.});
     }
 
-    var stop = false;
-    while (!stop) {
+    while (true) {
         try stdout.print("> ", .{});
 
         const input = try prompt(arena.allocator());
