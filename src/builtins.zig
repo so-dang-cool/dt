@@ -12,6 +12,35 @@ const RockError = interpret.Error;
 const RockVal = interpret.RockVal;
 const RockMachine = interpret.RockMachine;
 
+pub fn defineAll(machine: *RockMachine) !void {
+    try machine.define("def", "define a new command", .{ .builtin = def });
+    try machine.define(":", "bind variables", .{ .builtin = colon });
+
+    try machine.define("dup", "duplicate the top value", .{ .builtin = dup });
+    try machine.define("drop", "drop the top value", .{ .builtin = drop });
+    try machine.define("swap", "swap the top two values", .{ .builtin = swap });
+    try machine.define("rot", "rotate the top three values", .{ .builtin = rot });
+
+    try machine.define("pl", "print a value and a newline", .{ .builtin = pl });
+    try machine.define(".s", "print the stack", .{ .builtin = dotS });
+
+    try machine.define("+", "add two numeric values", .{ .builtin = add });
+    try machine.define("-", "subtract two numeric values", .{ .builtin = subtract });
+    try machine.define("*", "multiply two numeric values", .{ .builtin = multiply });
+    try machine.define("/", "divide two numeric values", .{ .builtin = divide });
+    try machine.define("%", "modulo two numeric values", .{ .builtin = modulo });
+    try machine.define("abs", "consume a number and produce its absolute value", .{ .builtin = abs });
+
+    try machine.define("do", "execute a command or quote", .{ .builtin = do });
+    try machine.define("map", "apply a command to all values in a stack", .{ .builtin = map });
+
+    try machine.define("...", "expand a quote", .{ .builtin = ellipsis });
+    try machine.define("push", "move an item into a quote", .{ .builtin = push });
+    try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = pop });
+    try machine.define("enq", "move an item into the first position of a quote", .{ .builtin = enq });
+    try machine.define("deq", "remove an item from the first position of a quote", .{ .builtin = deq });
+}
+
 pub fn def(state: *RockMachine) !void {
     const usage = "USAGE: quote term def ({any})\n";
 
