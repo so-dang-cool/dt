@@ -39,6 +39,7 @@ pub fn main() !void {
     try machine.define("%", "modulo two numeric values", .{ .builtin = builtins.modulo });
     try machine.define("abs", "consume a number and produce its absolute value", .{ .builtin = builtins.abs });
     try machine.define(".s", "print the stack", .{ .builtin = builtins.dotS });
+    try machine.define("do", "execute a command or quote", .{ .builtin = builtins.map });
     try machine.define("map", "apply a command to all values in a stack", .{ .builtin = builtins.map });
     try machine.define("...", "expand a quote", .{ .builtin = builtins.ellipsis });
     try machine.define("push", "move an item into a quote", .{ .builtin = builtins.push });

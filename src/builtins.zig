@@ -101,7 +101,7 @@ pub fn dotS(state: *RockMachine) !void {
 
     var top = state.nest.first orelse return;
 
-    for (top.data.stack.items) |val| {
+    for (top.data.items) |val| {
         try val.print();
         try stdout.print(" ", .{});
     }
@@ -302,6 +302,34 @@ pub fn abs(state: *RockMachine) !void {
     return RockError.WrongArguments;
 }
 
+pub fn do(state: *RockMachine) !void {
+    const usage = "USAGE: ... term|quote do -> ... ({any})\n";
+
+    var toDo = try state.pop();
+
+    { // Command
+        const cmd = toDo.asCommand();
+        if (cmd != null) {
+            try state.handleCmd(cmd.?);
+            return;
+        }
+    }
+
+    { // Quote
+        const quote = toDo.asQuote();
+        if (quote != null) {
+            for (quote.?.items) |val| {
+                try state.handle(val);
+            }
+            return;
+        }
+    }
+
+    const err = RockError.WrongArguments;
+    try stderr.print(usage, .{err});
+    return err;
+}
+
 pub fn map(state: *RockMachine) !void {
     const usage = "USAGE: [as] term(a->b) map -> [bs] ({any})\n";
 
@@ -311,19 +339,20 @@ pub fn map(state: *RockMachine) !void {
     };
 
     const quote = vals[0].asQuote();
-    const f = vals[1].asCommand();
+    const f = vals[1];
 
-    if (quote != null and f != null) {
+    if (quote != null) {
         var as = quote.?;
 
-        var newQuote = ArrayList(RockVal).init(state.alloc);
+        var child = try state.child();
 
         for (as.items) |a| {
-            try state.push(a);
-            try state.handleCmd(f.?); // This should be performed in a new context where only the first item is present
-            var newVal = try state.pop();
-            try newQuote.append(newVal);
+            try child.push(a);
+            try child.push(f);
+            try do(&child);
         }
+
+        const newQuote = try child.popContext();
 
         try state.push(RockVal{ .quote = newQuote });
     }

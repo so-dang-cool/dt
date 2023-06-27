@@ -12,18 +12,7 @@ const Token = tokens.Token;
 
 const RockString = []const u8;
 pub const Dictionary = StringHashMap(RockCommand);
-
-pub const Context = struct {
-    stack: ArrayList(RockVal),
-    defs: Dictionary,
-
-    pub fn init(alloc: Allocator) Context {
-        return .{
-            .stack = ArrayList(RockVal).init(alloc),
-            .defs = Dictionary.init(alloc),
-        };
-    }
-};
+pub const Quote = ArrayList(RockVal);
 
 pub const Error = error{
     TooManyRightBrackets,
@@ -35,18 +24,20 @@ pub const Error = error{
 
 pub const RockMachine = struct {
     alloc: Allocator,
-    nest: Stack(Context),
+    nest: Stack(ArrayList(RockVal)),
+    defs: Dictionary,
     depth: u8,
 
     pub fn init(alloc: Allocator) !RockMachine {
-        var nest = Stack(Context){};
-        var mainNode = try alloc.create(Stack(Context).Node);
-        mainNode.* = Stack(Context).Node{ .data = Context.init(alloc) };
+        var nest = Stack(Quote){};
+        var mainNode = try alloc.create(Stack(Quote).Node);
+        mainNode.* = Stack(Quote).Node{ .data = Quote.init(alloc) };
         nest.prepend(mainNode);
 
         return .{
             .alloc = alloc,
             .nest = nest,
+            .defs = Dictionary.init(alloc),
             .depth = 0,
         };
     }
@@ -66,7 +57,7 @@ pub const RockMachine = struct {
                 self.depth -= 1;
 
                 var context = try self.popContext();
-                try self.push(RockVal{ .quote = context.stack });
+                try self.push(RockVal{ .quote = context });
             },
             .bool => |b| try self.push(RockVal{ .bool = b }),
             .i64 => |i| try self.push(RockVal{ .i64 = i }),
@@ -77,7 +68,7 @@ pub const RockMachine = struct {
         }
     }
 
-    fn handle(self: *RockMachine, val: RockVal) anyerror!void {
+    pub fn handle(self: *RockMachine, val: RockVal) anyerror!void {
         switch (val) {
             .command => |cmdName| try self.handleCmd(cmdName),
             else => try self.push(val),
@@ -90,27 +81,33 @@ pub const RockMachine = struct {
             return;
         }
 
-        var node = self.nest.first;
-        while (node) |n| : (node = n.next) {
-            if (n.data.defs.get(cmdName)) |cmd| {
-                // try stderr.print("Running command: {s}\n", .{cmd.name});
-                try cmd.run(self);
-                return;
-            }
+        if (self.defs.get(cmdName)) |cmd| {
+            // try stderr.print("Running command: {s}\n", .{cmd.name});
+            try cmd.run(self);
+            return;
         }
 
         try stderr.print("Undefined: {s}\n", .{cmdName});
         return Error.CommandUndefined;
     }
 
+    pub fn child(self: *RockMachine) !RockMachine {
+        var newMachine = try RockMachine.init(self.alloc);
+
+        // TODO: Persistent map for dictionary would make this much cheaper.
+        newMachine.defs = try self.defs.clone();
+
+        return newMachine;
+    }
+
     pub fn define(self: *RockMachine, name: RockString, description: RockString, action: RockAction) !void {
         const cmd = RockCommand{ .name = name, .description = description, .action = action };
-        try self.nest.first.?.data.defs.put(name, cmd);
+        try self.defs.put(name, cmd);
     }
 
     pub fn push(self: *RockMachine, val: RockVal) !void {
         var top = self.nest.first orelse return Error.ContextStackUnderflow;
-        try top.data.stack.append(val);
+        try top.data.append(val);
     }
 
     pub fn pushN(self: *RockMachine, comptime n: comptime_int, vals: [n]RockVal) !void {
@@ -122,7 +119,10 @@ pub const RockMachine = struct {
 
     pub fn pop(self: *RockMachine) !RockVal {
         var top = self.nest.first orelse return Error.ContextStackUnderflow;
-        return top.data.stack.pop();
+        if (top.data.items.len < 1) {
+            return Error.StackUnderflow;
+        }
+        return top.data.pop();
     }
 
     // Removes and returns top N values from the stack from oldest to youngest. Last index is the most recent, 0 is the oldest.
@@ -144,12 +144,12 @@ pub const RockMachine = struct {
     }
 
     pub fn pushContext(self: *RockMachine) !void {
-        var node = try self.alloc.create(Stack(Context).Node);
-        node.* = .{ .data = Context.init(self.alloc) };
+        var node = try self.alloc.create(Stack(Quote).Node);
+        node.* = .{ .data = Quote.init(self.alloc) };
         self.nest.prepend(node);
     }
 
-    pub fn popContext(self: *RockMachine) !Context {
+    pub fn popContext(self: *RockMachine) !Quote {
         var node = self.nest.popFirst() orelse return Error.ContextStackUnderflow;
         return node.data;
     }
@@ -160,7 +160,7 @@ pub const RockVal = union(enum) {
     i64: i64,
     f64: f64,
     command: RockString,
-    quote: ArrayList(RockVal),
+    quote: Quote,
     string: RockString,
     // TODO: HashMap<RockVal, RockVal, ..., ...>
 
@@ -192,7 +192,7 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn asQuote(self: RockVal) ?ArrayList(RockVal) {
+    pub fn asQuote(self: RockVal) ?Quote {
         return switch (self) {
             .quote => |q| q,
             else => null,
@@ -246,5 +246,5 @@ pub const RockCommand = struct {
 
 pub const RockAction = union(enum) {
     builtin: *const fn (*RockMachine) anyerror!void,
-    quote: ArrayList(RockVal),
+    quote: Quote,
 };
