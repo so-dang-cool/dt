@@ -274,6 +274,34 @@ pub fn modulo(state: *RockMachine) !void {
     return RockError.WrongArguments;
 }
 
+pub fn abs(state: *RockMachine) !void {
+    const usage = "USAGE: n abs -> |n| ({any})\n";
+
+    const n = try state.pop();
+
+    { // Integers
+        const a = n.asI64();
+
+        if (a != null) {
+            try state.push(.{ .i64 = try std.math.absInt(a.?) });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = n.asF64();
+
+        if (a != null) {
+            try state.push(.{ .f64 = std.math.fabs(a.?) });
+            return;
+        }
+    }
+
+    try state.push(n);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
+}
+
 pub fn map(state: *RockMachine) !void {
     const usage = "USAGE: [as] term(a->b) map -> [bs] ({any})\n";
 
@@ -330,6 +358,19 @@ pub fn push(state: *RockMachine) !void {
     try state.push(RockVal{ .quote = quote });
 }
 
+pub fn enq(state: *RockMachine) !void {
+    const vals = try state.popN(2);
+
+    var pushMe = vals[0];
+    var quote: ArrayList(RockVal) = vals[1].asQuote() orelse {
+        try state.pushN(2, vals);
+        return RockError.WrongArguments;
+    };
+
+    try quote.insert(0, pushMe);
+    try state.push(RockVal{ .quote = quote });
+}
+
 pub fn deq(state: *RockMachine) !void {
     const val = try state.pop();
     var quote: ArrayList(RockVal) = val.asQuote() orelse {
@@ -346,15 +387,14 @@ pub fn deq(state: *RockMachine) !void {
     try state.push(val);
 }
 
-pub fn enq(state: *RockMachine) !void {
-    const vals = try state.popN(2);
-
-    var pushMe = vals[0];
-    var quote: ArrayList(RockVal) = vals[1].asQuote() orelse {
-        try state.pushN(2, vals);
+pub fn ellipsis(state: *RockMachine) !void {
+    const val = try state.pop();
+    var quote: ArrayList(RockVal) = val.asQuote() orelse {
         return RockError.WrongArguments;
     };
 
-    try quote.insert(0, pushMe);
-    try state.push(RockVal{ .quote = quote });
+    // TODO: Push as slice
+    for (quote.items) |v| {
+        try state.push(v);
+    }
 }
