@@ -7,6 +7,7 @@ const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
 const interpret = @import("interpret.zig");
+const Quote = interpret.Quote;
 const RockError = interpret.Error;
 const RockVal = interpret.RockVal;
 const RockMachine = interpret.RockMachine;
@@ -20,7 +21,7 @@ pub fn def(state: *RockMachine) !void {
     };
 
     const quote = vals[0].asQuote();
-    const name = vals[1].asCommand();
+    const name = vals[1].asCommand() orelse vals[1].asDeferredCommand();
 
     if (name == null or quote == null) {
         try stderr.print(usage, .{.{ name, quote }});
@@ -39,7 +40,7 @@ pub fn colon(state: *RockMachine) !void {
     var terms = try state.pop();
 
     { // Single term
-        const term = terms.asCommand();
+        const term = terms.asCommand() orelse terms.asDeferredCommand();
         if (term != null) {
             const val = try state.pop();
             var quote = ArrayList(RockVal).init(state.alloc);
@@ -49,7 +50,7 @@ pub fn colon(state: *RockMachine) !void {
         }
     }
 
-    // Assume multiple terms
+    // Multiple terms
     for (terms.asQuote().?.items) |termVal| {
         const term = termVal.asCommand();
         const val = try state.pop();
@@ -308,7 +309,7 @@ pub fn do(state: *RockMachine) !void {
     var toDo = try state.pop();
 
     { // Command
-        const cmd = toDo.asCommand();
+        const cmd = toDo.asCommand() orelse toDo.asDeferredCommand();
         if (cmd != null) {
             try state.handleCmd(cmd.?);
             return;
@@ -327,11 +328,12 @@ pub fn do(state: *RockMachine) !void {
 
     const err = RockError.WrongArguments;
     try stderr.print(usage, .{err});
+    try state.push(toDo);
     return err;
 }
 
 pub fn map(state: *RockMachine) !void {
-    const usage = "USAGE: [as] term(a->b) map -> [bs] ({any})\n";
+    const usage = "USAGE: [as] (a->b) map -> [bs] ({any})\n";
 
     const vals = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
@@ -342,20 +344,28 @@ pub fn map(state: *RockMachine) !void {
     const f = vals[1];
 
     if (quote != null) {
-        var as = quote.?;
-
-        var child = try state.child();
-
-        for (as.items) |a| {
-            try child.push(a);
-            try child.push(f);
-            try do(&child);
-        }
-
-        const newQuote = try child.popContext();
-
-        try state.push(RockVal{ .quote = newQuote });
+        _map(state, quote.?, f) catch |err| {
+            try stderr.print(usage, .{err});
+            try state.pushN(2, vals);
+        };
+    } else {
+        try stderr.print(usage, .{RockError.WrongArguments});
+        try state.pushN(2, vals);
     }
+}
+
+fn _map(state: *RockMachine, as: Quote, f: RockVal) !void {
+    var child = try state.child();
+
+    for (as.items) |a| {
+        try child.push(a);
+        try child.push(f);
+        try do(&child);
+    }
+
+    const newQuote = try child.popContext();
+
+    try state.push(RockVal{ .quote = newQuote });
 }
 
 pub fn pop(state: *RockMachine) !void {

@@ -63,7 +63,7 @@ pub const RockMachine = struct {
             .i64 => |i| try self.push(RockVal{ .i64 = i }),
             .f64 => |f| try self.push(RockVal{ .f64 = f }),
             .string => |s| try self.push(RockVal{ .string = s[0..] }),
-            .deferred_term => |cmd| try self.push(RockVal{ .command = cmd }),
+            .deferred_term => |cmd| try self.push(RockVal{ .deferred_command = cmd }),
             .none => {},
         }
     }
@@ -160,6 +160,7 @@ pub const RockVal = union(enum) {
     i64: i64,
     f64: f64,
     command: RockString,
+    deferred_command: RockString,
     quote: Quote,
     string: RockString,
     // TODO: HashMap<RockVal, RockVal, ..., ...>
@@ -192,6 +193,13 @@ pub const RockVal = union(enum) {
         };
     }
 
+    pub fn asDeferredCommand(self: RockVal) ?RockString {
+        return switch (self) {
+            .deferred_command => |cmd| cmd,
+            else => null,
+        };
+    }
+
     pub fn asQuote(self: RockVal) ?Quote {
         return switch (self) {
             .quote => |q| q,
@@ -211,7 +219,8 @@ pub const RockVal = union(enum) {
             .bool => |b| try stdout.print("{}", .{b}),
             .i64 => |i| try stdout.print("{}", .{i}),
             .f64 => |f| try stdout.print("{}", .{f}),
-            .command => |cmd| try stdout.print("\\{s}", .{cmd}),
+            .command => |cmd| try stdout.print("{s}", .{cmd}),
+            .deferred_command => |cmd| try stdout.print("\\{s}", .{cmd}),
             .quote => |q| {
                 try stdout.print("[ ", .{});
                 for (q.items) |val| {
