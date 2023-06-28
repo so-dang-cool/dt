@@ -18,6 +18,9 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("def", "define a new command", .{ .builtin = def });
     try machine.define(":", "bind variables", .{ .builtin = colon });
 
+    try machine.define("do", "execute a command or quote", .{ .builtin = do });
+    try machine.define("?", "consumes a command/quote and a boolean and performs the quote if the boolean is true", .{ .builtin = opt });
+
     try machine.define("dup", "duplicate the top value", .{ .builtin = dup });
     try machine.define("drop", "drop the top value", .{ .builtin = drop });
     try machine.define("swap", "swap the top two values", .{ .builtin = swap });
@@ -38,10 +41,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("or", "consume two booleans and produce their logical or", .{ .builtin = boolOr });
     try machine.define("not", "consume a booleans and produce its logical not", .{ .builtin = not });
 
-    try machine.define("?", "consumes a command/quote and a boolean and performs the quote if the boolean is true", .{ .builtin = opt });
-
-    try machine.define("do", "execute a command or quote", .{ .builtin = do });
-    try machine.define("map", "apply a command to all values in a stack", .{ .builtin = map });
+    try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
+    try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
 
     try machine.define("...", "expand a quote", .{ .builtin = ellipsis });
     try machine.define("push", "move an item into a quote", .{ .builtin = push });
@@ -493,6 +494,47 @@ fn _map(state: *RockMachine, as: Quote, f: RockVal) !void {
     const newQuote = try child.popContext();
 
     try state.push(RockVal{ .quote = newQuote });
+}
+
+pub fn filter(state: *RockMachine) !void {
+    const usage = "USAGE: [as] (a->bool) filter -> [bs] ({any})\n";
+
+    const vals = state.popN(2) catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    const quote = vals[0].asQuote();
+    const f = vals[1];
+
+    if (quote != null) {
+        _filter(state, quote.?, f) catch |err| {
+            try stderr.print(usage, .{err});
+            try state.pushN(2, vals);
+        };
+    } else {
+        try stderr.print(usage, .{RockError.WrongArguments});
+        try state.pushN(2, vals);
+    }
+}
+
+fn _filter(state: *RockMachine, as: Quote, f: RockVal) !void {
+    var quote = Quote.init(state.alloc);
+
+    for (as.items) |a| {
+        var child = try state.child();
+        try child.push(a);
+        try child.push(f);
+        try do(&child);
+        var lastVal = try child.pop();
+        var cond = lastVal.asBool();
+
+        if (cond != null and cond.?) {
+            try quote.append(a);
+        }
+    }
+
+    try state.push(RockVal{ .quote = quote });
 }
 
 pub fn pop(state: *RockMachine) !void {

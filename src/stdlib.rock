@@ -4,3 +4,6 @@
 # Boolean operators
 [ and not ] \nand def
 [ or not ] \nor def
+
+# Swizzing and such
+[ swap \save : do save ] \dip def
