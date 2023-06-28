@@ -47,6 +47,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("or", "consume two booleans and produce their logical or", .{ .builtin = boolOr });
     try machine.define("not", "consume a booleans and produce its logical not", .{ .builtin = not });
 
+    try machine.define("split", "consume a string and a substring, and produce a quote of the string split on all occurrences of the substring", .{ .builtin = split});
+
     try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
     try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
 
@@ -623,6 +625,38 @@ pub fn not(state: *RockMachine) !void {
         try state.push(.{ .bool = !a.? });
     } else {
         try state.push(val);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    }
+}
+
+pub fn split(state: *RockMachine) !void {
+    const usage = "USAGE: str delim split -> [substrs...] ({any})\n";
+
+    var vals = try state.popN(2);
+
+    var str = vals[0].asString();
+    var delim = vals[1].asString();
+
+    if (str != null and delim != null) {
+        if (delim.?.len > 0) {
+            var parts = std.mem.split(u8, str.?, delim.?);
+            var quote = Quote.init(state.alloc);
+            while (parts.next()) |part| {
+                try quote.append(.{ .string = part});
+            }
+            try state.push(.{ .quote = quote });
+        } else {
+            var quote = Quote.init(state.alloc);
+            for (str.?) |c| {
+                var s = try state.alloc.create([1]u8);
+                s[0] = c;
+                try quote.append(.{ .string = s});
+            }
+            try state.push(.{ .quote = quote});
+        }
+    } else {
+        try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
     }

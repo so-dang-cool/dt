@@ -5,5 +5,10 @@
 [ and not ] \nand def
 [ or not ] \nor def
 
+# String things
+[ "" split ] \chars def
+[ " " split ] \words def
+[ "\n" split ] \lines def
+
 # Swizzing and such
 [ swap \save : do save ] \dip def
