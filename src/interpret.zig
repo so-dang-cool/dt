@@ -239,14 +239,40 @@ pub const RockCommand = struct {
     description: RockString,
     action: RockAction,
 
-    fn run(self: RockCommand, state: *RockMachine) !void {
+    fn run(self: RockCommand, state: *RockMachine) anyerror!void {
         switch (self.action) {
             .builtin => |b| return try b(state),
             .quote => |quote| {
-                for (quote.items) |val| {
-                    state.handle(val) catch |e| {
-                        return e;
-                    };
+                var again = true;
+
+                var vals = quote.items;
+                var lastIndex = vals.len - 1;
+
+                while (again) {
+                    again = false;
+
+                    for (vals[0..lastIndex]) |val| {
+                        try state.handle(val);
+                    }
+
+                    const lastVal = vals[lastIndex];
+
+                    switch (lastVal) {
+                        // Tail calls optimized, yay!
+                        .command => |cmdName| {
+                            // Even if this is the same command name, we should re-fetch in case it's been redefined
+                            const cmd = state.defs.get(cmdName).?;
+                            switch (cmd.action) {
+                                .quote => |nextQuote| {
+                                    again = true;
+                                    vals = nextQuote.items;
+                                    lastIndex = vals.len - 1;
+                                },
+                                .builtin => |b| return try b(state),
+                            }
+                        },
+                        else => try state.handle(lastVal),
+                    }
                 }
             },
         }
