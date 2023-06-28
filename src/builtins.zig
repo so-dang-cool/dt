@@ -37,6 +37,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("%", "modulo two numeric values", .{ .builtin = modulo });
     try machine.define("abs", "consume a number and produce its absolute value", .{ .builtin = abs });
 
+    try machine.define("eq?", "consume two values and return true if they are equal", .{ .builtin = eq });
+
     try machine.define("and", "consume two booleans and produce their logical and", .{ .builtin = boolAnd });
     try machine.define("or", "consume two booleans and produce their logical or", .{ .builtin = boolOr });
     try machine.define("not", "consume a booleans and produce its logical not", .{ .builtin = not });
@@ -359,6 +361,97 @@ pub fn abs(state: *RockMachine) !void {
     try state.push(n);
     try stderr.print(usage, .{RockError.WrongArguments});
     return RockError.WrongArguments;
+}
+
+pub fn eq(state: *RockMachine) !void {
+    const usage = "USAGE: a b eq? -> bool ({any})\n";
+    _ = usage;
+
+    const vals = try state.popN(2);
+
+    { // Integers
+        const a = vals[0].asI64();
+        const b = vals[1].asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = a.? == b.? });
+            return;
+        }
+    }
+
+    { // Floats
+        const a = vals[0].asF64();
+        const b = vals[1].asF64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = a.? == b.? });
+            return;
+        }
+    }
+
+    { // Bools
+        const a = vals[0].asBool();
+        const b = vals[1].asBool();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = a.? == b.? });
+            return;
+        }
+    }
+
+    { // Commands
+        const a = vals[0].asCommand() orelse vals[0].asDeferredCommand();
+        const b = vals[1].asCommand() orelse vals[1].asDeferredCommand();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = std.mem.eql(u8, a.?, b.?) });
+            return;
+        }
+    }
+
+    { // Strings
+        const a = vals[0].asString();
+        const b = vals[1].asString();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = std.mem.eql(u8, a.?, b.?) });
+            return;
+        }
+    }
+
+    { // Quotes
+        const a = vals[0].asQuote();
+        const b = vals[1].asQuote();
+
+        if (a != null and b != null) {
+            const as: []RockVal = a.?.items;
+            const bs: []RockVal = b.?.items;
+
+            if (as.len != bs.len) {
+                try state.push(.{ .bool = false });
+                return;
+            }
+
+            var child = try state.child();
+
+            for (as, 0..) |val, i| {
+                try child.push(val);
+                try child.push(bs[i]);
+                try eq(&child);
+                const bv = try child.pop();
+                const res = bv.asBool();
+                if (res == null or !res.?) {
+                    try state.push(.{ .bool = false });
+                    return;
+                }
+            }
+
+            try state.push(.{ .bool = true });
+            return;
+        }
+    }
+
+    try state.push(.{ .bool = false });
 }
 
 pub fn boolAnd(state: *RockMachine) !void {
