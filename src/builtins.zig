@@ -47,7 +47,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("or", "consume two booleans and produce their logical or", .{ .builtin = boolOr });
     try machine.define("not", "consume a booleans and produce its logical not", .{ .builtin = not });
 
-    try machine.define("split", "consume a string and a substring, and produce a quote of the string split on all occurrences of the substring", .{ .builtin = split});
+    try machine.define("split", "consume a string and a delimiter, and produce a quote of the string split on all occurrences of the substring", .{ .builtin = split});
+    try machine.define("join", "consume a quote of strings and a delimiter, and produce a string with the delimiter interspersed", .{ .builtin = join});
 
     try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
     try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
@@ -655,6 +656,30 @@ pub fn split(state: *RockMachine) !void {
             }
             try state.push(.{ .quote = quote});
         }
+    } else {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    }
+}
+
+
+pub fn join(state: *RockMachine) !void {
+    const usage = "USAGE: [strs...] delim join -> str ({any})\n";
+
+    var vals = try state.popN(2);
+
+    var strs = vals[0].asQuote();
+    var delim = vals[1].asString();
+
+    if (strs != null and delim != null) {
+        var parts = try ArrayList([]const u8).initCapacity(state.alloc, strs.?.items.len);
+        for (strs.?.items) |part| {
+            const s = part.asString().?;
+            try parts.append(s);
+        }
+        var acc = try std.mem.join(state.alloc, delim.?, parts.items);
+        try state.push(.{ .string = acc});
     } else {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});

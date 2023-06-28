@@ -7,8 +7,12 @@
 
 # String things
 [ "" split ] \chars def
-[ " " split ] \words def
-[ "\n" split ] \lines def
 
-# Swizzing and such
+[ " " split ] \words def
+[ " " join ] \unwords def
+
+[ "\n" split ] \lines def
+[ "\n" join ] \unlines def
+
+# Swizzling and such
 [ swap \save : do save ] \dip def
