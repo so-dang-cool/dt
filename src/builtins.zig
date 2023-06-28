@@ -16,6 +16,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define(".q", "quit", .{ .builtin = quit });
 
     try machine.define("def", "define a new command", .{ .builtin = def });
+    try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
+    try machine.define("def?", "return true if a name is defined", .{ .builtin = isDef });
     try machine.define(":", "bind variables", .{ .builtin = colon });
 
     try machine.define("do", "execute a command or quote", .{ .builtin = do });
@@ -93,6 +95,39 @@ pub fn def(state: *RockMachine) !void {
     }
 
     try state.define(name.?, "TODO", .{ .quote = quote.? });
+}
+
+pub fn defs(state: *RockMachine) !void {
+    const usage = "USAGE: defs -> [cmdnames...] ({any})\n";
+    _ = usage;
+
+    var quote = Quote.init(state.alloc);
+    var defNames = state.defs.keyIterator();
+
+    while(defNames.next()) |defName| {
+        var cmdName = try state.alloc.dupe(u8, defName.*);
+        try quote.append(.{ .string = cmdName});
+    }
+
+    try state.push(.{ .quote = quote });
+}
+
+pub fn isDef(state: *RockMachine) !void {
+    const usage = "USAGE: term def? ({any})\n";
+
+    const val = state.pop() catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    const name = val.asCommand() orelse val.asDeferredCommand() orelse val.asString() orelse {
+        const err = RockError.WrongArguments;
+        try stderr.print(usage, .{err});
+        try state.push(val);
+        return err;
+    };
+
+    try state.push(.{ .bool = state.defs.contains(name) });
 }
 
 // Variable binding
