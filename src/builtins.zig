@@ -38,6 +38,10 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("abs", "consume a number and produce its absolute value", .{ .builtin = abs });
 
     try machine.define("eq?", "consume two values and return true if they are equal", .{ .builtin = eq });
+    try machine.define("gt?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThan});
+    try machine.define("gte?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThanEq});
+    try machine.define("lt?", "consume two numbers and return true if the most recent is less", .{ .builtin = lessThan});
+    try machine.define("lte?", "consume two numbers and return true if the most recent is less", .{ .builtin = lessThanEq});
 
     try machine.define("and", "consume two booleans and produce their logical and", .{ .builtin = boolAnd });
     try machine.define("or", "consume two booleans and produce their logical or", .{ .builtin = boolOr });
@@ -452,6 +456,126 @@ pub fn eq(state: *RockMachine) !void {
     }
 
     try state.push(.{ .bool = false });
+}
+
+pub fn greaterThan(state: *RockMachine) !void {
+    const usage = "USAGE: a b gt? -> b>a ({any})\n";
+
+    const vals = try state.popN(2);
+
+    { // Integers
+        const a = vals[0].asI64();
+        const b = vals[1].asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = b.? > a.? });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = vals[0].asF64();
+        const b = vals[1].asF64();
+
+        if (a != null) {
+            try state.push(.{ .bool = b.? > a.? });
+            return;
+        }
+    }
+
+    try state.pushN(2, vals);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
+}
+
+pub fn greaterThanEq(state: *RockMachine) !void {
+    const usage = "USAGE: a b gt? -> b>a ({any})\n";
+
+    const vals = try state.popN(2);
+
+    { // Integers
+        const a = vals[0].asI64();
+        const b = vals[1].asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = b.? >= a.? });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = vals[0].asF64();
+        const b = vals[1].asF64();
+
+        if (a != null) {
+            try state.push(.{ .bool = b.? >= a.? });
+            return;
+        }
+    }
+
+    try state.pushN(2, vals);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
+}
+
+pub fn lessThan(state: *RockMachine) !void {
+    const usage = "USAGE: a b lt? -> b>a ({any})\n";
+
+    const vals = try state.popN(2);
+
+    { // Integers
+        const a = vals[0].asI64();
+        const b = vals[1].asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = b.? < a.? });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = vals[0].asF64();
+        const b = vals[1].asF64();
+
+        if (a != null) {
+            try state.push(.{ .bool = b.? < a.? });
+            return;
+        }
+    }
+
+    try state.pushN(2, vals);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
+}
+
+pub fn lessThanEq(state: *RockMachine) !void {
+    const usage = "USAGE: a b lte? -> b>a ({any})\n";
+
+    const vals = try state.popN(2);
+
+    { // Integers
+        const a = vals[0].asI64();
+        const b = vals[1].asI64();
+
+        if (a != null and b != null) {
+            try state.push(.{ .bool = b.? <= a.? });
+            return;
+        }
+    }
+
+    { // Both floats
+        const a = vals[0].asF64();
+        const b = vals[1].asF64();
+
+        if (a != null) {
+            try state.push(.{ .bool = b.? <= a.? });
+            return;
+        }
+    }
+
+    try state.pushN(2, vals);
+    try stderr.print(usage, .{RockError.WrongArguments});
+    return RockError.WrongArguments;
 }
 
 pub fn boolAnd(state: *RockMachine) !void {
