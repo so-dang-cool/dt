@@ -159,7 +159,7 @@ pub fn colon(state: *RockMachine) !void {
     var i = terms.len;
 
     while (i > 0) : (i -= 1) {
-        vals[i-1] = try state.pop();
+        vals[i - 1] = try state.pop();
     }
 
     for (terms, vals) |termV, val| {
