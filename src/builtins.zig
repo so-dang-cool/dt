@@ -362,6 +362,12 @@ pub fn divide(state: *RockMachine) !void {
         const b = ns[1].asI64();
 
         if (a != null and b != null) {
+            if (b.? == 0) {
+                try state.pushN(2, ns);
+                try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a.?});
+                return RockError.DivisionByZero;
+            }
+
             try state.push(.{ .i64 = @divTrunc(a.?, b.?) });
             return;
         }
@@ -372,6 +378,12 @@ pub fn divide(state: *RockMachine) !void {
         const b = ns[1].asF64();
 
         if (a != null and b != null) {
+            if (b.? == 0) {
+                try state.pushN(2, ns);
+                try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a.?});
+                return RockError.DivisionByZero;
+            }
+
             try state.push(.{ .f64 = a.? / b.? });
             return;
         }

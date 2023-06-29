@@ -20,6 +20,7 @@ pub const Error = error{
     ContextStackUnderflow,
     StackUnderflow,
     IntegerOverflow,
+    DivisionByZero,
     WrongArguments,
 };
 
