@@ -20,10 +20,18 @@
 [ "\n" join ] \unlines def
 
 
-## Quote manipulation ##
+### Quote manipulation ###
 
 [ deq drop ] \first def
 [ pop swap drop ] \last def
+
+
+### Control flow ###
+
+[ [ cmd n ] :
+    0 n gt?   \continue :
+    [ cmd do   cmd n 1 - times ] continue ?
+] \times def
 
 
 ### Swizzling and such ###

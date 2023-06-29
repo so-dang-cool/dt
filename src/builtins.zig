@@ -21,6 +21,7 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define(":", "bind variables", .{ .builtin = colon });
 
     try machine.define("do", "execute a command or quote", .{ .builtin = do });
+    try machine.define("doin", "execute a command or quote in a previous quote", .{ .builtin = doin });
     try machine.define("?", "consumes a command/quote and a value and performs it if the value is truthy", .{ .builtin = opt });
 
     try machine.define("dup", "duplicate the top value", .{ .builtin = dup });
@@ -134,13 +135,13 @@ pub fn isDef(state: *RockMachine) !void {
 
 // Variable binding
 pub fn colon(state: *RockMachine) !void {
-    const usage = "USAGE: ...vals terms : ({any})\n";
+    const usage = "USAGE: ...vals term(s) : ({any})\n";
     _ = usage;
 
-    var terms = try state.pop();
+    var termVal = try state.pop();
 
     { // Single term
-        const term = terms.asCommand() orelse terms.asDeferredCommand();
+        const term = termVal.asCommand() orelse termVal.asDeferredCommand() orelse termVal.asString();
         if (term != null) {
             const val = try state.pop();
             var quote = ArrayList(RockVal).init(state.alloc);
@@ -151,9 +152,18 @@ pub fn colon(state: *RockMachine) !void {
     }
 
     // Multiple terms
-    for (terms.asQuote().?.items) |termVal| {
-        const term = termVal.asCommand();
-        const val = try state.pop();
+
+    var terms = (try termVal.intoQuote(state)).items;
+    var vals = try state.alloc.alloc(RockVal, terms.len);
+
+    var i = terms.len;
+
+    while (i > 0) : (i -= 1) {
+        vals[i-1] = try state.pop();
+    }
+
+    for (terms, vals) |termV, val| {
+        const term = termV.asCommand() orelse termV.asDeferredCommand() orelse termV.asString();
         var quote = ArrayList(RockVal).init(state.alloc);
         try quote.append(val);
         try state.define(term.?, term.?, .{ .quote = quote });
@@ -732,6 +742,34 @@ pub fn do(state: *RockMachine) !void {
     try stderr.print(usage, .{err});
     try state.push(toDo);
     return err;
+}
+
+pub fn doin(state: *RockMachine) !void {
+    const usage = "USAGE: [as...] cmd|quote doin -> [bs...] ({any})\n";
+    const vals = state.popN(2) catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    const quote = try vals[0].intoQuote(state);
+    const f = vals[1];
+
+    _doin(state, quote, f) catch {
+        try stderr.print(usage, .{RockError.WrongArguments});
+        try state.pushN(2, vals);
+    };
+}
+
+fn _doin(state: *RockMachine, quote: Quote, f: RockVal) !void {
+    var child = try state.child();
+
+    try child.push(.{ .quote = quote });
+    try ellipsis(&child);
+    try child.push(f);
+    try do(&child);
+    const resultQuote = try child.popContext();
+
+    try state.push(.{ .quote = resultQuote });
 }
 
 pub fn map(state: *RockMachine) !void {

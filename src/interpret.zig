@@ -221,6 +221,17 @@ pub const RockVal = union(enum) {
         };
     }
 
+    pub fn intoQuote(self: RockVal, state: *RockMachine) !Quote {
+        return switch (self) {
+            .quote => |q| q,
+            else => {
+                var q = Quote.init(state.alloc);
+                try q.append(self);
+                return q;
+            },
+        };
+    }
+
     pub fn asString(self: RockVal) ?RockString {
         return switch (self) {
             .string => |s| s,
