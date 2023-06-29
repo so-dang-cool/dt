@@ -172,6 +172,20 @@ pub const RockVal = union(enum) {
         };
     }
 
+    pub fn intoBool(self: RockVal, state: *RockMachine) bool {
+        return switch (self) {
+            .bool => |b| b,
+            .i64 => |i| i > 0,
+            .f64 => |f| f > 0,
+            .string => |s| !std.mem.eql(u8, "", s),
+            .quote => |q| q.items.len > 0,
+
+            // Commands are truthy if defined
+            .command => |cmd| state.defs.contains(cmd),
+            .deferred_command => |cmd| state.defs.contains(cmd),
+        };
+    }
+
     pub fn asI64(self: RockVal) ?i64 {
         return switch (self) {
             .i64 => |i| i,

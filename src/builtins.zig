@@ -40,17 +40,17 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("abs", "consume a number and produce its absolute value", .{ .builtin = abs });
 
     try machine.define("eq?", "consume two values and return true if they are equal", .{ .builtin = eq });
-    try machine.define("gt?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThan});
-    try machine.define("gte?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThanEq});
-    try machine.define("lt?", "consume two numbers and return true if the most recent is less", .{ .builtin = lessThan});
-    try machine.define("lte?", "consume two numbers and return true if the most recent is less", .{ .builtin = lessThanEq});
+    try machine.define("gt?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThan });
+    try machine.define("gte?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThanEq });
+    try machine.define("lt?", "consume two numbers and return true if the most recent is less", .{ .builtin = lessThan });
+    try machine.define("lte?", "consume two numbers and return true if the most recent is less", .{ .builtin = lessThanEq });
 
     try machine.define("and", "consume two booleans and produce their logical and", .{ .builtin = boolAnd });
     try machine.define("or", "consume two booleans and produce their logical or", .{ .builtin = boolOr });
     try machine.define("not", "consume a booleans and produce its logical not", .{ .builtin = not });
 
-    try machine.define("split", "consume a string and a delimiter, and produce a quote of the string split on all occurrences of the substring", .{ .builtin = split});
-    try machine.define("join", "consume a quote of strings and a delimiter, and produce a string with the delimiter interspersed", .{ .builtin = join});
+    try machine.define("split", "consume a string and a delimiter, and produce a quote of the string split on all occurrences of the substring", .{ .builtin = split });
+    try machine.define("join", "consume a quote of strings and a delimiter, and produce a string with the delimiter interspersed", .{ .builtin = join });
 
     try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
     try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
@@ -104,9 +104,9 @@ pub fn defs(state: *RockMachine) !void {
     var quote = Quote.init(state.alloc);
     var defNames = state.defs.keyIterator();
 
-    while(defNames.next()) |defName| {
+    while (defNames.next()) |defName| {
         var cmdName = try state.alloc.dupe(u8, defName.*);
-        try quote.append(.{ .string = cmdName});
+        try quote.append(.{ .string = cmdName });
     }
 
     try state.push(.{ .quote = quote });
@@ -617,53 +617,28 @@ pub fn lessThanEq(state: *RockMachine) !void {
 }
 
 pub fn boolAnd(state: *RockMachine) !void {
-    const usage = "USAGE: a b and -> a&b ({any})\n";
-
     var vals = try state.popN(2);
 
-    var a = vals[0].asBool();
-    var b = vals[1].asBool();
+    var a = vals[0].intoBool(state);
+    var b = vals[1].intoBool(state);
 
-    if (a != null and b != null) {
-        try state.push(.{ .bool = a.? and b.? });
-    } else {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
-    }
+    try state.push(.{ .bool = a and b });
 }
 
 pub fn boolOr(state: *RockMachine) !void {
-    const usage = "USAGE: a b or -> a|b ({any})\n";
-
     var vals = try state.popN(2);
 
-    var a = vals[0].asBool();
-    var b = vals[1].asBool();
+    var a = vals[0].intoBool(state);
+    var b = vals[1].intoBool(state);
 
-    if (a != null and b != null) {
-        try state.push(.{ .bool = a.? or b.? });
-    } else {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
-    }
+    try state.push(.{ .bool = a or b });
 }
 
 pub fn not(state: *RockMachine) !void {
-    const usage = "USAGE: a b or -> a|b ({any})\n";
-
     var val = try state.pop();
 
-    var a = val.asBool();
-
-    if (a != null) {
-        try state.push(.{ .bool = !a.? });
-    } else {
-        try state.push(val);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
-    }
+    var a = val.intoBool(state);
+    try state.push(.{ .bool = !a });
 }
 
 pub fn split(state: *RockMachine) !void {
@@ -679,7 +654,7 @@ pub fn split(state: *RockMachine) !void {
             var parts = std.mem.split(u8, str.?, delim.?);
             var quote = Quote.init(state.alloc);
             while (parts.next()) |part| {
-                try quote.append(.{ .string = part});
+                try quote.append(.{ .string = part });
             }
             try state.push(.{ .quote = quote });
         } else {
@@ -687,9 +662,9 @@ pub fn split(state: *RockMachine) !void {
             for (str.?) |c| {
                 var s = try state.alloc.create([1]u8);
                 s[0] = c;
-                try quote.append(.{ .string = s});
+                try quote.append(.{ .string = s });
             }
-            try state.push(.{ .quote = quote});
+            try state.push(.{ .quote = quote });
         }
     } else {
         try state.pushN(2, vals);
@@ -697,7 +672,6 @@ pub fn split(state: *RockMachine) !void {
         return RockError.WrongArguments;
     }
 }
-
 
 pub fn join(state: *RockMachine) !void {
     const usage = "USAGE: [strs...] delim join -> str ({any})\n";
@@ -714,7 +688,7 @@ pub fn join(state: *RockMachine) !void {
             try parts.append(s);
         }
         var acc = try std.mem.join(state.alloc, delim.?, parts.items);
-        try state.push(.{ .string = acc});
+        try state.push(.{ .string = acc });
     } else {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
@@ -723,23 +697,10 @@ pub fn join(state: *RockMachine) !void {
 }
 
 pub fn opt(state: *RockMachine) !void {
-    const usage = "USAGE: cmd|quote b opt -> ... ({any})\n";
-
     var val = try state.pop();
+    const cond = val.intoBool(state);
 
-    var cond = val.asBool();
-
-    if (cond != null) {
-        if (cond.?) {
-            try do(state);
-        } else {
-            try drop(state);
-        }
-    } else {
-        try state.push(val);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
-    }
+    if (cond) try do(state) else try drop(state);
 }
 
 pub fn do(state: *RockMachine) !void {

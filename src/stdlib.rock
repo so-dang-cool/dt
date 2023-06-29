@@ -1,11 +1,16 @@
-# Display
+###  Display ###
+
 [ p nl ] \pl def
 
-# Boolean operators
+
+### Boolean operators ###
+
 [ and not ] \nand def
 [ or not ] \nor def
 
-# String things
+
+### String things ###
+
 [ "" split ] \chars def
 
 [ " " split ] \words def
@@ -14,5 +19,13 @@
 [ "\n" split ] \lines def
 [ "\n" join ] \unlines def
 
-# Swizzling and such
+
+## Quote manipulation ##
+
+[ deq drop ] \first def
+[ pop swap drop ] \last def
+
+
+### Swizzling and such ###
+
 [ swap \save : do save ] \dip def
