@@ -884,5 +884,5 @@ pub fn ellipsis(state: *RockMachine) !void {
 pub fn toBool(state: *RockMachine) !void {
     const val = try state.pop();
 
-    try state.push(.{ .bool = val.intoBool(state)});
+    try state.push(.{ .bool = val.intoBool(state) });
 }
