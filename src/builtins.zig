@@ -21,7 +21,7 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define(":", "bind variables", .{ .builtin = colon });
 
     try machine.define("do", "execute a command or quote", .{ .builtin = do });
-    try machine.define("?", "consumes a command/quote and a boolean and performs the quote if the boolean is true", .{ .builtin = opt });
+    try machine.define("?", "consumes a command/quote and a value and performs it if the value is truthy", .{ .builtin = opt });
 
     try machine.define("dup", "duplicate the top value", .{ .builtin = dup });
     try machine.define("drop", "drop the top value", .{ .builtin = drop });
@@ -60,6 +60,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = pop });
     try machine.define("enq", "move an item into the first position of a quote", .{ .builtin = enq });
     try machine.define("deq", "remove an item from the first position of a quote", .{ .builtin = deq });
+
+    try machine.define("to-bool", "coerce value to boolean", .{ .builtin = toBool });
 }
 
 pub fn quit(state: *RockMachine) !void {
@@ -877,4 +879,10 @@ pub fn ellipsis(state: *RockMachine) !void {
     for (quote.items) |v| {
         try state.push(v);
     }
+}
+
+pub fn toBool(state: *RockMachine) !void {
+    const val = try state.pop();
+
+    try state.push(.{ .bool = val.intoBool(state)});
 }
