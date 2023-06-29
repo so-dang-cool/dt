@@ -19,6 +19,7 @@ pub const Error = error{
     CommandUndefined,
     ContextStackUnderflow,
     StackUnderflow,
+    IntegerOverflow,
     WrongArguments,
 };
 
@@ -152,6 +153,15 @@ pub const RockMachine = struct {
     pub fn popContext(self: *RockMachine) !Quote {
         var node = self.nest.popFirst() orelse return Error.ContextStackUnderflow;
         return node.data;
+    }
+
+    pub fn quoteContext(self: *RockMachine) !void {
+        var node = self.nest.popFirst();
+        var quote = if (node) |n| n.data else Quote.init(self.alloc);
+
+        if (self.nest.first == null) try self.pushContext();
+
+        try self.push(.{ .quote = quote });
     }
 };
 

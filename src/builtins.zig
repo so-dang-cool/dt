@@ -57,12 +57,14 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
 
     try machine.define("...", "expand a quote", .{ .builtin = ellipsis });
+    try machine.define("quote-all", "quote all current context", .{ .builtin = quoteAll });
     try machine.define("push", "move an item into a quote", .{ .builtin = push });
     try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = pop });
     try machine.define("enq", "move an item into the first position of a quote", .{ .builtin = enq });
     try machine.define("deq", "remove an item from the first position of a quote", .{ .builtin = deq });
 
     try machine.define("to-bool", "coerce value to boolean", .{ .builtin = toBool });
+    try machine.define("to-quote", "coerce value to quote", .{ .builtin = toQuote });
 }
 
 pub fn quit(state: *RockMachine) !void {
@@ -92,7 +94,7 @@ pub fn def(state: *RockMachine) !void {
     const name = vals[1].asCommand() orelse vals[1].asDeferredCommand();
 
     if (name == null or quote == null) {
-        try stderr.print(usage, .{.{ name, quote }});
+        try stderr.print(usage, .{.{ name, quote.? }});
         try state.pushN(2, vals);
         return RockError.WrongArguments;
     }
@@ -237,7 +239,15 @@ pub fn add(state: *RockMachine) !void {
         const b = ns[1].asI64();
 
         if (a != null and b != null) {
-            try state.push(.{ .i64 = a.? + b.? });
+            const res = @addWithOverflow(a.?, b.?);
+
+            if (res[1] == 1) {
+                try state.pushN(2, ns);
+                try stderr.print("ERROR: Adding {} and {} would overflow.\n", .{ a.?, b.? });
+                return RockError.IntegerOverflow;
+            }
+
+            try state.push(.{ .i64 = res[0] });
             return;
         }
     }
@@ -270,7 +280,15 @@ pub fn subtract(state: *RockMachine) !void {
         const b = ns[1].asI64();
 
         if (a != null and b != null) {
-            try state.push(.{ .i64 = a.? - b.? });
+            const res = @subWithOverflow(a.?, b.?);
+
+            if (res[1] == 1) {
+                try state.pushN(2, ns);
+                try stderr.print("ERROR: Subtracting {} from {} would overflow.\n", .{ b.?, a.? });
+                return RockError.IntegerOverflow;
+            }
+
+            try state.push(.{ .i64 = res[0] });
             return;
         }
     }
@@ -303,7 +321,15 @@ pub fn multiply(state: *RockMachine) !void {
         const b = ns[1].asI64();
 
         if (a != null and b != null) {
-            try state.push(.{ .i64 = a.? * b.? });
+            const res = @mulWithOverflow(a.?, b.?);
+
+            if (res[1] == 1) {
+                try state.pushN(2, ns);
+                try stderr.print("ERROR: Multiplying {} by {} would overflow.\n", .{ a.?, b.? });
+                return RockError.IntegerOverflow;
+            }
+
+            try state.push(.{ .i64 = res[0] });
             return;
         }
     }
@@ -919,8 +945,19 @@ pub fn ellipsis(state: *RockMachine) !void {
     }
 }
 
+pub fn quoteAll(state: *RockMachine) !void {
+    try state.quoteContext();
+}
+
 pub fn toBool(state: *RockMachine) !void {
     const val = try state.pop();
 
     try state.push(.{ .bool = val.intoBool(state) });
+}
+
+pub fn toQuote(state: *RockMachine) !void {
+    const val = try state.pop();
+    const quote = try val.intoQuote(state);
+
+    try state.push(.{ .quote = quote });
 }
