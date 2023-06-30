@@ -250,14 +250,12 @@ pub fn add(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = ns[0].asF64();
-        const b = ns[1].asF64();
+    if (ns[0].isF64() or ns[1].isF64()) {
+        const a = try ns[0].intoF64();
+        const b = try ns[1].intoF64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .f64 = a.? + b.? });
-            return;
-        }
+        try state.push(.{ .f64 = a + b });
+        return;
     }
 
     try state.pushN(2, ns);
@@ -289,14 +287,12 @@ pub fn subtract(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = ns[0].asF64();
-        const b = ns[1].asF64();
+    if (ns[0].isF64() or ns[1].isF64()) {
+        const a = try ns[0].intoF64();
+        const b = try ns[1].intoF64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .f64 = a.? - b.? });
-            return;
-        }
+        try state.push(.{ .f64 = a - b });
+        return;
     }
 
     try state.pushN(2, ns);
@@ -328,14 +324,12 @@ pub fn multiply(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = ns[0].asF64();
-        const b = ns[1].asF64();
+    if (ns[0].isF64() or ns[1].isF64()) {
+        const a = try ns[0].intoF64();
+        const b = try ns[1].intoF64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .f64 = a.? * b.? });
-            return;
-        }
+        try state.push(.{ .f64 = a * b });
+        return;
     }
 
     try state.pushN(2, ns);
@@ -365,20 +359,18 @@ pub fn divide(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = ns[0].asF64();
-        const b = ns[1].asF64();
+    if (ns[0].isF64() or ns[1].isF64()) {
+        const a = try ns[0].intoF64();
+        const b = try ns[1].intoF64();
 
-        if (a != null and b != null) {
-            if (b.? == 0) {
-                try state.pushN(2, ns);
-                try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a.?});
-                return RockError.DivisionByZero;
-            }
-
-            try state.push(.{ .f64 = a.? / b.? });
-            return;
+        if (b == 0) {
+            try state.pushN(2, ns);
+            try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
+            return RockError.DivisionByZero;
         }
+
+        try state.push(.{ .f64 = a / b });
+        return;
     }
 
     try state.pushN(2, ns);
@@ -402,14 +394,12 @@ pub fn modulo(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = ns[0].asF64();
-        const b = ns[1].asF64();
+    if (ns[0].isF64() or ns[1].isF64()) {
+        const a = try ns[0].intoF64();
+        const b = try ns[1].intoF64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .f64 = @mod(a.?, b.?) });
-            return;
-        }
+        try state.push(.{ .f64 = @mod(a, b) });
+        return;
     }
 
     try state.pushN(2, ns);
@@ -429,13 +419,11 @@ pub fn abs(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = n.asF64();
+    if (n.isF64()) {
+        const a = try n.intoF64();
 
-        if (a != null) {
-            try state.push(.{ .f64 = std.math.fabs(a.?) });
-            return;
-        }
+        try state.push(.{ .f64 = std.math.fabs(a) });
+        return;
     }
 
     try state.push(n);
@@ -457,14 +445,12 @@ pub fn eq(state: *RockMachine) !void {
         return;
     }
 
-    { // Floats
-        const a = vals[0].asF64();
-        const b = vals[1].asF64();
+    if (vals[0].isF64() and vals[1].isF64()) {
+        const a = try vals[0].intoF64();
+        const b = try vals[1].intoF64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = a.? == b.? });
-            return;
-        }
+        try state.push(.{ .bool = a == b });
+        return;
     }
 
     if (vals[0].isBool() and vals[1].isBool()) {
@@ -543,14 +529,12 @@ pub fn greaterThan(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = vals[0].asF64();
-        const b = vals[1].asF64();
+    if (vals[0].isF64() and vals[1].isF64()) {
+        const a = try vals[0].intoF64();
+        const b = try vals[1].intoF64();
 
-        if (a != null) {
-            try state.push(.{ .bool = b.? > a.? });
-            return;
-        }
+        try state.push(.{ .bool = b > a });
+        return;
     }
 
     try state.pushN(2, vals);
@@ -571,14 +555,12 @@ pub fn greaterThanEq(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = vals[0].asF64();
-        const b = vals[1].asF64();
+    if (vals[0].isF64() and vals[1].isF64()) {
+        const a = try vals[0].intoF64();
+        const b = try vals[1].intoF64();
 
-        if (a != null) {
-            try state.push(.{ .bool = b.? >= a.? });
-            return;
-        }
+        try state.push(.{ .bool = b >= a });
+        return;
     }
 
     try state.pushN(2, vals);
@@ -599,14 +581,12 @@ pub fn lessThan(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = vals[0].asF64();
-        const b = vals[1].asF64();
+    if (vals[0].isF64() and vals[1].isF64()) {
+        const a = try vals[0].intoF64();
+        const b = try vals[1].intoF64();
 
-        if (a != null) {
-            try state.push(.{ .bool = b.? < a.? });
-            return;
-        }
+        try state.push(.{ .bool = b < a });
+        return;
     }
 
     try state.pushN(2, vals);
@@ -627,14 +607,12 @@ pub fn lessThanEq(state: *RockMachine) !void {
         return;
     }
 
-    { // Both floats
-        const a = vals[0].asF64();
-        const b = vals[1].asF64();
+    if (vals[0].isF64() and vals[1].isF64()) {
+        const a = try vals[0].intoF64();
+        const b = try vals[1].intoF64();
 
-        if (a != null) {
-            try state.push(.{ .bool = b.? <= a.? });
-            return;
-        }
+        try state.push(.{ .bool = b <= a });
+        return;
     }
 
     try state.pushN(2, vals);

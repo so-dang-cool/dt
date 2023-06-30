@@ -215,10 +215,21 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn asF64(self: RockVal) ?f64 {
+    pub fn isF64(self: RockVal) bool {
+        return switch (self) {
+            .f64 => true,
+            else => false,
+        };
+    }
+
+    pub fn intoF64(self: RockVal) !f64 {
         return switch (self) {
             .f64 => |f| f,
-            else => null,
+
+            .bool => |b| if (b) 1 else 0,
+            .i64 => |i| @as(f64, @floatFromInt(i)),
+            .string => |s| std.fmt.parseFloat(f64, s),
+            else => Error.NoIntegerCoersion,
         };
     }
 
