@@ -18,9 +18,10 @@ pub const Error = error{
     TooManyRightBrackets,
     CommandUndefined,
     ContextStackUnderflow,
-    StackUnderflow,
-    IntegerOverflow,
     DivisionByZero,
+    IntegerOverflow,
+    NoIntegerCoersion,
+    StackUnderflow,
     WrongArguments,
 };
 
@@ -174,7 +175,6 @@ pub const RockVal = union(enum) {
     deferred_command: RockString,
     quote: Quote,
     string: RockString,
-    // TODO: HashMap<RockVal, RockVal, ..., ...>
 
     pub fn isBool(self: RockVal) bool {
         return switch (self) {
@@ -197,10 +197,21 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn asI64(self: RockVal) ?i64 {
+    pub fn isI64(self: RockVal) bool {
+        return switch (self) {
+            .i64 => true,
+            else => false,
+        };
+    }
+
+    pub fn intoI64(self: RockVal) !i64 {
         return switch (self) {
             .i64 => |i| i,
-            else => null,
+
+            .bool => |b| if (b) 1 else 0,
+            .f64 => |f| @as(i64, @intFromFloat(f)),
+            .string => |s| std.fmt.parseInt(i64, s, 10),
+            else => Error.NoIntegerCoersion,
         };
     }
 

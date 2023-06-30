@@ -234,22 +234,20 @@ pub fn add(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    { // Both integers
-        const a = ns[0].asI64();
-        const b = ns[1].asI64();
+    if (ns[0].isI64() and ns[1].isI64()) {
+        const a = try ns[0].intoI64();
+        const b = try ns[1].intoI64();
 
-        if (a != null and b != null) {
-            const res = @addWithOverflow(a.?, b.?);
+        const res = @addWithOverflow(a, b);
 
-            if (res[1] == 1) {
-                try state.pushN(2, ns);
-                try stderr.print("ERROR: Adding {} and {} would overflow.\n", .{ a.?, b.? });
-                return RockError.IntegerOverflow;
-            }
-
-            try state.push(.{ .i64 = res[0] });
-            return;
+        if (res[1] == 1) {
+            try state.pushN(2, ns);
+            try stderr.print("ERROR: Adding {} and {} would overflow.\n", .{ a, b });
+            return RockError.IntegerOverflow;
         }
+
+        try state.push(.{ .i64 = res[0] });
+        return;
     }
 
     { // Both floats
@@ -275,22 +273,20 @@ pub fn subtract(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    { // Both integers
-        const a = ns[0].asI64();
-        const b = ns[1].asI64();
+    if (ns[0].isI64() and ns[1].isI64()) {
+        const a = try ns[0].intoI64();
+        const b = try ns[1].intoI64();
 
-        if (a != null and b != null) {
-            const res = @subWithOverflow(a.?, b.?);
+        const res = @subWithOverflow(a, b);
 
-            if (res[1] == 1) {
-                try state.pushN(2, ns);
-                try stderr.print("ERROR: Subtracting {} from {} would overflow.\n", .{ b.?, a.? });
-                return RockError.IntegerOverflow;
-            }
-
-            try state.push(.{ .i64 = res[0] });
-            return;
+        if (res[1] == 1) {
+            try state.pushN(2, ns);
+            try stderr.print("ERROR: Subtracting {} from {} would overflow.\n", .{ b, a });
+            return RockError.IntegerOverflow;
         }
+
+        try state.push(.{ .i64 = res[0] });
+        return;
     }
 
     { // Both floats
@@ -316,22 +312,20 @@ pub fn multiply(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    { // Both integers
-        const a = ns[0].asI64();
-        const b = ns[1].asI64();
+    if (ns[0].isI64() and ns[1].isI64()) {
+        const a = try ns[0].intoI64();
+        const b = try ns[1].intoI64();
 
-        if (a != null and b != null) {
-            const res = @mulWithOverflow(a.?, b.?);
+        const res = @mulWithOverflow(a, b);
 
-            if (res[1] == 1) {
-                try state.pushN(2, ns);
-                try stderr.print("ERROR: Multiplying {} by {} would overflow.\n", .{ a.?, b.? });
-                return RockError.IntegerOverflow;
-            }
-
-            try state.push(.{ .i64 = res[0] });
-            return;
+        if (res[1] == 1) {
+            try state.pushN(2, ns);
+            try stderr.print("ERROR: Multiplying {} by {} would overflow.\n", .{ a, b });
+            return RockError.IntegerOverflow;
         }
+
+        try state.push(.{ .i64 = res[0] });
+        return;
     }
 
     { // Both floats
@@ -357,20 +351,18 @@ pub fn divide(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    { // Both integers
-        const a = ns[0].asI64();
-        const b = ns[1].asI64();
+    if (ns[0].isI64() and ns[1].isI64()) {
+        const a = try ns[0].intoI64();
+        const b = try ns[1].intoI64();
 
-        if (a != null and b != null) {
-            if (b.? == 0) {
-                try state.pushN(2, ns);
-                try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a.?});
-                return RockError.DivisionByZero;
-            }
-
-            try state.push(.{ .i64 = @divTrunc(a.?, b.?) });
-            return;
+        if (b == 0) {
+            try state.pushN(2, ns);
+            try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
+            return RockError.DivisionByZero;
         }
+
+        try state.push(.{ .i64 = @divTrunc(a, b) });
+        return;
     }
 
     { // Both floats
@@ -402,14 +394,12 @@ pub fn modulo(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    { // Both integers
-        const a = ns[0].asI64();
-        const b = ns[1].asI64();
+    if (ns[0].isI64() and ns[1].isI64()) {
+        const a = try ns[0].intoI64();
+        const b = try ns[1].intoI64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .i64 = @mod(a.?, b.?) });
-            return;
-        }
+        try state.push(.{ .i64 = @mod(a, b) });
+        return;
     }
 
     { // Both floats
@@ -432,13 +422,11 @@ pub fn abs(state: *RockMachine) !void {
 
     const n = try state.pop();
 
-    { // Integers
-        const a = n.asI64();
+    if (n.isI64()) {
+        const a = try n.intoI64();
 
-        if (a != null) {
-            try state.push(.{ .i64 = try std.math.absInt(a.?) });
-            return;
-        }
+        try state.push(.{ .i64 = try std.math.absInt(a) });
+        return;
     }
 
     { // Both floats
@@ -461,14 +449,12 @@ pub fn eq(state: *RockMachine) !void {
 
     const vals = try state.popN(2);
 
-    { // Integers
-        const a = vals[0].asI64();
-        const b = vals[1].asI64();
+    if (vals[0].isI64() and vals[1].isI64()) {
+        const a = try vals[0].intoI64();
+        const b = try vals[1].intoI64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = a.? == b.? });
-            return;
-        }
+        try state.push(.{ .bool = a == b });
+        return;
     }
 
     { // Floats
@@ -549,14 +535,12 @@ pub fn greaterThan(state: *RockMachine) !void {
 
     const vals = try state.popN(2);
 
-    { // Integers
-        const a = vals[0].asI64();
-        const b = vals[1].asI64();
+    if (vals[0].isI64() and vals[1].isI64()) {
+        const a = try vals[0].intoI64();
+        const b = try vals[1].intoI64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = b.? > a.? });
-            return;
-        }
+        try state.push(.{ .bool = b > a });
+        return;
     }
 
     { // Both floats
@@ -579,14 +563,12 @@ pub fn greaterThanEq(state: *RockMachine) !void {
 
     const vals = try state.popN(2);
 
-    { // Integers
-        const a = vals[0].asI64();
-        const b = vals[1].asI64();
+    if (vals[0].isI64() and vals[1].isI64()) {
+        const a = try vals[0].intoI64();
+        const b = try vals[1].intoI64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = b.? >= a.? });
-            return;
-        }
+        try state.push(.{ .bool = b >= a });
+        return;
     }
 
     { // Both floats
@@ -609,14 +591,12 @@ pub fn lessThan(state: *RockMachine) !void {
 
     const vals = try state.popN(2);
 
-    { // Integers
-        const a = vals[0].asI64();
-        const b = vals[1].asI64();
+    if (vals[0].isI64() and vals[1].isI64()) {
+        const a = try vals[0].intoI64();
+        const b = try vals[1].intoI64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = b.? < a.? });
-            return;
-        }
+        try state.push(.{ .bool = b < a });
+        return;
     }
 
     { // Both floats
@@ -639,14 +619,12 @@ pub fn lessThanEq(state: *RockMachine) !void {
 
     const vals = try state.popN(2);
 
-    { // Integers
-        const a = vals[0].asI64();
-        const b = vals[1].asI64();
+    if (vals[0].isI64() and vals[1].isI64()) {
+        const a = try vals[0].intoI64();
+        const b = try vals[1].intoI64();
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = b.? <= a.? });
-            return;
-        }
+        try state.push(.{ .bool = b <= a });
+        return;
     }
 
     { // Both floats
