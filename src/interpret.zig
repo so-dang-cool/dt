@@ -176,10 +176,10 @@ pub const RockVal = union(enum) {
     string: RockString,
     // TODO: HashMap<RockVal, RockVal, ..., ...>
 
-    pub fn asBool(self: RockVal) ?bool {
+    pub fn isBool(self: RockVal) bool {
         return switch (self) {
-            .bool => |b| b,
-            else => null,
+            .bool => true,
+            else => false,
         };
     }
 

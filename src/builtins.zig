@@ -481,14 +481,12 @@ pub fn eq(state: *RockMachine) !void {
         }
     }
 
-    { // Bools
-        const a = vals[0].asBool();
-        const b = vals[1].asBool();
+    if (vals[0].isBool() and vals[1].isBool()) {
+        const a = vals[0].intoBool(state);
+        const b = vals[1].intoBool(state);
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = a.? == b.? });
-            return;
-        }
+        try state.push(.{ .bool = a == b });
+        return;
     }
 
     { // Commands
@@ -531,8 +529,8 @@ pub fn eq(state: *RockMachine) !void {
                 try child.push(bs[i]);
                 try eq(&child);
                 const bv = try child.pop();
-                const res = bv.asBool();
-                if (res == null or !res.?) {
+                const res = bv.intoBool(state);
+                if (!res) {
                     try state.push(.{ .bool = false });
                     return;
                 }
@@ -877,9 +875,9 @@ fn _filter(state: *RockMachine, as: Quote, f: RockVal) !void {
         try child.push(f);
         try do(&child);
         var lastVal = try child.pop();
-        var cond = lastVal.asBool();
+        var cond = lastVal.intoBool(state);
 
-        if (cond != null and cond.?) {
+        if (cond) {
             try quote.append(a);
         }
     }
