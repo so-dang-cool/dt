@@ -6,7 +6,14 @@
 
 ### PIPE things ###
 
-[ get-lines   get-args deq   swap drop   unlines eval ] \pipe-thru-args def
+[ [ "dt " p version pl ]   get-args [ "--version" eq? ] any? ? ] \FLAG:version def
+[ get-args   [ "--version" eq? not ] filter ] \stripped-args def
+
+[ FLAG:version
+    stripped-args deq   swap drop   unlines eval
+] \run-args def
+
+[ get-lines   run-args ] \pipe-thru-args def
 
 
 ### Display ###

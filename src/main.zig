@@ -34,7 +34,10 @@ pub fn main() !void {
 
     if (std.io.getStdIn().isTty()) {
         // REPL
-        try stderr.print("dt {s}", .{version});
+        machine.interpret(.{ .term = "run-args" }) catch |e| {
+            try stderr.print("RIP: {any}\n", .{e});
+            std.os.exit(1);
+        };
         while (true) machine.interpret(.{ .term = "repl" }) catch |e| if (e == error.EndOfStream) {
             try stderr.print("\nBye\n", .{});
             return;
@@ -42,7 +45,7 @@ pub fn main() !void {
     } else {
         // PIPE
         machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
-            try stderr.print("Uncaught error: {any}\n", .{e});
+            try stderr.print("RIP: {any}\n", .{e});
         };
     }
 }

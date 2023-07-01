@@ -1,0 +1,5 @@
+#!/bin/bash
+
+zig build \
+  && exec zig-out/bin/"$(basename "$0")" "$@"
+

@@ -66,11 +66,16 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("join", "consume a quote of strings and a delimiter, and produce a string with the delimiter interspersed", .{ .builtin = join });
     try machine.define("upcase", "convert a string to uppercase", .{ .builtin = upcase });
     try machine.define("downcase", "convert a string to lowercase", .{ .builtin = downcase });
+    try machine.define("starts-with?", "consume a string and a prefix, and return true if the string has the prefix", .{ .builtin = startsWith });
+    try machine.define("ends-with?", "consume a string and a suffix, and return true if the string has the suffix", .{ .builtin = endsWith });
+    try machine.define("contains?", "consume a string and a substring, and return true if the string contains the substring", .{ .builtin = contains });
 
     try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
     try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
+    try machine.define("any?", "return true if any value in a quote passes a predicate", .{ .builtin = any });
 
     try machine.define("...", "expand a quote", .{ .builtin = ellipsis });
+    try machine.define("rev", "reverse a quote or string", .{ .builtin = rev });
     try machine.define("quote-all", "quote all current context", .{ .builtin = quoteAll });
     try machine.define("push", "move an item into a quote", .{ .builtin = push });
     try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = pop });
@@ -771,6 +776,27 @@ pub fn downcase(state: *RockMachine) !void {
     try state.push(.{ .string = after });
 }
 
+pub fn startsWith(state: *RockMachine) !void {
+    var vals = try state.popN(2);
+    var str = try vals[0].intoString(state);
+    var prefix = try vals[1].intoString(state);
+    try state.push(.{ .bool = std.mem.startsWith(u8, str, prefix) });
+}
+
+pub fn endsWith(state: *RockMachine) !void {
+    var vals = try state.popN(2);
+    var str = try vals[0].intoString(state);
+    var suffix = try vals[1].intoString(state);
+    try state.push(.{ .bool = std.mem.endsWith(u8, str, suffix) });
+}
+
+pub fn contains(state: *RockMachine) !void {
+    var vals = try state.popN(2);
+    var str = try vals[0].intoString(state);
+    var substr = try vals[1].intoString(state);
+    try state.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
+}
+
 pub fn opt(state: *RockMachine) !void {
     var val = try state.pop();
     const cond = val.intoBool(state);
@@ -832,12 +858,6 @@ pub fn map(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    if (!vals[0].isQuote()) {
-        const err = RockError.WrongArguments;
-        try stderr.print(usage, .{err});
-        return err;
-    }
-
     const quote = try vals[0].intoQuote(state);
     const f = vals[1];
 
@@ -869,12 +889,6 @@ pub fn filter(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    if (!vals[0].isQuote()) {
-        const err = RockError.WrongArguments;
-        try stderr.print(usage, .{err});
-        return err;
-    }
-
     const quote = try vals[0].intoQuote(state);
     const f = vals[1];
 
@@ -901,6 +915,41 @@ fn _filter(state: *RockMachine, as: Quote, f: RockVal) !void {
     }
 
     try state.push(RockVal{ .quote = quote });
+}
+
+pub fn any(state: *RockMachine) !void {
+    const usage = "USAGE: [as] (a->bool) any? -> bool ({any})\n";
+
+    const vals = state.popN(2) catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.StackUnderflow;
+    };
+
+    const quote = try vals[0].intoQuote(state);
+    const f = vals[1];
+
+    _any(state, quote, f) catch |err| {
+        try stderr.print(usage, .{err});
+        try state.pushN(2, vals);
+    };
+}
+
+fn _any(state: *RockMachine, as: Quote, f: RockVal) !void {
+    for (as.items) |a| {
+        var child = try state.child();
+        try child.push(a);
+        try child.push(f);
+        try do(&child);
+        var lastVal = try child.pop();
+        var cond = lastVal.intoBool(state);
+
+        if (cond) {
+            try state.push(RockVal{ .bool = true });
+            return;
+        }
+    }
+
+    try state.push(RockVal{ .bool = false });
 }
 
 pub fn pop(state: *RockMachine) !void {
@@ -982,6 +1031,37 @@ pub fn ellipsis(state: *RockMachine) !void {
     for (quote.items) |v| {
         try state.push(v);
     }
+}
+
+pub fn rev(state: *RockMachine) !void {
+    const val = try state.pop();
+
+    if (val.isQuote()) {
+        const quote = try val.intoQuote(state);
+        const len = quote.items.len;
+        var newQuote: Quote = try Quote.initCapacity(state.alloc, len);
+        for (quote.items, 0..) |v, i| {
+            try newQuote.insert(len - i - 1, v);
+        }
+        try state.push(.{ .quote = newQuote });
+        return;
+    }
+
+    if (val.isString()) {
+        const str = try val.intoString(state);
+        var newStr = try state.alloc.alloc(u8, str.len);
+
+        for (str, 0..) |c, i| {
+            newStr[str.len - 1 - i] = c;
+        }
+
+        try state.push(.{ .string = newStr });
+        return;
+    }
+
+    const err = RockError.WrongArguments;
+    try stderr.print("USAGE: quote|str rev -> rts|etouq ({any})", .{err});
+    return err;
 }
 
 pub fn quoteAll(state: *RockMachine) !void {
