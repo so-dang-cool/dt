@@ -8,6 +8,8 @@ const stderr = std.io.getStdErr().writer();
 
 const Token = @import("tokens.zig").Token;
 
+const main = @import("main.zig");
+
 const interpret = @import("interpret.zig");
 const Quote = interpret.Quote;
 const RockError = interpret.Error;
@@ -17,6 +19,7 @@ const RockMachine = interpret.RockMachine;
 pub fn defineAll(machine: *RockMachine) !void {
     try machine.define(".q", "quit, printing a warning if there are any values left on stack", .{ .builtin = quit });
     try machine.define("exit", "exit with the specified exit code", .{ .builtin = exit });
+    try machine.define("version", "print the version of the interpreter", .{ .builtin = version });
 
     try machine.define("def", "define a new command", .{ .builtin = def });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
@@ -36,8 +39,11 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("nl", "print a newline", .{ .builtin = nl });
     try machine.define(".s", "print the stack", .{ .builtin = dotS });
 
-    try machine.define("get-line", "get a line from standard input", .{ .builtin = getLine });
+    try machine.define("get-line", "get a line from standard input (until newline)", .{ .builtin = getLine });
+    try machine.define("get-lines", "get lines from standard input (until EOF)", .{ .builtin = getLines });
+    try machine.define("get-args", "get command-line args", .{ .builtin = getArgs });
     try machine.define("eval", "evaluate a string as commands", .{ .builtin = eval });
+    try machine.define("interactive?", "determine if the input mode is interactive (a TTY) or not", .{ .builtin = interactive });
 
     try machine.define("+", "add two numeric values", .{ .builtin = add });
     try machine.define("-", "subtract two numeric values", .{ .builtin = subtract });
@@ -58,6 +64,8 @@ pub fn defineAll(machine: *RockMachine) !void {
 
     try machine.define("split", "consume a string and a delimiter, and produce a quote of the string split on all occurrences of the substring", .{ .builtin = split });
     try machine.define("join", "consume a quote of strings and a delimiter, and produce a string with the delimiter interspersed", .{ .builtin = join });
+    try machine.define("upcase", "convert a string to uppercase", .{ .builtin = upcase });
+    try machine.define("downcase", "convert a string to lowercase", .{ .builtin = downcase });
 
     try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
     try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
@@ -104,6 +112,10 @@ pub fn exit(state: *RockMachine) !void {
 
     const code: u8 = @intCast(i);
     std.os.exit(code);
+}
+
+pub fn version(state: *RockMachine) !void {
+    try state.push(.{ .string = main.version });
 }
 
 pub fn def(state: *RockMachine) !void {
@@ -250,6 +262,31 @@ pub fn getLine(state: *RockMachine) !void {
     try state.push(.{ .string = line.items });
 }
 
+pub fn getLines(state: *RockMachine) !void {
+    var lines = Quote.init(state.alloc);
+    while (true) {
+        getLine(state) catch |err| switch (err) {
+            error.EndOfStream => break,
+            else => return err,
+        };
+        const val = try state.pop();
+        const line = try val.intoString(state);
+        try lines.append(.{ .string = line });
+    }
+
+    try state.push(.{ .quote = lines });
+}
+
+pub fn getArgs(state: *RockMachine) !void {
+    var quote = Quote.init(state.alloc);
+    var args = std.process.args();
+    while (args.next()) |arg| {
+        try quote.append(.{ .string = arg });
+    }
+
+    try state.push(.{ .quote = quote });
+}
+
 pub fn eval(state: *RockMachine) !void {
     var val = try state.pop();
     var code = try val.intoString(state);
@@ -258,6 +295,10 @@ pub fn eval(state: *RockMachine) !void {
     for (tokens.items) |tok| {
         try state.interpret(tok);
     }
+}
+
+pub fn interactive(state: *RockMachine) !void {
+    try state.push(.{ .bool = std.io.getStdIn().isTty() });
 }
 
 pub fn add(state: *RockMachine) !void {
@@ -714,6 +755,20 @@ pub fn join(state: *RockMachine) !void {
     }
     var acc = try std.mem.join(state.alloc, delim, parts.items);
     try state.push(.{ .string = acc });
+}
+
+pub fn upcase(state: *RockMachine) !void {
+    var val = try state.pop();
+    const before = try val.intoString(state);
+    const after = try std.ascii.allocUpperString(state.alloc, before);
+    try state.push(.{ .string = after });
+}
+
+pub fn downcase(state: *RockMachine) !void {
+    var val = try state.pop();
+    const before = try val.intoString(state);
+    const after = try std.ascii.allocLowerString(state.alloc, before);
+    try state.push(.{ .string = after });
 }
 
 pub fn opt(state: *RockMachine) !void {

@@ -1,16 +1,18 @@
-### Main ###
+### REPL things ###
 
 [ "» " p   get-line eval   repl ] \repl def
 [ .q ] \quit def
+
+
+### PIPE things ###
+
+[ get-lines   get-args deq   swap drop   unlines eval ] \pipe-thru-args def
 
 
 ### Display ###
 
 [ p nl ] \pl def
 [ \pl map drop ] \pls def
-[ dup p ] \.p def
-[ dup pl ] \.pl def
-[ dup pls ] \.pls def
 
 
 ### Boolean operators ###

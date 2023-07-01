@@ -16,13 +16,11 @@ const RockMachine = interpret.RockMachine;
 
 const builtins = @import("builtins.zig");
 
-const version = "0.1.1";
+pub const version = "0.1.1";
 
 const rockStdlib = @embedFile("stdlib.rock");
 
 pub fn main() !void {
-    try stderr.print("rock {s}\n", .{version});
-
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
     var machine = try RockMachine.init(arena.allocator());
@@ -34,10 +32,17 @@ pub fn main() !void {
         try machine.interpret(token);
     }
 
-    while (true) {
-        machine.interpret(.{ .term = "repl" }) catch |e| if (e == error.EndOfStream) {
+    if (std.io.getStdIn().isTty()) {
+        // REPL
+        try stderr.print("dt {s}", .{version});
+        while (true) machine.interpret(.{ .term = "repl" }) catch |e| if (e == error.EndOfStream) {
             try stderr.print("\nBye\n", .{});
             return;
+        };
+    } else {
+        // PIPE
+        machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
+            try stderr.print("Uncaught error: {any}\n", .{e});
         };
     }
 }
