@@ -35,21 +35,10 @@ pub fn main() !void {
     }
 
     while (true) {
-        try stdout.print("> ", .{});
-
-        const input = try prompt(arena.allocator());
-
-        const tokens = try Token.parseAlloc(arena.allocator(), input);
-        for (tokens.items) |token| {
-            //try stderr.print("Token: {any}\n", .{token});
-            machine.interpret(token) catch |e| {
-                switch (token) {
-                    .term => |term| try stderr.print("OOPS {s} caused error: {any}\n", .{ term, e }),
-                    else => try stderr.print("OOPS {any} caused error: {any}\n", .{ token, e }),
-                }
-                break;
-            };
-        }
+        machine.interpret(.{ .term = "repl" }) catch |e| if (e == error.EndOfStream) {
+            try stderr.print("\nBye\n", .{});
+            return;
+        };
     }
 }
 

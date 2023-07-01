@@ -20,6 +20,7 @@ pub const Error = error{
     ContextStackUnderflow,
     DivisionByZero,
     IntegerOverflow,
+    IntegerUnderflow,
     NoCoersionToInteger,
     NoCoersionToString,
     StackUnderflow,

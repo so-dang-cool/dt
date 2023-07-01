@@ -6,6 +6,8 @@ const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
+const Token = @import("tokens.zig").Token;
+
 const interpret = @import("interpret.zig");
 const Quote = interpret.Quote;
 const RockError = interpret.Error;
@@ -13,7 +15,8 @@ const RockVal = interpret.RockVal;
 const RockMachine = interpret.RockMachine;
 
 pub fn defineAll(machine: *RockMachine) !void {
-    try machine.define(".q", "quit", .{ .builtin = quit });
+    try machine.define(".q", "quit, printing a warning if there are any values left on stack", .{ .builtin = quit });
+    try machine.define("exit", "exit with the specified exit code", .{ .builtin = exit });
 
     try machine.define("def", "define a new command", .{ .builtin = def });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
@@ -34,6 +37,7 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define(".s", "print the stack", .{ .builtin = dotS });
 
     try machine.define("get-line", "get a line from standard input", .{ .builtin = getLine });
+    try machine.define("eval", "evaluate a string as commands", .{ .builtin = eval });
 
     try machine.define("+", "add two numeric values", .{ .builtin = add });
     try machine.define("-", "subtract two numeric values", .{ .builtin = subtract });
@@ -86,6 +90,20 @@ pub fn quit(state: *RockMachine) !void {
     }
 
     std.os.exit(0);
+}
+
+pub fn exit(state: *RockMachine) !void {
+    const val = try state.pop();
+    const i = try val.intoI64();
+
+    if (i < 0) {
+        return RockError.IntegerUnderflow;
+    } else if (i > 255) {
+        return RockError.IntegerOverflow;
+    }
+
+    const code: u8 = @intCast(i);
+    std.os.exit(code);
 }
 
 pub fn def(state: *RockMachine) !void {
@@ -230,6 +248,16 @@ pub fn getLine(state: *RockMachine) !void {
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
 
     try state.push(.{ .string = line.items });
+}
+
+pub fn eval(state: *RockMachine) !void {
+    var val = try state.pop();
+    var code = try val.intoString(state);
+
+    const tokens = try Token.parseAlloc(state.alloc, code);
+    for (tokens.items) |tok| {
+        try state.interpret(tok);
+    }
 }
 
 pub fn add(state: *RockMachine) !void {

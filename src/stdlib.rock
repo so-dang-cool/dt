@@ -1,6 +1,16 @@
-###  Display ###
+### Main ###
+
+[ "» " p   get-line eval   repl ] \repl def
+[ .q ] \quit def
+
+
+### Display ###
 
 [ p nl ] \pl def
+[ \pl map drop ] \pls def
+[ dup p ] \.p def
+[ dup pl ] \.pl def
+[ dup pls ] \.pls def
 
 
 ### Boolean operators ###
@@ -37,3 +47,8 @@
 ### Swizzling and such ###
 
 [ swap \save : do save ] \dip def
+
+
+### Parsing ###
+
+[ lines [ "," split ] map ] \parse-csv def

@@ -16,7 +16,7 @@ pub const Token = union(enum) {
     pub fn parseAlloc(alloc: Allocator, raw: []const u8) !ArrayList(Token) {
         var tokens = ArrayList(Token).init(alloc);
 
-        var stringSplits = std.mem.split(u8, raw, "\"");
+        var stringSplits = std.mem.splitScalar(u8, raw, '"');
         var inString = false;
         while (stringSplits.next()) |contents| : (inString = !inString) {
             if (inString) {
