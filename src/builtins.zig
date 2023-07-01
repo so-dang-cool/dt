@@ -90,16 +90,10 @@ pub fn def(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    const quote = vals[0].asQuote();
-    const name = vals[1].asCommand() orelse vals[1].asDeferredCommand();
+    const quote = try vals[0].intoQuote(state);
+    const name = try vals[1].intoString(state);
 
-    if (name == null or quote == null) {
-        try stderr.print(usage, .{.{ name, quote.? }});
-        try state.pushN(2, vals);
-        return RockError.WrongArguments;
-    }
-
-    try state.define(name.?, "TODO", .{ .quote = quote.? });
+    try state.define(name, name, .{ .quote = quote });
 }
 
 pub fn defs(state: *RockMachine) !void {
@@ -125,12 +119,7 @@ pub fn isDef(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    const name = val.asCommand() orelse val.asDeferredCommand() orelse val.asString() orelse {
-        const err = RockError.WrongArguments;
-        try stderr.print(usage, .{err});
-        try state.push(val);
-        return err;
-    };
+    const name = try val.intoString(state);
 
     try state.push(.{ .bool = state.defs.contains(name) });
 }
@@ -138,19 +127,23 @@ pub fn isDef(state: *RockMachine) !void {
 // Variable binding
 pub fn colon(state: *RockMachine) !void {
     const usage = "USAGE: ...vals term(s) : ({any})\n";
-    _ = usage;
 
     var termVal = try state.pop();
 
-    { // Single term
-        const term = termVal.asCommand() orelse termVal.asDeferredCommand() orelse termVal.asString();
-        if (term != null) {
-            const val = try state.pop();
-            var quote = ArrayList(RockVal).init(state.alloc);
-            try quote.append(val);
-            try state.define(term.?, term.?, .{ .quote = quote });
-            return;
-        }
+    // Single term
+    if (termVal.isCommand() or termVal.isDeferredCommand() or termVal.isString()) {
+        const cmdName = try termVal.intoString(state);
+
+        const val = state.pop() catch |e| {
+            try stderr.print(usage, .{e});
+            try state.push(termVal);
+            return e;
+        };
+
+        var quote = ArrayList(RockVal).init(state.alloc);
+        try quote.append(val);
+        try state.define(cmdName, cmdName, .{ .quote = quote });
+        return;
     }
 
     // Multiple terms
@@ -165,10 +158,10 @@ pub fn colon(state: *RockMachine) !void {
     }
 
     for (terms, vals) |termV, val| {
-        const term = termV.asCommand() orelse termV.asDeferredCommand() orelse termV.asString();
+        const term = try termV.intoString(state);
         var quote = ArrayList(RockVal).init(state.alloc);
         try quote.append(val);
-        try state.define(term.?, term.?, .{ .quote = quote });
+        try state.define(term, term, .{ .quote = quote });
     }
 }
 
@@ -461,56 +454,42 @@ pub fn eq(state: *RockMachine) !void {
         return;
     }
 
-    { // Commands
-        const a = vals[0].asCommand() orelse vals[0].asDeferredCommand();
-        const b = vals[1].asCommand() orelse vals[1].asDeferredCommand();
+    if (vals[0].isQuote() and vals[1].isQuote()) {
+        const a = try vals[0].intoQuote(state);
+        const b = try vals[1].intoQuote(state);
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = std.mem.eql(u8, a.?, b.?) });
+        const as: []RockVal = a.items;
+        const bs: []RockVal = b.items;
+
+        if (as.len != bs.len) {
+            try state.push(.{ .bool = false });
             return;
         }
-    }
 
-    { // Strings
-        const a = vals[0].asString();
-        const b = vals[1].asString();
+        var child = try state.child();
 
-        if (a != null and b != null) {
-            try state.push(.{ .bool = std.mem.eql(u8, a.?, b.?) });
-            return;
-        }
-    }
-
-    { // Quotes
-        const a = vals[0].asQuote();
-        const b = vals[1].asQuote();
-
-        if (a != null and b != null) {
-            const as: []RockVal = a.?.items;
-            const bs: []RockVal = b.?.items;
-
-            if (as.len != bs.len) {
+        for (as, 0..) |val, i| {
+            try child.push(val);
+            try child.push(bs[i]);
+            try eq(&child);
+            const bv = try child.pop();
+            const res = bv.intoBool(state);
+            if (!res) {
                 try state.push(.{ .bool = false });
                 return;
             }
-
-            var child = try state.child();
-
-            for (as, 0..) |val, i| {
-                try child.push(val);
-                try child.push(bs[i]);
-                try eq(&child);
-                const bv = try child.pop();
-                const res = bv.intoBool(state);
-                if (!res) {
-                    try state.push(.{ .bool = false });
-                    return;
-                }
-            }
-
-            try state.push(.{ .bool = true });
-            return;
         }
+
+        try state.push(.{ .bool = true });
+        return;
+    }
+
+    if (!vals[0].isQuote() and !vals[1].isQuote()) {
+        const a = try vals[0].intoString(state);
+        const b = try vals[1].intoString(state);
+
+        try state.push(.{ .bool = std.mem.eql(u8, a, b) });
+        return;
     }
 
     try state.push(.{ .bool = false });
@@ -647,57 +626,53 @@ pub fn not(state: *RockMachine) !void {
 
 pub fn split(state: *RockMachine) !void {
     const usage = "USAGE: str delim split -> [substrs...] ({any})\n";
+    _ = usage;
 
     var vals = try state.popN(2);
 
-    var str = vals[0].asString();
-    var delim = vals[1].asString();
+    var str = try vals[0].intoString(state);
+    var delim = try vals[1].intoString(state);
 
-    if (str != null and delim != null) {
-        if (delim.?.len > 0) {
-            var parts = std.mem.split(u8, str.?, delim.?);
-            var quote = Quote.init(state.alloc);
-            while (parts.next()) |part| {
-                try quote.append(.{ .string = part });
-            }
-            try state.push(.{ .quote = quote });
-        } else {
-            var quote = Quote.init(state.alloc);
-            for (str.?) |c| {
-                var s = try state.alloc.create([1]u8);
-                s[0] = c;
-                try quote.append(.{ .string = s });
-            }
-            try state.push(.{ .quote = quote });
+    if (delim.len > 0) {
+        var parts = std.mem.split(u8, str, delim);
+        var quote = Quote.init(state.alloc);
+        while (parts.next()) |part| {
+            try quote.append(.{ .string = part });
         }
+        try state.push(.{ .quote = quote });
     } else {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        var quote = Quote.init(state.alloc);
+        for (str) |c| {
+            var s = try state.alloc.create([1]u8);
+            s[0] = c;
+            try quote.append(.{ .string = s });
+        }
+        try state.push(.{ .quote = quote });
     }
 }
 
 pub fn join(state: *RockMachine) !void {
     const usage = "USAGE: [strs...] delim join -> str ({any})\n";
+    _ = usage;
 
     var vals = try state.popN(2);
 
-    var strs = vals[0].asQuote();
-    var delim = vals[1].asString();
-
-    if (strs != null and delim != null) {
-        var parts = try ArrayList([]const u8).initCapacity(state.alloc, strs.?.items.len);
-        for (strs.?.items) |part| {
-            const s = part.asString().?;
-            try parts.append(s);
-        }
-        var acc = try std.mem.join(state.alloc, delim.?, parts.items);
-        try state.push(.{ .string = acc });
-    } else {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+    if (!vals[0].isQuote()) {
+        const str = try vals[0].intoString(state);
+        try state.push(.{ .string = str });
+        return;
     }
+
+    var strs = try vals[0].intoQuote(state);
+    var delim = try vals[1].intoString(state);
+
+    var parts = try ArrayList([]const u8).initCapacity(state.alloc, strs.items.len);
+    for (strs.items) |part| {
+        const s = try part.intoString(state);
+        try parts.append(s);
+    }
+    var acc = try std.mem.join(state.alloc, delim, parts.items);
+    try state.push(.{ .string = acc });
 }
 
 pub fn opt(state: *RockMachine) !void {
@@ -709,31 +684,20 @@ pub fn opt(state: *RockMachine) !void {
 
 pub fn do(state: *RockMachine) !void {
     const usage = "USAGE: ... term|quote do -> ... ({any})\n";
+    _ = usage;
 
-    var toDo = try state.pop();
+    var val = try state.pop();
 
-    { // Command
-        const cmd = toDo.asCommand() orelse toDo.asDeferredCommand();
-        if (cmd != null) {
-            try state.handleCmd(cmd.?);
-            return;
-        }
+    if (val.isCommand() or val.isDeferredCommand() or val.isString()) {
+        const cmdName = try val.intoString(state);
+
+        try state.handleCmd(cmdName);
+        return;
     }
 
-    { // Quote
-        const quote = toDo.asQuote();
-        if (quote != null) {
-            for (quote.?.items) |val| {
-                try state.handle(val);
-            }
-            return;
-        }
-    }
+    const quote = try val.intoQuote(state);
 
-    const err = RockError.WrongArguments;
-    try stderr.print(usage, .{err});
-    try state.push(toDo);
-    return err;
+    for (quote.items) |v| try state.handle(v);
 }
 
 pub fn doin(state: *RockMachine) !void {
@@ -772,18 +736,19 @@ pub fn map(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    const quote = vals[0].asQuote();
+    if (!vals[0].isQuote()) {
+        const err = RockError.WrongArguments;
+        try stderr.print(usage, .{err});
+        return err;
+    }
+
+    const quote = try vals[0].intoQuote(state);
     const f = vals[1];
 
-    if (quote != null) {
-        _map(state, quote.?, f) catch |err| {
-            try stderr.print(usage, .{err});
-            try state.pushN(2, vals);
-        };
-    } else {
-        try stderr.print(usage, .{RockError.WrongArguments});
+    _map(state, quote, f) catch |err| {
+        try stderr.print(usage, .{err});
         try state.pushN(2, vals);
-    }
+    };
 }
 
 fn _map(state: *RockMachine, as: Quote, f: RockVal) !void {
@@ -808,18 +773,19 @@ pub fn filter(state: *RockMachine) !void {
         return RockError.WrongArguments;
     };
 
-    const quote = vals[0].asQuote();
+    if (!vals[0].isQuote()) {
+        const err = RockError.WrongArguments;
+        try stderr.print(usage, .{err});
+        return err;
+    }
+
+    const quote = try vals[0].intoQuote(state);
     const f = vals[1];
 
-    if (quote != null) {
-        _filter(state, quote.?, f) catch |err| {
-            try stderr.print(usage, .{err});
-            try state.pushN(2, vals);
-        };
-    } else {
-        try stderr.print(usage, .{RockError.WrongArguments});
+    _filter(state, quote, f) catch |err| {
+        try stderr.print(usage, .{err});
         try state.pushN(2, vals);
-    }
+    };
 }
 
 fn _filter(state: *RockMachine, as: Quote, f: RockVal) !void {
@@ -843,9 +809,13 @@ fn _filter(state: *RockMachine, as: Quote, f: RockVal) !void {
 
 pub fn pop(state: *RockMachine) !void {
     const val = try state.pop();
-    var quote: ArrayList(RockVal) = val.asQuote() orelse {
+
+    if (!val.isQuote()) {
+        try state.push(val);
         return RockError.WrongArguments;
-    };
+    }
+
+    var quote = try val.intoQuote(state);
 
     if (quote.items.len > 0) {
         const lastVal = quote.pop();
@@ -860,11 +830,13 @@ pub fn pop(state: *RockMachine) !void {
 pub fn push(state: *RockMachine) !void {
     const vals = try state.popN(2);
 
-    var pushMe = vals[1];
-    var quote: ArrayList(RockVal) = vals[0].asQuote() orelse {
+    if (!vals[0].isQuote()) {
         try state.pushN(2, vals);
         return RockError.WrongArguments;
-    };
+    }
+
+    var pushMe = vals[1];
+    var quote: ArrayList(RockVal) = try vals[0].intoQuote(state);
 
     try quote.append(pushMe);
     try state.push(RockVal{ .quote = quote });
@@ -873,11 +845,13 @@ pub fn push(state: *RockMachine) !void {
 pub fn enq(state: *RockMachine) !void {
     const vals = try state.popN(2);
 
-    var pushMe = vals[0];
-    var quote: ArrayList(RockVal) = vals[1].asQuote() orelse {
+    if (!vals[1].isQuote()) {
         try state.pushN(2, vals);
         return RockError.WrongArguments;
-    };
+    }
+
+    var pushMe = vals[0];
+    var quote: ArrayList(RockVal) = try vals[1].intoQuote(state);
 
     try quote.insert(0, pushMe);
     try state.push(RockVal{ .quote = quote });
@@ -885,9 +859,13 @@ pub fn enq(state: *RockMachine) !void {
 
 pub fn deq(state: *RockMachine) !void {
     const val = try state.pop();
-    var quote: ArrayList(RockVal) = val.asQuote() orelse {
+
+    if (!val.isQuote()) {
+        try state.push(val);
         return RockError.WrongArguments;
-    };
+    }
+
+    var quote: ArrayList(RockVal) = try val.intoQuote(state);
 
     if (quote.items.len > 0) {
         const firstVal = quote.orderedRemove(0);
@@ -901,9 +879,8 @@ pub fn deq(state: *RockMachine) !void {
 
 pub fn ellipsis(state: *RockMachine) !void {
     const val = try state.pop();
-    var quote: ArrayList(RockVal) = val.asQuote() orelse {
-        return RockError.WrongArguments;
-    };
+
+    var quote = try val.intoQuote(state);
 
     // TODO: Push as slice
     for (quote.items) |v| {

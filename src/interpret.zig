@@ -20,7 +20,8 @@ pub const Error = error{
     ContextStackUnderflow,
     DivisionByZero,
     IntegerOverflow,
-    NoIntegerCoersion,
+    NoCoersionToInteger,
+    NoCoersionToString,
     StackUnderflow,
     WrongArguments,
 };
@@ -211,7 +212,7 @@ pub const RockVal = union(enum) {
             .bool => |b| if (b) 1 else 0,
             .f64 => |f| @as(i64, @intFromFloat(f)),
             .string => |s| std.fmt.parseInt(i64, s, 10),
-            else => Error.NoIntegerCoersion,
+            else => Error.NoCoersionToInteger,
         };
     }
 
@@ -229,28 +230,48 @@ pub const RockVal = union(enum) {
             .bool => |b| if (b) 1 else 0,
             .i64 => |i| @as(f64, @floatFromInt(i)),
             .string => |s| std.fmt.parseFloat(f64, s),
-            else => Error.NoIntegerCoersion,
+            else => Error.NoCoersionToInteger,
         };
     }
 
-    pub fn asCommand(self: RockVal) ?RockString {
+    pub fn isCommand(self: RockVal) bool {
+        return switch (self) {
+            .command => true,
+            else => false,
+        };
+    }
+
+    pub fn isDeferredCommand(self: RockVal) bool {
+        return switch (self) {
+            .deferred_command => true,
+            else => false,
+        };
+    }
+
+    pub fn isString(self: RockVal) bool {
+        return switch (self) {
+            .string => true,
+            else => false,
+        };
+    }
+
+    pub fn intoString(self: RockVal, state: *RockMachine) !RockString {
         return switch (self) {
             .command => |cmd| cmd,
-            else => null,
-        };
-    }
 
-    pub fn asDeferredCommand(self: RockVal) ?RockString {
-        return switch (self) {
             .deferred_command => |cmd| cmd,
-            else => null,
+            .string => |s| s,
+            .bool => |b| if (b) "true" else "false",
+            .i64 => |i| try std.fmt.allocPrint(state.alloc, "{}", .{i}),
+            .f64 => |f| try std.fmt.allocPrint(state.alloc, "{}", .{f}),
+            else => Error.NoCoersionToString,
         };
     }
 
-    pub fn asQuote(self: RockVal) ?Quote {
+    pub fn isQuote(self: RockVal) bool {
         return switch (self) {
-            .quote => |q| q,
-            else => null,
+            .quote => true,
+            else => false,
         };
     }
 
@@ -262,13 +283,6 @@ pub const RockVal = union(enum) {
                 try q.append(self);
                 return q;
             },
-        };
-    }
-
-    pub fn asString(self: RockVal) ?RockString {
-        return switch (self) {
-            .string => |s| s,
-            else => null,
         };
     }
 
