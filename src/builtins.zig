@@ -33,6 +33,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("nl", "print a newline", .{ .builtin = nl });
     try machine.define(".s", "print the stack", .{ .builtin = dotS });
 
+    try machine.define("get-line", "get a line from standard input", .{ .builtin = getLine });
+
     try machine.define("+", "add two numeric values", .{ .builtin = add });
     try machine.define("-", "subtract two numeric values", .{ .builtin = subtract });
     try machine.define("*", "multiply two numeric values", .{ .builtin = multiply });
@@ -64,6 +66,10 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("deq", "remove an item from the first position of a quote", .{ .builtin = deq });
 
     try machine.define("to-bool", "coerce value to boolean", .{ .builtin = toBool });
+    try machine.define("to-int", "coerce value to integer", .{ .builtin = toInt });
+    try machine.define("to-float", "coerce value to floating-point number", .{ .builtin = toFloat });
+    try machine.define("to-string", "coerce value to string", .{ .builtin = toString });
+    try machine.define("to-cmd", "coerce value to a deferred command", .{ .builtin = toCommand });
     try machine.define("to-quote", "coerce value to quote", .{ .builtin = toQuote });
 }
 
@@ -217,6 +223,13 @@ pub fn dotS(state: *RockMachine) !void {
     }
 
     try stdout.print("]\n", .{});
+}
+
+pub fn getLine(state: *RockMachine) !void {
+    var line = ArrayList(u8).init(state.alloc);
+    try stdin.streamUntilDelimiter(line.writer(), '\n', null);
+
+    try state.push(.{ .string = line.items });
 }
 
 pub fn add(state: *RockMachine) !void {
@@ -894,13 +907,36 @@ pub fn quoteAll(state: *RockMachine) !void {
 
 pub fn toBool(state: *RockMachine) !void {
     const val = try state.pop();
+    const b = val.intoBool(state);
+    try state.push(.{ .bool = b });
+}
 
-    try state.push(.{ .bool = val.intoBool(state) });
+pub fn toInt(state: *RockMachine) !void {
+    const val = try state.pop();
+    const i = try val.intoI64();
+    try state.push(.{ .i64 = i });
+}
+
+pub fn toFloat(state: *RockMachine) !void {
+    const val = try state.pop();
+    const f = try val.intoF64();
+    try state.push(.{ .f64 = f });
+}
+
+pub fn toString(state: *RockMachine) !void {
+    const val = try state.pop();
+    const s = try val.intoString(state);
+    try state.push(.{ .string = s });
+}
+
+pub fn toCommand(state: *RockMachine) !void {
+    const val = try state.pop();
+    const cmd = try val.intoString(state);
+    try state.push(.{ .deferred_command = cmd });
 }
 
 pub fn toQuote(state: *RockMachine) !void {
     const val = try state.pop();
     const quote = try val.intoQuote(state);
-
     try state.push(.{ .quote = quote });
 }
