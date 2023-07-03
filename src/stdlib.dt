@@ -1,20 +1,24 @@
 ### Flags and such ###
 
-# [ [ action flag ] :
-#   get-args [ flag eq? ] any?
-#   action swap ? ] \handle-flag def
+[ [ action flag ] :
+  get-args [ flag eq? ] any?
+  action swap ? ] \handle-flag def
 
-# [ "dt " p version pl ] \print-version def
-# # [ [ print-version 0 exit ]   "--version" handle-flag   ? ] \--version def
+[ "dt " p version pl ] \print-version def
+[ [ print-version 0 exit ]   "--version" handle-flag ] \--version def
 
-# [ "Good luck, this help hasn't been finished yet." pl   0 exit ] \print-help def
-# [ [ print-help 0 exit ]   "--help" handle-flag ] \--help def
+[ "Good luck, this help hasn't been finished yet." pl   0 exit ] \print-help def
+[ [ print-help 0 exit ]   "--help" handle-flag ] \--help def
 
-[ get-args deq   swap drop   unlines eval ] \run-args def
+[ --help --version ] \handle-flags def
+
+[ handle-flags
+    get-args deq   swap drop   unwords eval ] \run-args def
 
 
 ### REPL things ###
 
+[ handle-flags repl ] \main-repl def
 [ "» " p   get-line eval   repl ] \repl def
 [ .q ] \quit def
 
@@ -28,6 +32,11 @@
 
 [ p nl ] \pl def
 [ \pl map drop ] \pls def
+
+
+### Filesystem and process things ###
+
+[ cwd pl ] \pwd def
 
 
 ### Boolean operators ###

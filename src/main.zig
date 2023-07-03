@@ -37,7 +37,7 @@ pub fn main() !void {
             std.os.exit(1);
         };
 
-        while (true) machine.interpret(.{ .term = "repl" }) catch |e| if (e == error.EndOfStream) {
+        while (true) machine.interpret(.{ .term = "main-repl" }) catch |e| if (e == error.EndOfStream) {
             try stderr.print("\nSee you next time.\n", .{});
             return;
         };

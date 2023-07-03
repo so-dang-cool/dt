@@ -21,6 +21,9 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("exit", "exit with the specified exit code", .{ .builtin = exit });
     try machine.define("version", "print the version of the interpreter", .{ .builtin = version });
 
+    try machine.define("cwd", "current working directory", .{ .builtin = cwd });
+    try machine.define("cd", "change directory", .{ .builtin = cd });
+
     try machine.define("def", "define a new command", .{ .builtin = def });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
     try machine.define("def?", "return true if a name is defined", .{ .builtin = isDef });
@@ -106,7 +109,7 @@ pub fn quit(state: *RockMachine) !void {
 }
 
 pub fn exit(state: *RockMachine) !void {
-    const val = try state.pop();
+    const val = state.pop() catch RockVal{ .i64 = 255 };
     const i = try val.intoI64();
 
     if (i < 0) {
@@ -121,6 +124,28 @@ pub fn exit(state: *RockMachine) !void {
 
 pub fn version(state: *RockMachine) !void {
     try state.push(.{ .string = main.version });
+}
+
+pub fn cwd(state: *RockMachine) !void {
+    const theCwd = try std.process.getCwdAlloc(state.alloc);
+    try state.push(.{ .string = theCwd });
+}
+
+pub fn cd(state: *RockMachine) !void {
+    const usage = "USAGE: path cd ({any})\n";
+    _ = usage;
+
+    const val = try state.pop();
+    var path = try val.intoString(state);
+
+    if (std.mem.eql(u8, path, "~")) {
+        path = try std.process.getEnvVarOwned(state.alloc, "HOME");
+    }
+
+    std.os.chdir(path) catch |e| {
+        try stderr.print("Unable to change directory: {any}\n", .{e});
+        try state.push(val);
+    };
 }
 
 pub fn def(state: *RockMachine) !void {
@@ -799,10 +824,23 @@ pub fn contains(state: *RockMachine) !void {
 }
 
 pub fn opt(state: *RockMachine) !void {
-    var val = try state.pop();
+    const usage = "USAGE: ... term|quote bool ? -> ... ({any})\n";
+
+    var val = state.pop() catch |e| switch (e) {
+        error.StackUnderflow => {
+            try stderr.print(usage, .{e});
+            return;
+        },
+        else => return e,
+    };
+
     const cond = val.intoBool(state);
 
-    if (cond) try do(state) else try drop(state);
+    try if (cond) do(state) else drop(state) catch |e| {
+        try state.push(val);
+        try stderr.print(usage, .{e});
+        return e;
+    };
 }
 
 pub fn do(state: *RockMachine) !void {
@@ -928,6 +966,11 @@ pub fn any(state: *RockMachine) !void {
 
     const quote = try vals[0].intoQuote(state);
     const f = vals[1];
+
+    if (quote.items.len == 0) {
+        try state.push(.{ .bool = false });
+        return;
+    }
 
     _any(state, quote, f) catch |err| {
         try stderr.print(usage, .{err});

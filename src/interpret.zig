@@ -334,7 +334,10 @@ pub const RockCommand = struct {
                         // Tail calls optimized, yay!
                         .command => |cmdName| {
                             // Even if this is the same command name, we should re-fetch in case it's been redefined
-                            const cmd = state.defs.get(cmdName).?;
+                            const cmd = state.defs.get(cmdName) orelse {
+                                try stderr.print("Command undefined: {s}\n", .{cmdName});
+                                return Error.CommandUndefined;
+                            };
                             switch (cmd.action) {
                                 .quote => |nextQuote| {
                                     again = true;
