@@ -30,6 +30,7 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("def", "define a new command", .{ .builtin = def });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
     try machine.define("def?", "return true if a name is defined", .{ .builtin = isDef });
+    try machine.define("usage", "print the usage notes of a given command", .{ .builtin = cmdUsage });
     try machine.define(":", "bind variables", .{ .builtin = colon });
 
     try machine.define("do", "execute a command or quote", .{ .builtin = do });
@@ -237,6 +238,27 @@ pub fn isDef(state: *RockMachine) !void {
     const name = try val.intoString(state);
 
     try state.push(.{ .bool = state.defs.contains(name) });
+}
+
+pub fn cmdUsage(state: *RockMachine) !void {
+    const usage = "USAGE: term usage -> str ({any})\n";
+
+    const val = state.pop() catch |e| {
+        try stderr.print(usage, .{e});
+        return RockError.WrongArguments;
+    };
+
+    const cmdName = try val.intoString(state);
+
+    const cmd = state.defs.get(cmdName) orelse {
+        const err = RockError.CommandUndefined;
+        try stderr.print(usage, .{err});
+        return err;
+    };
+
+    var description = try state.alloc.dupe(u8, cmd.description);
+
+    try state.push(.{ .string = description });
 }
 
 // Variable binding
