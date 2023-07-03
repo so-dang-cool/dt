@@ -1083,10 +1083,14 @@ pub fn rev(state: *RockMachine) !void {
     if (val.isQuote()) {
         const quote = try val.intoQuote(state);
         const len = quote.items.len;
-        var newQuote: Quote = try Quote.initCapacity(state.alloc, len);
+
+        var newItems = try state.alloc.alloc(RockVal, len);
         for (quote.items, 0..) |v, i| {
-            try newQuote.insert(len - i - 1, v);
+            newItems[len - i - 1] = v;
         }
+
+        var newQuote = Quote.fromOwnedSlice(state.alloc, newItems);
+
         try state.push(.{ .quote = newQuote });
         return;
     }
