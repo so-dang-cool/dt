@@ -23,6 +23,7 @@ pub fn defineAll(machine: *RockMachine) !void {
 
     try machine.define("cwd", "current working directory", .{ .builtin = cwd });
     try machine.define("cd", "change directory", .{ .builtin = cd });
+    try machine.define("ls", "list contents of current directory", .{ .builtin = ls });
 
     try machine.define("def", "define a new command", .{ .builtin = def });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
@@ -146,6 +147,22 @@ pub fn cd(state: *RockMachine) !void {
         try stderr.print("Unable to change directory: {any}\n", .{e});
         try state.push(val);
     };
+}
+
+pub fn ls(state: *RockMachine) !void {
+    const theCwd = try std.process.getCwdAlloc(state.alloc);
+    var dir = try std.fs.openIterableDirAbsolute(theCwd, .{});
+    var entries = dir.iterate();
+
+    var quote = Quote.init(state.alloc);
+    while (try entries.next()) |entry| {
+        var name = try state.alloc.dupe(u8, entry.name);
+        try quote.append(.{ .string = name });
+    }
+
+    try state.push(.{ .quote = quote });
+
+    dir.close();
 }
 
 pub fn def(state: *RockMachine) !void {
