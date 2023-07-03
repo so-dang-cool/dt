@@ -1,5 +1,7 @@
 #!/bin/bash
 
-zig build \
-  && exec zig-out/bin/"$(basename "$0")" "$@"
+set -eu
 
+zig build \
+  && echo 'INFO: dt compiled (zig build exited successfully)' \
+  && exec zig-out/bin/"$(basename "$0")" "$@"

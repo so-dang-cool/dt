@@ -2,6 +2,62 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
+const stderr = std.io.getStdErr().writer(); // TODO: Remove
+
+pub const TokenIterator = struct {
+    buf: []const u8,
+    index: usize,
+
+    const Self = @This();
+
+    pub fn next(self: *Self) ?Token {
+        // If the index is out-of-bounds then we are done now and forever
+        if (self.index >= self.buf.len) return null;
+
+        // First, skip any whitespace. Return null if nothing else remains
+        const start = std.mem.indexOfNonePos(u8, self.buf, self.index, " ,\t\r\n") orelse {
+            self.index = self.buf.len;
+            return null;
+        };
+
+        switch (self.buf[start]) {
+            '"' => { // Parse a string
+                var strStart = start + 1;
+                var end = start + 1;
+                var keepLookin = true;
+                while (keepLookin) {
+                    // Out-of-bounds: unterminated string. Return string as slice from start to end of buffer.
+                    if (end >= self.buf.len) {
+                        self.index = self.buf.len;
+                        return .{ .string = self.buf[start..(self.buf.len)] };
+                    }
+
+                    end = std.mem.indexOfPos(u8, self.buf, end, "\"") orelse self.buf.len;
+
+                    if (self.buf[end - 1] != '\\') {
+                        // We found the end!
+                        keepLookin = false;
+                    } else {
+                        // Found a quote, but it was escaped. Search from next character
+                        end += 1;
+                    }
+                }
+                self.index = end + 1;
+                return .{ .string = self.buf[strStart..end] };
+            },
+            '#' => { // Ignore a comment (by recursively returning the next non-comment token)
+                self.index = std.mem.indexOfAnyPos(u8, self.buf, start, "\r\n") orelse self.buf.len;
+                return self.next();
+            },
+            else => { // Parse a token
+                var end = std.mem.indexOfAnyPos(u8, self.buf, start, " ,\t\r\n") orelse self.buf.len;
+                self.index = end + 1;
+                return Token.parseOneToken(self.buf[start..end]);
+            },
+        }
+    }
+};
+
 pub const Token = union(enum) {
     left_bracket: void,
     right_bracket: void,
@@ -13,41 +69,14 @@ pub const Token = union(enum) {
     string: []const u8,
     none: void,
 
-    pub fn parseAlloc(alloc: Allocator, raw: []const u8) !ArrayList(Token) {
-        var tokens = ArrayList(Token).init(alloc);
-
-        var stringSplits = std.mem.splitScalar(u8, raw, '"');
-        var inString = false;
-        while (stringSplits.next()) |contents| : (inString = !inString) {
-            if (inString) {
-                if (std.mem.containsAtLeast(u8, contents, 1, "\\n")) {
-                    const rsize = std.mem.replacementSize(u8, contents, "\\n", "\n");
-                    var unescaped = try alloc.alloc(u8, rsize);
-                    _ = std.mem.replace(u8, contents, "\\n", "\n", unescaped);
-                    try tokens.append(.{ .string = unescaped });
-                } else {
-                    try tokens.append(.{ .string = contents });
-                }
-            } else {
-                var lineSplits = std.mem.tokenize(u8, contents, "\r\n");
-
-                while (lineSplits.next()) |line| {
-                    var wsSplits = std.mem.tokenize(u8, line, " \t,");
-
-                    while (wsSplits.next()) |rawTok| {
-                        // Comments end a line
-                        if (rawTok[0] == '#') break;
-
-                        try tokens.append(parse(rawTok));
-                    }
-                }
-            }
-        }
-
-        return tokens;
+    pub fn parse(code: []const u8) TokenIterator {
+        return .{
+            .buf = code,
+            .index = 0,
+        };
     }
 
-    fn parse(part: []const u8) Token {
+    fn parseOneToken(part: []const u8) Token {
         if (std.mem.eql(u8, part, "[")) {
             return .left_bracket;
         }
@@ -73,6 +102,28 @@ pub const Token = union(enum) {
 
         return .{ .term = part };
     }
+
+    // fn parseString(alloc: Allocator, contents: []const u8) Token {
+    //     var hasNewlines = std.mem.containsAtLeast(u8, contents, 1, "\\n");
+    //     var hasQuotes = std.mem.containsAtLeast(u8, contents, 1, "\\");
+
+    //     // Contains no escapes, just exit
+    //     if (!hasNewlines and !hasQuotes) return .{ .string = contents };
+
+    //     // Contains escapes, handle them
+
+    //     // Newlines
+    //     var rsize = std.mem.replacementSize(u8, contents, "\\n", "\n");
+    //     var unescapedNewlines = try alloc.alloc(u8, rsize);
+    //     _ = std.mem.replace(u8, contents, "\\n", "\n", unescapedNewlines);
+
+    //     // Quotes
+    //     rsize = std.mem.replacementSize(u8, contents, "\\\"", "\"");
+    //     var unescaped = try alloc.alloc(u8, rsize);
+    //     _ = std.mem.replace(u8, contents, "\\\"", "\"", unescaped);
+
+    //     return .{ .string = unescaped };
+    // }
 
     fn assertEql(self: Token, other: Token) void {
         switch (self) {
@@ -102,7 +153,7 @@ test "parse hello.rock" {
     try expected.append(Token{ .term = "def" });
 
     const helloFile = @embedFile("test/hello.rock");
-    const tokens = try Token.parseAlloc(std.testing.allocator, helloFile);
+    const tokens = try Token.parse(std.testing.allocator, helloFile);
     defer tokens.deinit();
 
     std.debug.assert(tokens.items.len == 6);

@@ -1,3 +1,18 @@
+### Flags and such ###
+
+# [ [ action flag ] :
+#   get-args [ flag eq? ] any?
+#   action swap ? ] \handle-flag def
+
+# [ "dt " p version pl ] \print-version def
+# # [ [ print-version 0 exit ]   "--version" handle-flag   ? ] \--version def
+
+# [ "Good luck, this help hasn't been finished yet." pl   0 exit ] \print-help def
+# [ [ print-help 0 exit ]   "--help" handle-flag ] \--help def
+
+[ get-args deq   swap drop   unlines eval ] \run-args def
+
+
 ### REPL things ###
 
 [ "» " p   get-line eval   repl ] \repl def
@@ -5,13 +20,6 @@
 
 
 ### PIPE things ###
-
-[ [ "dt " p version pl ]   get-args [ "--version" eq? ] any? ? ] \FLAG:version def
-[ get-args   [ "--version" eq? not ] filter ] \stripped-args def
-
-[ FLAG:version
-    stripped-args deq   swap drop   unlines eval
-] \run-args def
 
 [ get-lines   run-args ] \pipe-thru-args def
 
@@ -47,9 +55,9 @@
 
 ### Control flow ###
 
-[ [ cmd n ] :
-    0 n gt?   \continue :
-    [ cmd do   cmd n 1 - times ] continue ?
+[ [ cmd _n ] :
+    0 _n gt?   \continue :
+    [ cmd do   cmd _n 1 - times ] continue ?
 ] \times def
 
 

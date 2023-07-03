@@ -190,6 +190,7 @@ pub fn colon(state: *RockMachine) !void {
     // Multiple terms
 
     var terms = (try termVal.intoQuote(state)).items;
+
     var vals = try state.alloc.alloc(RockVal, terms.len);
 
     var i = terms.len;
@@ -296,8 +297,8 @@ pub fn eval(state: *RockMachine) !void {
     var val = try state.pop();
     var code = try val.intoString(state);
 
-    const tokens = try Token.parseAlloc(state.alloc, code);
-    for (tokens.items) |tok| {
+    var tokens = Token.parse(code);
+    while (tokens.next()) |tok| {
         try state.interpret(tok);
     }
 }

@@ -18,19 +18,17 @@ const builtins = @import("builtins.zig");
 
 pub const version = "0.1.1";
 
-const rockStdlib = @embedFile("stdlib.rock");
+const stdlib = @embedFile("stdlib.dt");
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
     var machine = try RockMachine.init(arena.allocator());
+
     try builtins.defineAll(&machine);
 
-    const toks = try Token.parseAlloc(arena.allocator(), rockStdlib);
-    defer toks.deinit();
-    for (toks.items) |token| {
-        try machine.interpret(token);
-    }
+    var toks = Token.parse(stdlib);
+    while (toks.next()) |token| try machine.interpret(token);
 
     if (std.io.getStdIn().isTty()) {
         // REPL
@@ -38,8 +36,9 @@ pub fn main() !void {
             try stderr.print("RIP: {any}\n", .{e});
             std.os.exit(1);
         };
+
         while (true) machine.interpret(.{ .term = "repl" }) catch |e| if (e == error.EndOfStream) {
-            try stderr.print("\nBye\n", .{});
+            try stderr.print("\nSee you next time.\n", .{});
             return;
         };
     } else {
