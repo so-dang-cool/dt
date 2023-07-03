@@ -25,6 +25,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("cd", "change directory", .{ .builtin = cd });
     try machine.define("ls", "list contents of current directory", .{ .builtin = ls });
 
+    try machine.define("exec", "execute a child process. When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false", .{ .builtin = exec });
+
     try machine.define("def", "define a new command", .{ .builtin = def });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
     try machine.define("def?", "return true if a name is defined", .{ .builtin = isDef });
@@ -163,6 +165,36 @@ pub fn ls(state: *RockMachine) !void {
     try state.push(.{ .quote = quote });
 
     dir.close();
+}
+
+pub fn exec(state: *RockMachine) !void {
+    const val = try state.pop();
+    const childProcess = try val.intoString(state);
+    var args = std.mem.splitAny(u8, childProcess, " \t");
+    var argv = ArrayList([]const u8).init(state.alloc);
+
+    while (args.next()) |arg| try argv.append(arg);
+
+    var result = std.process.Child.exec(.{
+        .allocator = state.alloc,
+        .argv = try argv.toOwnedSlice(),
+    }) catch |e| {
+        try stderr.print("Unable to launch child process: {any}\n", .{e});
+        try state.push(.{ .bool = false });
+        return;
+    };
+
+    switch (result.term) {
+        .Exited => |code| if (code == 0) {
+            const trimmed = std.mem.trimRight(u8, result.stdout, "\r\n");
+            try state.push(.{ .string = trimmed });
+            return;
+        },
+        else => {
+            try stderr.print("{s}", .{result.stderr});
+            try state.push(.{ .bool = false });
+        },
+    }
 }
 
 pub fn def(state: *RockMachine) !void {
