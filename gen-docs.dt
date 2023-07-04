@@ -1,9 +1,9 @@
-#!/usr/bin/env -S dtsh run
+#!/usr/bin/env dt
 
 # Don't expose any commands defined later in the file.
-defs \FROZEN_DEFS =>
+defs \FROZEN_DEFS :
 
-[quote [do] doin] \eval ->
+[quote \do doin] \eval def
 
 # TODO: Why don't multiline strings work?
 [ "<!doctype html>"
@@ -25,29 +25,20 @@ defs \FROZEN_DEFS =>
       "<table id='stdlib'>"
 ] eval
 
-[ describe \text ->
-    [
-        [text "FIXME" contains?] ["<i>" text "</i>"]
-        [otherwise]              [text]
-    ] ?
-] \fmt-describe def
-
 [[cmd]:
   "<tr>"
     "<td class='lighter'>" cmd "</td>"
-    "<td>" cmd fmt-describe "</td>"
+    "<td>" cmd usage "</td>"
   "</tr>"
 ] \cmd-row def
 
 FROZEN_DEFS
-  ["rail" starts-with? not] filter
-  [quote \cmd-row doin
-    "" join
-  ] map
+  [\cmd-row doin   "" join] map
   "\n  " join
   push
 
-[ "</table></main>"
+[ "</table>"
+  "</main>"
   "</div>"
   "</body>"
   "</html>"
