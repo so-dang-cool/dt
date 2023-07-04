@@ -432,11 +432,11 @@ pub fn add(state: *RockMachine) !void {
         return;
     }
 
-    if (ns[0].isF64() or ns[1].isF64()) {
-        const a = try ns[0].intoF64();
-        const b = try ns[1].intoF64();
+    if (ns[0].isFloat() or ns[1].isFloat()) {
+        const a = try ns[0].intoFloat();
+        const b = try ns[1].intoFloat();
 
-        try state.push(.{ .f64 = a + b });
+        try state.push(.{ .float = a + b });
         return;
     }
 
@@ -469,11 +469,11 @@ pub fn subtract(state: *RockMachine) !void {
         return;
     }
 
-    if (ns[0].isF64() or ns[1].isF64()) {
-        const a = try ns[0].intoF64();
-        const b = try ns[1].intoF64();
+    if (ns[0].isFloat() or ns[1].isFloat()) {
+        const a = try ns[0].intoFloat();
+        const b = try ns[1].intoFloat();
 
-        try state.push(.{ .f64 = a - b });
+        try state.push(.{ .float = a - b });
         return;
     }
 
@@ -506,11 +506,11 @@ pub fn multiply(state: *RockMachine) !void {
         return;
     }
 
-    if (ns[0].isF64() or ns[1].isF64()) {
-        const a = try ns[0].intoF64();
-        const b = try ns[1].intoF64();
+    if (ns[0].isFloat() or ns[1].isFloat()) {
+        const a = try ns[0].intoFloat();
+        const b = try ns[1].intoFloat();
 
-        try state.push(.{ .f64 = a * b });
+        try state.push(.{ .float = a * b });
         return;
     }
 
@@ -541,9 +541,9 @@ pub fn divide(state: *RockMachine) !void {
         return;
     }
 
-    if (ns[0].isF64() or ns[1].isF64()) {
-        const a = try ns[0].intoF64();
-        const b = try ns[1].intoF64();
+    if (ns[0].isFloat() or ns[1].isFloat()) {
+        const a = try ns[0].intoFloat();
+        const b = try ns[1].intoFloat();
 
         if (b == 0) {
             try state.pushN(2, ns);
@@ -551,7 +551,7 @@ pub fn divide(state: *RockMachine) !void {
             return RockError.DivisionByZero;
         }
 
-        try state.push(.{ .f64 = a / b });
+        try state.push(.{ .float = a / b });
         return;
     }
 
@@ -576,11 +576,11 @@ pub fn modulo(state: *RockMachine) !void {
         return;
     }
 
-    if (ns[0].isF64() or ns[1].isF64()) {
-        const a = try ns[0].intoF64();
-        const b = try ns[1].intoF64();
+    if (ns[0].isFloat() or ns[1].isFloat()) {
+        const a = try ns[0].intoFloat();
+        const b = try ns[1].intoFloat();
 
-        try state.push(.{ .f64 = @mod(a, b) });
+        try state.push(.{ .float = @mod(a, b) });
         return;
     }
 
@@ -601,10 +601,10 @@ pub fn abs(state: *RockMachine) !void {
         return;
     }
 
-    if (n.isF64()) {
-        const a = try n.intoF64();
+    if (n.isFloat()) {
+        const a = try n.intoFloat();
 
-        try state.push(.{ .f64 = std.math.fabs(a) });
+        try state.push(.{ .float = std.math.fabs(a) });
         return;
     }
 
@@ -627,9 +627,9 @@ pub fn eq(state: *RockMachine) !void {
         return;
     }
 
-    if ((vals[0].isInt() or vals[0].isF64()) and (vals[1].isInt() or vals[1].isF64())) {
-        const a = try vals[0].intoF64();
-        const b = try vals[1].intoF64();
+    if ((vals[0].isInt() or vals[0].isFloat()) and (vals[1].isInt() or vals[1].isFloat())) {
+        const a = try vals[0].intoFloat();
+        const b = try vals[1].intoFloat();
 
         try state.push(.{ .bool = a == b });
         return;
@@ -697,13 +697,13 @@ pub fn greaterThan(state: *RockMachine) !void {
         return;
     }
 
-    const a = vals[0].intoF64() catch {
+    const a = vals[0].intoFloat() catch {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
     };
 
-    const b = vals[1].intoF64() catch {
+    const b = vals[1].intoFloat() catch {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
@@ -725,13 +725,13 @@ pub fn greaterThanEq(state: *RockMachine) !void {
         return;
     }
 
-    const a = vals[0].intoF64() catch {
+    const a = vals[0].intoFloat() catch {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
     };
 
-    const b = vals[1].intoF64() catch {
+    const b = vals[1].intoFloat() catch {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
@@ -753,13 +753,13 @@ pub fn lessThan(state: *RockMachine) !void {
         return;
     }
 
-    const a = vals[0].intoF64() catch {
+    const a = vals[0].intoFloat() catch {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
     };
 
-    const b = vals[1].intoF64() catch {
+    const b = vals[1].intoFloat() catch {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
@@ -781,13 +781,13 @@ pub fn lessThanEq(state: *RockMachine) !void {
         return;
     }
 
-    const a = vals[0].intoF64() catch {
+    const a = vals[0].intoFloat() catch {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
     };
 
-    const b = vals[1].intoF64() catch {
+    const b = vals[1].intoFloat() catch {
         try state.pushN(2, vals);
         try stderr.print(usage, .{RockError.WrongArguments});
         return RockError.WrongArguments;
@@ -1278,8 +1278,8 @@ pub fn toInt(state: *RockMachine) !void {
 
 pub fn toFloat(state: *RockMachine) !void {
     const val = try state.pop();
-    const f = try val.intoF64();
-    try state.push(.{ .f64 = f });
+    const f = try val.intoFloat();
+    try state.push(.{ .float = f });
 }
 
 pub fn toString(state: *RockMachine) !void {

@@ -71,7 +71,7 @@ pub const Token = union(enum) {
     right_bracket: void,
     bool: bool,
     int: i64,
-    f64: f64,
+    float: f64,
     term: []const u8,
     deferred_term: []const u8,
     string: []const u8,
@@ -105,7 +105,7 @@ pub const Token = union(enum) {
             return .{ .int = i };
         } else |_| {}
         if (std.fmt.parseFloat(f64, part)) |f| {
-            return .{ .f64 = f };
+            return .{ .float = f };
         } else |_| {}
 
         return .{ .term = part };
@@ -116,8 +116,8 @@ pub const Token = union(enum) {
             .left_bracket => std.debug.assert(other == Token.left_bracket),
             .right_bracket => std.debug.assert(other == Token.right_bracket),
             .bool => |b| std.debug.assert(other.bool == b),
-            .i64 => |i| std.debug.assert(other.i64 == i),
-            .f64 => |f| std.debug.assert(other.f64 == f),
+            .int => |i| std.debug.assert(other.int == i),
+            .float => |f| std.debug.assert(other.float == f),
             .string => |s| std.debug.assert(std.mem.eql(u8, other.string, s)),
             .term => |t| std.debug.assert(std.mem.eql(u8, other.term, t)),
             .deferred_term => |t| std.debug.assert(std.mem.eql(u8, other.deferred_term, t)),
