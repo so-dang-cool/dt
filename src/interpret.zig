@@ -10,7 +10,9 @@ const stderr = std.io.getStdErr().writer();
 const tokens = @import("tokens.zig");
 const Token = tokens.Token;
 
-const RockString = []const u8;
+const string = @import("string.zig");
+const String = string.String;
+
 pub const Dictionary = StringHashMap(RockCommand);
 pub const Quote = ArrayList(RockVal);
 
@@ -80,7 +82,7 @@ pub const RockMachine = struct {
         }
     }
 
-    pub fn handleCmd(self: *RockMachine, cmdName: RockString) !void {
+    pub fn handleCmd(self: *RockMachine, cmdName: String) !void {
         if (self.depth > 0) {
             try self.push(RockVal{ .command = cmdName });
             return;
@@ -105,7 +107,7 @@ pub const RockMachine = struct {
         return newMachine;
     }
 
-    pub fn define(self: *RockMachine, name: RockString, description: RockString, action: RockAction) !void {
+    pub fn define(self: *RockMachine, name: String, description: String, action: RockAction) !void {
         const cmd = RockCommand{ .name = name, .description = description, .action = action };
         try self.defs.put(name, cmd);
     }
@@ -173,10 +175,10 @@ pub const RockVal = union(enum) {
     bool: bool,
     int: i64, // TODO: BigInteger?
     float: f64, // TODO: BigDecimal? Or floating point forever? Maybe decimal is more useful?
-    command: RockString,
-    deferred_command: RockString,
+    command: String,
+    deferred_command: String,
     quote: Quote,
-    string: RockString,
+    string: String,
 
     pub fn isBool(self: RockVal) bool {
         return switch (self) {
@@ -256,7 +258,7 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn intoString(self: RockVal, state: *RockMachine) !RockString {
+    pub fn intoString(self: RockVal, state: *RockMachine) !String {
         return switch (self) {
             .command => |cmd| cmd,
 
@@ -291,7 +293,7 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn print(self: RockVal) !void {
+    pub fn print(self: RockVal, allocator: Allocator) !void {
         switch (self) {
             .bool => |b| try stdout.print("{}", .{b}),
             .int => |i| try stdout.print("{}", .{i}),
@@ -301,19 +303,22 @@ pub const RockVal = union(enum) {
             .quote => |q| {
                 try stdout.print("[ ", .{});
                 for (q.items) |val| {
-                    try val.print();
+                    try val.print(allocator);
                     try stdout.print(" ", .{});
                 }
                 try stdout.print("]", .{});
             },
-            .string => |s| try stdout.print("\"{s}\"", .{s}),
+            .string => |s| {
+                const escaped = try string.escape(allocator, s);
+                try stdout.print("\"{s}\"", .{escaped});
+            },
         }
     }
 };
 
 pub const RockCommand = struct {
-    name: RockString,
-    description: RockString,
+    name: String,
+    description: String,
     action: RockAction,
 
     fn run(self: RockCommand, state: *RockMachine) anyerror!void {

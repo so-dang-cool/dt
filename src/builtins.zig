@@ -9,6 +9,7 @@ const stderr = std.io.getStdErr().writer();
 const Token = @import("tokens.zig").Token;
 
 const main = @import("main.zig");
+const string = @import("string.zig");
 
 const interpret = @import("interpret.zig");
 const Quote = interpret.Quote;
@@ -24,6 +25,8 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("cwd", "current working directory", .{ .builtin = cwd });
     try machine.define("cd", "change directory", .{ .builtin = cd });
     try machine.define("ls", "list contents of current directory", .{ .builtin = ls });
+    try machine.define("readf", "read a file as a string", .{ .builtin = readf });
+    try machine.define("writef", "write a string as a file", .{ .builtin = writef });
 
     try machine.define("exec", "execute a child process. When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false", .{ .builtin = exec });
 
@@ -107,7 +110,7 @@ pub fn quit(state: *RockMachine) !void {
     if (ctx.items.len > 0) {
         try stderr.print("Warning: Exited with unused values: [ ", .{});
         for (ctx.items) |item| {
-            try item.print();
+            try item.print(state.alloc);
             try stderr.print(" ", .{});
         }
         try stderr.print("] \n", .{});
@@ -170,6 +173,43 @@ pub fn ls(state: *RockMachine) !void {
     try state.push(.{ .quote = quote });
 
     dir.close();
+}
+
+pub fn readf(state: *RockMachine) !void {
+    const val = try state.pop();
+    const filename = val.intoString(state) catch |e| {
+        try state.push(val);
+        return e;
+    };
+
+    // We get a Dir from CWD so we can resolve relative paths
+    const theCwdPath = try std.process.getCwdAlloc(state.alloc);
+    var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
+
+    var file = try theCwd.openFile(filename, .{ .mode = .read_only });
+    var contents = try file.readToEndAlloc(state.alloc, std.math.pow(usize, 2, 16));
+
+    try state.push(.{ .string = contents });
+    file.close();
+}
+
+pub fn writef(state: *RockMachine) !void {
+    const vals = try state.popN(2);
+    const filename = vals[1].intoString(state) catch |e| {
+        try state.pushN(2, vals);
+        return e;
+    };
+    const contents = vals[0].intoString(state) catch |e| {
+        try state.pushN(2, vals);
+        return e;
+    };
+
+    // We get a Dir from CWD so we can resolve relative paths
+    const theCwdPath = try std.process.getCwdAlloc(state.alloc);
+    var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
+
+    try theCwd.writeFile(filename, contents);
+    theCwd.close();
 }
 
 pub fn exec(state: *RockMachine) !void {
@@ -342,7 +382,7 @@ pub fn p(state: *RockMachine) !void {
             try stdout.print("{s}", .{unescaped});
         },
         else => {
-            try val.print();
+            try val.print(state.alloc);
         },
     }
 }
@@ -358,7 +398,7 @@ pub fn dotS(state: *RockMachine) !void {
     var top = state.nest.first orelse return;
 
     for (top.data.items) |val| {
-        try val.print();
+        try val.print(state.alloc);
         try stdout.print(" ", .{});
     }
 
@@ -368,8 +408,9 @@ pub fn dotS(state: *RockMachine) !void {
 pub fn getLine(state: *RockMachine) !void {
     var line = ArrayList(u8).init(state.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
+    const unescaped = try string.unescape(state.alloc, line.items);
 
-    try state.push(.{ .string = line.items });
+    try state.push(.{ .string = unescaped });
 }
 
 pub fn getLines(state: *RockMachine) !void {
@@ -402,8 +443,8 @@ pub fn eval(state: *RockMachine) !void {
     var val = try state.pop();
     var code = try val.intoString(state);
 
-    var tokens = Token.parse(code);
-    while (tokens.next()) |tok| {
+    var tokens = Token.parse(state.alloc, code);
+    while (try tokens.next()) |tok| {
         try state.interpret(tok);
     }
 }
@@ -1188,8 +1229,8 @@ pub fn len(state: *RockMachine) !void {
     }
 
     if (val.isString()) {
-        const string = try val.intoString(state);
-        const length: i64 = @intCast(string.len);
+        const s = try val.intoString(state);
+        const length: i64 = @intCast(s.len);
         try state.push(.{ .int = length });
         return;
     }

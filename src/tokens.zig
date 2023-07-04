@@ -2,15 +2,18 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
+const string = @import("string.zig");
+
 const stderr = std.io.getStdErr().writer(); // TODO: Remove
 
 pub const TokenIterator = struct {
+    allocator: Allocator,
     buf: []const u8,
     index: usize,
 
     const Self = @This();
 
-    pub fn next(self: *Self) ?Token {
+    pub fn next(self: *Self) !?Token {
         // If the index is out-of-bounds then we are done now and forever
         if (self.index >= self.buf.len) return null;
 
@@ -43,7 +46,8 @@ pub const TokenIterator = struct {
                     }
                 }
                 self.index = end + 1;
-                return .{ .string = self.buf[strStart..end] };
+                const unescaped = try string.unescape(self.allocator, self.buf[strStart..end]);
+                return .{ .string = unescaped };
             },
             '#' => { // Ignore a comment (by recursively returning the next non-comment token)
                 self.index = std.mem.indexOfAnyPos(u8, self.buf, start, "\r\n") orelse self.buf.len;
@@ -77,8 +81,9 @@ pub const Token = union(enum) {
     string: []const u8,
     none: void,
 
-    pub fn parse(code: []const u8) TokenIterator {
+    pub fn parse(allocator: Allocator, code: []const u8) TokenIterator {
         return .{
+            .allocator = allocator,
             .buf = code,
             .index = 0,
         };

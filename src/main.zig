@@ -29,17 +29,16 @@ pub fn main() !void {
     try builtins.defineAll(&machine);
 
     // TODO: Can this be done at comptime somehow?
-    var toks = Token.parse(stdlib);
-    while (toks.next()) |token| try machine.interpret(token);
+    var toks = Token.parse(arena.allocator(), stdlib);
+    while (try toks.next()) |token| try machine.interpret(token);
 
     if (!std.io.getStdIn().isTty()) {
         return handlePipedStdin(&machine);
     } else if (!std.io.getStdOut().isTty()) {
         return handlePipedStdoutOnly(&machine);
     } else if (try readShebangFile(arena.allocator())) |fileContents| {
-        toks = Token.parse(fileContents);
-        while (toks.next()) |token| try machine.interpret(token);
-        return;
+        toks = Token.parse(arena.allocator(), fileContents);
+        return while (try toks.next()) |token| try machine.interpret(token);
     }
 
     return readEvalPrintLoop(&machine);
@@ -67,9 +66,12 @@ fn readEvalPrintLoop(machine: *RockMachine) !void {
         std.os.exit(1);
     };
 
-    while (true) machine.interpret(.{ .term = "main-repl" }) catch |e| if (e == error.EndOfStream) {
-        try stderr.print("\nSee you next time.\n", .{});
-        return;
+    while (true) machine.interpret(.{ .term = "main-repl" }) catch |e| switch (e) {
+        error.EndOfStream => {
+            try stderr.print("\nSee you next time.\n", .{});
+            return;
+        },
+        else => try stderr.print("Recovering from: {any}\n", .{e}),
     };
 }
 
@@ -77,8 +79,12 @@ fn readShebangFile(allocator: Allocator) !?[]const u8 {
     var args = std.process.args();
     _ = args.skip();
 
-    if (args.next()) |arg| {
-        const file = std.fs.openFileAbsolute(arg, .{}) catch return null;
+    if (args.next()) |maybeFilepath| {
+        // We get a Dir from CWD so we can resolve relative paths
+        const theCwdPath = try std.process.getCwdAlloc(allocator);
+        var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
+
+        const file = theCwd.openFile(maybeFilepath, .{}) catch return null;
         defer file.close();
 
         const contents = try file.readToEndAlloc(allocator, std.math.pow(usize, 2, 16));
