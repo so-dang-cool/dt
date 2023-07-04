@@ -9,6 +9,10 @@ help() {
     >&2 echo "USAGE: $(basename "$0") [build, test, ...]"
 }
 
+clean() {
+    rm -r ./target ./zig-cache ./zig-out
+}
+
 build() {
     zig build
 }
@@ -19,7 +23,39 @@ test() {
 }
 
 release() {
-    zig build -Doptimize=ReleaseSmall
+    local triples=(
+        aarch64-linux-gnu
+        aarch64-linux-musleabi
+        arm-linux-musleabi
+        arm-linux-musleabihf
+        x86-linux-gnu
+        x86-linux-musl
+        mips64el-linux-gnuabi64
+        mips64el-linux-musl
+        mips64-linux-gnuabi64
+        mips64-linux-musl
+        mipsel-linux-gnu
+        mipsel-linux-musl
+        mips-linux-gnu
+        mips-linux-musl
+        powerpc64le-linux-gnu
+        powerpc64le-linux-musl
+        powerpc-linux-gnu
+        powerpc-linux-musl
+        riscv64-linux-gnu
+        riscv64-linux-musl
+        # wasm32-wasi-musl TODO
+        x86_64-linux-gnu
+        x86_64-linux-musl
+    )
+
+    for triple in "${triples[@]}"; do
+        >&2 echo "Cross-compiling for $triple"
+        local out="$project_root"/target/"$triple"
+        mkdir -p "$out"
+
+        zig build -Doptimize=ReleaseSmall -Dtarget="$triple" -p "$out"
+    done
 }
 
 for cmd in "$@"; do

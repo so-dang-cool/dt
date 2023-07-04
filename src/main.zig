@@ -44,8 +44,6 @@ pub fn main() !void {
         };
     } else {
         // === REPL ===
-        try stderr.print("REPL!\n", .{});
-
         machine.interpret(.{ .term = "run-args" }) catch |e| {
             try stderr.print("RIP: {any}\n", .{e});
             std.os.exit(1);

@@ -3,5 +3,5 @@
 set -eu
 
 zig build \
-  && echo 'INFO: dt compiled (zig build exited successfully)' \
+  && >&2 echo 'INFO: dt compiled (zig build exited successfully)' \
   && exec zig-out/bin/"$(basename "$0")" "$@"
