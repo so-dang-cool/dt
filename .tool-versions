@@ -1,1 +1,3 @@
-zig-impl/.tool-versions
+# Need Zig 0.11.*
+zig master
+

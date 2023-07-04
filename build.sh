@@ -6,7 +6,7 @@ cd "$(dirname "$0")" || exit 1
 project_root="$(pwd)"
 
 compile_zig() {
-    cd "$project_root"/zig-impl || exit 1
+    cd "$project_root" || exit 1
     zig build
 }
 

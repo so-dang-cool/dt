@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Write;
 use std::process::{Command, ExitStatus, Output, Stdio};
 
-const DT_PATH: &str = "../zig-impl/zig-out/bin/dt";
+const DT_PATH: &str = "../zig-out/bin/dt";
 
 #[derive(Debug)]
 #[allow(dead_code)]
