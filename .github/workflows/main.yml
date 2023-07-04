@@ -1,0 +1,21 @@
+name: compile
+
+on:
+  push:
+    branches:
+      - core
+  pull_request:
+    branches:
+      - core
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2.1.0
+      - name: Build and Test
+        run: ./build build test release
+      - name: Cross Compile
+        run: ./build cross-release
