@@ -16,7 +16,7 @@ const RockMachine = interpret.RockMachine;
 
 const builtins = @import("builtins.zig");
 
-pub const version = "0.1.1";
+pub const version = "0.8.0";
 
 const stdlib = @embedFile("stdlib.dt");
 
