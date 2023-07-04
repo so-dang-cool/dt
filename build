@@ -18,6 +18,10 @@ test() {
     cargo test
 }
 
+release() {
+    zig build -Doptimize=ReleaseSmall
+}
+
 for cmd in "$@"; do
     cd "$project_root" || exit 1
     eval "$cmd"

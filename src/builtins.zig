@@ -1005,15 +1005,13 @@ fn _doin(state: *RockMachine, quote: Quote, f: RockVal) !void {
 pub fn map(state: *RockMachine) !void {
     const usage = "USAGE: [as] (a->b) map -> [bs] ({any})\n";
 
-    const vals = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
-    };
+    const vals = try state.popN(2);
 
     const quote = try vals[0].intoQuote(state);
     const f = vals[1];
 
     _map(state, quote, f) catch |err| {
+        if (err == error.BrokenPipe) return err;
         try stderr.print(usage, .{err});
         try state.pushN(2, vals);
     };

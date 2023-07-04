@@ -30,8 +30,22 @@ pub fn main() !void {
     var toks = Token.parse(stdlib);
     while (toks.next()) |token| try machine.interpret(token);
 
-    if (std.io.getStdIn().isTty()) {
-        // REPL
+    if (!std.io.getStdIn().isTty()) {
+        // === PIPED IN ===
+        machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
+            if (e == error.BrokenPipe) return;
+            try stderr.print("RIP: {any}\n", .{e});
+        };
+    } else if (!std.io.getStdOut().isTty()) {
+        // === PIPED OUT ===
+        machine.interpret(.{ .term = "run-args" }) catch |e| {
+            if (e == error.BrokenPipe) return;
+            try stderr.print("RIP: {any}\n", .{e});
+        };
+    } else {
+        // === REPL ===
+        try stderr.print("REPL!\n", .{});
+
         machine.interpret(.{ .term = "run-args" }) catch |e| {
             try stderr.print("RIP: {any}\n", .{e});
             std.os.exit(1);
@@ -40,11 +54,6 @@ pub fn main() !void {
         while (true) machine.interpret(.{ .term = "main-repl" }) catch |e| if (e == error.EndOfStream) {
             try stderr.print("\nSee you next time.\n", .{});
             return;
-        };
-    } else {
-        // PIPE
-        machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
-            try stderr.print("RIP: {any}\n", .{e});
         };
     }
 }
