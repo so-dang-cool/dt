@@ -49,9 +49,17 @@ pub const TokenIterator = struct {
                 self.index = std.mem.indexOfAnyPos(u8, self.buf, start, "\r\n") orelse self.buf.len;
                 return self.next();
             },
+            '[' => {
+                self.index = start + 1;
+                return .left_bracket;
+            },
+            ']' => {
+                self.index = start + 1;
+                return .right_bracket;
+            },
             else => { // Parse a token
-                var end = std.mem.indexOfAnyPos(u8, self.buf, start, " ,\t\r\n") orelse self.buf.len;
-                self.index = end + 1;
+                var end = std.mem.indexOfAnyPos(u8, self.buf, start, "[] ,\t\r\n") orelse self.buf.len;
+                self.index = end;
                 return Token.parseOneToken(self.buf[start..end]);
             },
         }

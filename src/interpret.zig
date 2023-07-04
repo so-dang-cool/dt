@@ -291,7 +291,7 @@ pub const RockVal = union(enum) {
         switch (self) {
             .bool => |b| try stdout.print("{}", .{b}),
             .i64 => |i| try stdout.print("{}", .{i}),
-            .f64 => |f| try stdout.print("{}", .{f}),
+            .f64 => |f| try stdout.print("{d}", .{f}),
             .command => |cmd| try stdout.print("{s}", .{cmd}),
             .deferred_command => |cmd| try stdout.print("\\{s}", .{cmd}),
             .quote => |q| {

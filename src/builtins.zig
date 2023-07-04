@@ -27,12 +27,13 @@ pub fn defineAll(machine: *RockMachine) !void {
 
     try machine.define("exec", "execute a child process. When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false", .{ .builtin = exec });
 
-    try machine.define("def", "define a new command", .{ .builtin = def });
+    try machine.define("def!", "define a new command", .{ .builtin = def });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
     try machine.define("def?", "return true if a name is defined", .{ .builtin = isDef });
     try machine.define("usage", "print the usage notes of a given command", .{ .builtin = cmdUsage });
     try machine.define(":", "bind variables", .{ .builtin = colon });
 
+    try machine.define("do!", "execute a command or quote", .{ .builtin = doBang });
     try machine.define("do", "execute a command or quote", .{ .builtin = do });
     try machine.define("doin", "execute a command or quote in a previous quote", .{ .builtin = doin });
     try machine.define("?", "consumes a command/quote and a value and performs it if the value is truthy", .{ .builtin = opt });
@@ -80,10 +81,13 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
     try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
     try machine.define("any?", "return true if any value in a quote passes a predicate", .{ .builtin = any });
+    try machine.define("len", "the length of a quote or string", .{ .builtin = len });
 
     try machine.define("...", "expand a quote", .{ .builtin = ellipsis });
     try machine.define("rev", "reverse a quote or string", .{ .builtin = rev });
+    try machine.define("quote", "quote a value", .{ .builtin = quoteVal });
     try machine.define("quote-all", "quote all current context", .{ .builtin = quoteAll });
+    try machine.define("concat", "concatenate two quotes. Values are coerced into quotes. (For String concatenation, see join)", .{ .builtin = concat });
     try machine.define("push", "move an item into a quote", .{ .builtin = push });
     try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = pop });
     try machine.define("enq", "move an item into the first position of a quote", .{ .builtin = enq });
@@ -366,6 +370,7 @@ pub fn getLine(state: *RockMachine) !void {
 
 pub fn getLines(state: *RockMachine) !void {
     var lines = Quote.init(state.alloc);
+
     while (true) {
         getLine(state) catch |err| switch (err) {
             error.EndOfStream => break,
@@ -622,7 +627,7 @@ pub fn eq(state: *RockMachine) !void {
         return;
     }
 
-    if (vals[0].isF64() and vals[1].isF64()) {
+    if ((vals[0].isI64() or vals[0].isF64()) and (vals[1].isI64() or vals[1].isF64())) {
         const a = try vals[0].intoF64();
         const b = try vals[1].intoF64();
 
@@ -692,21 +697,23 @@ pub fn greaterThan(state: *RockMachine) !void {
         return;
     }
 
-    if (vals[0].isF64() and vals[1].isF64()) {
-        const a = try vals[0].intoF64();
-        const b = try vals[1].intoF64();
+    const a = vals[0].intoF64() catch {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    };
 
-        try state.push(.{ .bool = b > a });
-        return;
-    }
+    const b = vals[1].intoF64() catch {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    };
 
-    try state.pushN(2, vals);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try state.push(.{ .bool = b > a });
 }
 
 pub fn greaterThanEq(state: *RockMachine) !void {
-    const usage = "USAGE: a b gt? -> b>a ({any})\n";
+    const usage = "USAGE: a b gt? -> b>=a ({any})\n";
 
     const vals = try state.popN(2);
 
@@ -718,21 +725,23 @@ pub fn greaterThanEq(state: *RockMachine) !void {
         return;
     }
 
-    if (vals[0].isF64() and vals[1].isF64()) {
-        const a = try vals[0].intoF64();
-        const b = try vals[1].intoF64();
+    const a = vals[0].intoF64() catch {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    };
 
-        try state.push(.{ .bool = b >= a });
-        return;
-    }
+    const b = vals[1].intoF64() catch {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    };
 
-    try state.pushN(2, vals);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try state.push(.{ .bool = b >= a });
 }
 
 pub fn lessThan(state: *RockMachine) !void {
-    const usage = "USAGE: a b lt? -> b>a ({any})\n";
+    const usage = "USAGE: a b lt? -> b<a ({any})\n";
 
     const vals = try state.popN(2);
 
@@ -744,21 +753,23 @@ pub fn lessThan(state: *RockMachine) !void {
         return;
     }
 
-    if (vals[0].isF64() and vals[1].isF64()) {
-        const a = try vals[0].intoF64();
-        const b = try vals[1].intoF64();
+    const a = vals[0].intoF64() catch {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    };
 
-        try state.push(.{ .bool = b < a });
-        return;
-    }
+    const b = vals[1].intoF64() catch {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    };
 
-    try state.pushN(2, vals);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try state.push(.{ .bool = b < a });
 }
 
 pub fn lessThanEq(state: *RockMachine) !void {
-    const usage = "USAGE: a b lte? -> b>a ({any})\n";
+    const usage = "USAGE: a b lte? -> b<=a ({any})\n";
 
     const vals = try state.popN(2);
 
@@ -770,17 +781,19 @@ pub fn lessThanEq(state: *RockMachine) !void {
         return;
     }
 
-    if (vals[0].isF64() and vals[1].isF64()) {
-        const a = try vals[0].intoF64();
-        const b = try vals[1].intoF64();
+    const a = vals[0].intoF64() catch {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    };
 
-        try state.push(.{ .bool = b <= a });
-        return;
-    }
+    const b = vals[1].intoF64() catch {
+        try state.pushN(2, vals);
+        try stderr.print(usage, .{RockError.WrongArguments});
+        return RockError.WrongArguments;
+    };
 
-    try state.pushN(2, vals);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try state.push(.{ .bool = b <= a });
 }
 
 pub fn boolAnd(state: *RockMachine) !void {
@@ -914,8 +927,8 @@ pub fn opt(state: *RockMachine) !void {
     };
 }
 
-pub fn do(state: *RockMachine) !void {
-    const usage = "USAGE: ... term|quote do -> ... ({any})\n";
+pub fn doBang(state: *RockMachine) !void {
+    const usage = "USAGE: ... term|quote do! -> ... ({any})\n";
     _ = usage;
 
     var val = try state.pop();
@@ -930,6 +943,31 @@ pub fn do(state: *RockMachine) !void {
     const quote = try val.intoQuote(state);
 
     for (quote.items) |v| try state.handle(v);
+}
+
+// Same as do! but does not uplevel any definitions
+pub fn do(state: *RockMachine) !void {
+    const usage = "USAGE: ... term|quote do -> ... ({any})\n";
+    _ = usage;
+
+    var val = try state.pop();
+
+    var jail = try state.child();
+    jail.nest = state.nest;
+
+    if (val.isCommand() or val.isDeferredCommand() or val.isString()) {
+        const cmdName = try val.intoString(state);
+
+        try jail.handleCmd(cmdName);
+
+        state.nest = jail.nest;
+        return;
+    }
+
+    const quote = try val.intoQuote(state);
+
+    for (quote.items) |v| try jail.handle(v);
+    state.nest = jail.nest;
 }
 
 pub fn doin(state: *RockMachine) !void {
@@ -1137,6 +1175,27 @@ pub fn deq(state: *RockMachine) !void {
     try state.push(val);
 }
 
+pub fn len(state: *RockMachine) !void {
+    const val = try state.pop();
+
+    if (val.isQuote()) {
+        const quote = try val.intoQuote(state);
+        const length: i64 = @intCast(quote.items.len);
+        try state.push(.{ .i64 = length });
+        return;
+    }
+
+    if (val.isString()) {
+        const string = try val.intoString(state);
+        const length: i64 = @intCast(string.len);
+        try state.push(.{ .i64 = length });
+        return;
+    }
+
+    try stderr.print("USAGE: quote|string len -> int\n", .{});
+    try state.push(val);
+}
+
 pub fn ellipsis(state: *RockMachine) !void {
     const val = try state.pop();
 
@@ -1153,11 +1212,11 @@ pub fn rev(state: *RockMachine) !void {
 
     if (val.isQuote()) {
         const quote = try val.intoQuote(state);
-        const len = quote.items.len;
+        const length = quote.items.len;
 
-        var newItems = try state.alloc.alloc(RockVal, len);
+        var newItems = try state.alloc.alloc(RockVal, length);
         for (quote.items, 0..) |v, i| {
-            newItems[len - i - 1] = v;
+            newItems[length - i - 1] = v;
         }
 
         var newQuote = Quote.fromOwnedSlice(state.alloc, newItems);
@@ -1183,8 +1242,26 @@ pub fn rev(state: *RockMachine) !void {
     return err;
 }
 
+pub fn quoteVal(state: *RockMachine) !void {
+    const val = try state.pop();
+    var quote = Quote.init(state.alloc);
+    try quote.append(val);
+    try state.push(.{ .quote = quote });
+}
+
 pub fn quoteAll(state: *RockMachine) !void {
     try state.quoteContext();
+}
+
+pub fn concat(state: *RockMachine) !void {
+    const vals = try state.popN(2);
+
+    var a = try vals[0].intoQuote(state);
+    var b = try vals[1].intoQuote(state);
+
+    try a.appendSlice(b.items);
+
+    try state.push(.{ .quote = a });
 }
 
 pub fn toBool(state: *RockMachine) !void {

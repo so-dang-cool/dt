@@ -1,3 +1,11 @@
+### Binding ###
+
+[ swap quote [do] concat swap def! ] \def def!
+
+[ : ] \-> def
+[ def? not ] \undef? def
+
+
 ### Flags and such ###
 
 [ [ action flag ] :
@@ -13,12 +21,12 @@
 [ --help --version ] \handle-flags def
 
 [ handle-flags
-    get-args deq   swap drop   unwords eval ] \run-args def
+    get-args deq   [_ args]:   args unwords eval ] \run-args def
 
 
 ### REPL things ###
 
-[ handle-flags repl ] \main-repl def
+[ handle-flags   "dt " p version pl   repl ] \main-repl def
 [ "» " p   get-line eval   repl ] \repl def
 [ .q ] \quit def
 
@@ -30,8 +38,11 @@
 
 ### Display ###
 
+[ p ] \print def
 [ p nl ] \pl def
+[ pl ] \println def
 [ \pl map drop ] \pls def
+[ .s ] \status def
 
 
 ### Filesystem and process things ###
@@ -39,8 +50,16 @@
 [ cwd pl ] \pwd def
 
 
+### Math and such ###
+
+[2 % 0 eq?] \even? def
+[2 % 1 eq?] \odd? def
+[% 0 eq?] \divisor? def
+
+
 ### Boolean operators ###
 
+[ eq? not ] \neq? def
 [ and not ] \nand def
 [ or not ] \nor def
 
@@ -64,10 +83,11 @@
 
 ### Control flow ###
 
-[ [ cmd _n ] :
+[[cmd _n]:
     0 _n gt?   \continue :
     [ cmd do   cmd _n 1 - times ] continue ?
 ] \times def
+[ map drop ] \each def
 
 
 ### Swizzling and such ###
@@ -78,3 +98,8 @@
 ### Parsing ###
 
 [ lines [ "," split ] map ] \parse-csv def
+
+
+### Testing ###
+
+[[cond msg]:   [ msg pl   1 exit ] cond not ? ] \assert-true def
