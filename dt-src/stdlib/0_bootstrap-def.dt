@@ -1,5 +1,0 @@
-[
-    rail/swap rail/quote [rail/do]
-    rail/concat rail/swap
-    def!
-] [def] def!

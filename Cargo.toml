@@ -1,6 +1,6 @@
 [package]
 name = "dt-tool"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["J.R. Hill <hiljusti@so.dang.cool>"]
 description = "dt - it's duck tape for your unix pipes"
 license = "GPL-2.0-only"
@@ -17,6 +17,3 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-atty = "0.2"
-clap = { version = "4.1.6", features = [ "derive" ] }
-rail-lang = "0.29.0"

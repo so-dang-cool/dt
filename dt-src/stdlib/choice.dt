@@ -1,4 +1,0 @@
-[[case when-true when-false]::
-  [[case]      [when-true]
-   [otherwise] [when-false]] ? do
-] [choose] def

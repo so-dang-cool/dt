@@ -1,4 +1,0 @@
-[->] [:] alias
-[=>] [::] alias
-
-[def? not] [undef?] def

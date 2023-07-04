@@ -1,8 +1,6 @@
 mod dt_test_utils;
 use dt_test_utils::{dt, dt_oneliner};
 
-pub const DT_PATH: &str = std::env!("CARGO_BIN_EXE_dt");
-
 #[test]
 fn test_true() {
     let res = dt(&["true", "print"]);
