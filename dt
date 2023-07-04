@@ -1,9 +1,0 @@
-#!/bin/bash
-
-set -eu
-
-cargo run --bin "$(basename "$0")" \
-    -- \
-    --no-stdlib \
-    --lib-list dt-src/dev.txt \
-    "$@"

@@ -29,8 +29,8 @@ PIKACHU
 programming language.
 
 ```
-$ dtsh
-dt 0.7.0
+$ dt
+dt 0.8.0
 
 > 1 1 + print
 2
@@ -46,10 +46,8 @@ hi
 
 ## Installation
 
-```shell
-$ cargo install dt-tool
-$ dtup bootstrap
-```
+TBD. For now, clone the repo and run `./build.sh` with Zig 0.11.+ and a recent
+Cargo toolchain. The resulting binary will be in `./zig-impl/zig-out/bin/dt`
 
 ## Credits
 
