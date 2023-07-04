@@ -4,6 +4,7 @@ const ArrayList = std.ArrayList;
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
+const File = std.fs.File;
 
 const Token = @import("tokens.zig").Token;
 
@@ -27,45 +28,65 @@ pub fn main() !void {
 
     try builtins.defineAll(&machine);
 
+    // TODO: Can this be done at comptime somehow?
     var toks = Token.parse(stdlib);
     while (toks.next()) |token| try machine.interpret(token);
 
     if (!std.io.getStdIn().isTty()) {
-        // === PIPED IN ===
-        machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
-            if (e == error.BrokenPipe) return;
-            try stderr.print("RIP: {any}\n", .{e});
-        };
+        return handlePipedStdin(&machine);
     } else if (!std.io.getStdOut().isTty()) {
-        // === PIPED OUT ===
-        machine.interpret(.{ .term = "run-args" }) catch |e| {
-            if (e == error.BrokenPipe) return;
-            try stderr.print("RIP: {any}\n", .{e});
-        };
-    } else {
-        // === REPL ===
-        machine.interpret(.{ .term = "run-args" }) catch |e| {
-            try stderr.print("RIP: {any}\n", .{e});
-            std.os.exit(1);
-        };
-
-        while (true) machine.interpret(.{ .term = "main-repl" }) catch |e| if (e == error.EndOfStream) {
-            try stderr.print("\nSee you next time.\n", .{});
-            return;
-        };
+        return handlePipedStdoutOnly(&machine);
+    } else if (try readShebangFile(arena.allocator())) |fileContents| {
+        toks = Token.parse(fileContents);
+        while (toks.next()) |token| try machine.interpret(token);
+        return;
     }
+
+    return readEvalPrintLoop(&machine);
 }
 
-fn prompt(alloc: Allocator) ![]const u8 {
-    return stdin.readUntilDelimiterOrEofAlloc(alloc, '\n', 128) catch |err| {
-        const message = switch (err) {
-            error.StreamTooLong => "Response was too many characters.",
-            else => "Unable to read response.",
-        };
-        try stderr.print("\nERROR: {s} ({any})\n", .{ message, err });
+fn handlePipedStdin(machine: *RockMachine) !void {
+    machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
+        if (e == error.BrokenPipe) return;
+        try stderr.print("RIP: {any}\n", .{e});
         std.os.exit(1);
-    } orelse {
-        try stderr.print("\nBye now.\n", .{});
-        std.os.exit(0);
     };
+}
+
+fn handlePipedStdoutOnly(machine: *RockMachine) !void {
+    machine.interpret(.{ .term = "run-args" }) catch |e| {
+        if (e == error.BrokenPipe) return;
+        try stderr.print("RIP: {any}\n", .{e});
+        std.os.exit(1);
+    };
+}
+
+fn readEvalPrintLoop(machine: *RockMachine) !void {
+    machine.interpret(.{ .term = "run-args" }) catch |e| {
+        try stderr.print("RIP: {any}\n", .{e});
+        std.os.exit(1);
+    };
+
+    while (true) machine.interpret(.{ .term = "main-repl" }) catch |e| if (e == error.EndOfStream) {
+        try stderr.print("\nSee you next time.\n", .{});
+        return;
+    };
+}
+
+fn readShebangFile(allocator: Allocator) !?[]const u8 {
+    var args = std.process.args();
+    _ = args.skip();
+
+    if (args.next()) |arg| {
+        const file = std.fs.openFileAbsolute(arg, .{}) catch return null;
+        defer file.close();
+
+        const contents = try file.readToEndAlloc(allocator, std.math.pow(usize, 2, 16));
+
+        if (std.mem.startsWith(u8, contents, "#!")) {
+            return contents;
+        }
+    }
+
+    return null;
 }

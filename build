@@ -10,7 +10,7 @@ help() {
 }
 
 clean() {
-    rm -rf ./target ./zig-cache ./zig-out
+    rm -rf ./zig-cache ./zig-out
 }
 
 build() {
@@ -24,6 +24,10 @@ test() {
 
 release() {
     zig build -Doptimize=ReleaseSmall
+}
+
+cross-clean() {
+    rm -rf ./target
 }
 
 cross-release() {
