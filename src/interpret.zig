@@ -171,8 +171,8 @@ pub const RockMachine = struct {
 
 pub const RockVal = union(enum) {
     bool: bool,
-    int: i64,
-    float: f64,
+    int: i64, // TODO: BigInteger?
+    float: f64, // TODO: BigDecimal? Or floating point forever? Maybe decimal is more useful?
     command: RockString,
     deferred_command: RockString,
     quote: Quote,
