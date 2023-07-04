@@ -1,5 +1,5 @@
 mod dt_test_utils;
-use dt_test_utils::{dt_stdin, DtRunResult, dt};
+use dt_test_utils::{dt, dt_stdin, DtRunResult};
 
 fn assert_two(result: DtRunResult) {
     assert_eq!("2\n", result.stdout);

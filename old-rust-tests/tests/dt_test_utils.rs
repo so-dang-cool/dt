@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Write;
 use std::process::{Command, ExitStatus, Output, Stdio};
 
-const DT_PATH: &str = "zig-impl/zig-out/bin/dt";
+const DT_PATH: &str = "../zig-impl/zig-out/bin/dt";
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -19,8 +19,10 @@ impl From<Output> for DtRunResult {
             stdout,
             stderr,
         } = output;
+
         let stdout = String::from_utf8(stdout).expect("Unable to read stdout");
         let stderr = String::from_utf8(stderr).expect("Unable to read stderr");
+        
         DtRunResult {
             status,
             stdout,
@@ -33,18 +35,20 @@ impl From<Output> for DtRunResult {
 pub fn dt_stdin(stdin_input: &str) -> DtRunResult {
     let mut dt_proc = Command::new(DT_PATH)
         .args(["[\"#\" starts-with? not] filter", "unwords", "eval"])
-        .stdin(Stdio ::piped())
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .expect("Error running process");
 
-        let mut stdin = dt_proc.stdin.take().expect("Failed to open stdin");
+    let mut stdin = dt_proc.stdin.take().expect("Failed to open stdin");
 
-        let stdin_input = String::from(stdin_input);
-        std::thread::spawn(move || {
-            stdin.write_all(stdin_input.as_bytes()).expect("Failed to write to stdin");
-        });
+    let stdin_input = String::from(stdin_input);
+    std::thread::spawn(move || {
+        stdin
+            .write_all(stdin_input.as_bytes())
+            .expect("Failed to write to stdin");
+    });
 
     let output = dt_proc.wait_with_output().expect("Failed to read stdout");
 
