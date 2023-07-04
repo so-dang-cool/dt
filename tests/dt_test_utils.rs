@@ -1,16 +1,12 @@
-use std::io::{Read, Write};
+use std::fs::File;
+use std::io::Write;
 use std::process::{Command, ExitStatus, Output, Stdio};
 
-const DT_PATH: &str = std::env!("CARGO_BIN_EXE_dt");
-const DTSH_PATH: &str = std::env!("CARGO_BIN_EXE_dtsh");
-const DEV_MODE_ARGS: [&str; 3] = ["--no-stdlib", "--lib-list", "dt-src/dev.txt"];
+const DT_PATH: &str = "/workplace/hiljusti/rock/zig-out/bin/dt"; // std::env!("CARGO_BIN_EXE_dt");
+const DTSH_PATH: &str = "/workplace/hiljusti/rock/zig-out/bin/dt"; // std::env!("CARGO_BIN_EXE_dtsh");
+// const DEV_MODE_ARGS: [&str; 3] = ["--no-stdlib", "--lib-list", "dt-src/dev.txt"];
 
-#[allow(dead_code)]
-pub struct DtPipedResult {
-    pub stdout: String,
-    pub stderr: String,
-}
-
+#[derive(Debug)]
 #[allow(dead_code)]
 pub struct DtRunResult {
     pub status: ExitStatus,
@@ -36,38 +32,33 @@ impl From<Output> for DtRunResult {
 }
 
 #[allow(dead_code)]
-pub fn dtsh(stdin: &str) -> DtPipedResult {
-    let dt_proc = Command::new(DTSH_PATH)
-        .args(DEV_MODE_ARGS)
-        .stdin(Stdio::piped())
+pub fn dt_stdin(stdin_input: &str) -> DtRunResult {
+    let mut dt_proc = Command::new(DTSH_PATH)
+        .args(["[\"#\" starts-with? not] filter", "unwords", "eval"])
+        .stdin(Stdio ::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .expect("Error running process");
 
-    dt_proc
-        .stdin
-        .expect("Error sending stdin")
-        .write_all(stdin.as_bytes())
-        .unwrap();
+        let mut stdin = dt_proc.stdin.take().expect("Failed to open stdin");
 
-    let mut stdout = String::new();
-    dt_proc.stdout.unwrap().read_to_string(&mut stdout).unwrap();
+        let stdin_input = String::from(stdin_input);
+        std::thread::spawn(move || {
+            stdin.write_all(stdin_input.as_bytes()).expect("Failed to write to stdin");
+        });
 
-    let mut stderr = String::new();
-    dt_proc.stderr.unwrap().read_to_string(&mut stderr).unwrap();
+    let output = dt_proc.wait_with_output().expect("Failed to read stdout");
 
-    DtPipedResult { stdout, stderr }
+    output.into()
 }
 
 #[allow(dead_code)]
-pub fn dtsh_run_file(file: &str) -> DtRunResult {
-    Command::new(DTSH_PATH)
-        .args(DEV_MODE_ARGS)
-        .args(&["run", file])
-        .output()
-        .expect("Error running process")
-        .into()
+pub fn dt_run_file(file: &str) -> DtRunResult {
+    let file = File::open(file).expect("Unable to open file");
+    let contents = std::io::read_to_string(file).expect("Unable to read file contents");
+
+    dt_stdin(&contents)
 }
 
 #[allow(dead_code)]
@@ -78,7 +69,7 @@ pub fn dt_oneliner(source: &str) -> DtRunResult {
 #[allow(dead_code)]
 pub fn dt(args: &[&str]) -> DtRunResult {
     Command::new(DT_PATH)
-        .args(DEV_MODE_ARGS)
+        // .args(DEV_MODE_ARGS)
         .args(args)
         .output()
         .expect("Error running process")

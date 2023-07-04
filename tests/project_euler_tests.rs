@@ -1,9 +1,14 @@
 mod dt_test_utils;
-use dt_test_utils::dtsh_run_file;
+use dt_test_utils::dt_run_file;
 
 fn run_problem(n: &str) -> String {
     let filename = format!("tests/project_euler/problem-{}.dt", n);
-    dtsh_run_file(&filename).stdout.trim_end().to_string()
+    let res = dt_run_file(&filename);
+
+    eprintln!("=== STDOUT:\n{}\n===\n", res.stdout);
+    eprintln!("=== STDERR:\n{}\n===", res.stderr);
+
+    res.stdout.trim_end().to_string()
 }
 
 #[test]

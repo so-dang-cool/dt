@@ -8,12 +8,12 @@
 
 [ 4 1000 * 1000 * ] [ 4_million ] def
 
-[ dup last 4_million gt? ] [ [fib-once] doin ] while
+[ [fib-once] doin ] [ swap dup last 4_million gt? ] while
 
 [ even? ] filter
 
-\ns ::
+\ns :
     ns [ [+] doin ]
-    ns length 1 - times
+    ns len 1 - times
 
 unquote println

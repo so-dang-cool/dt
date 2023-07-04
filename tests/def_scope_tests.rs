@@ -4,9 +4,9 @@ use dt_test_utils::dt;
 #[test]
 fn basic_def() {
     let source = r#"
-        [1 +] [inc] def
+        [1 +] \inc def
         1 inc print
-        [inc] def? print
+        \inc def? print
     "#;
 
     assert_eq!("2true", dt(&[source]).stdout);
@@ -15,7 +15,7 @@ fn basic_def() {
 #[test]
 fn basic_do_bang_def() {
     let source = r#"
-        [[] [empty-quote] def] do!
+        [[] \empty-quote :   ] do!
 
         "empty-quote" def? "do! should define in parent context" assert-true
     "#;
@@ -27,7 +27,7 @@ fn basic_do_bang_def() {
 #[test]
 fn basic_do_def() {
     let source = r#"
-        [[] [empty-quote] def] do
+        [[] \empty-quote :   ] do
 
         "empty-quote" undef? "do should NOT define in parent context" assert-true
     "#;
@@ -59,12 +59,12 @@ fn basic_arrow_do() {
 fn arrow_in_times() {
     let source = r#"
         1
-        [ [ n ]:
+        [ [n] :
             n println
             n 2 *
         ] 7 times
 
-        [ n ] undef? "times must not leak definitions, but n was defined" assert-true
+        \n undef? "times must not leak definitions, but n was defined" assert-true
     "#;
 
     let res = dt(&[source]);
@@ -81,9 +81,9 @@ fn arrow_in_times() {
 fn arrow_in_each() {
     let source = r#"
         [ 1 2 3 4 5 ]
-        [ [ n ]: n n * println ] each
+        [ \n : n n * println ] each
 
-        [ n ] undef? "each must not leak definitions, but n was defined" assert-true
+        \n undef? "each must not leak definitions, but n was defined" assert-true
     "#;
 
     let res = dt(&[source]);
@@ -99,7 +99,7 @@ fn arrow_in_map() {
         ["apple" "banana" "cereal"]
         [[food]: food upcase] map print
 
-        [food] undef? "map must not leak definitions, but food was defined" assert-true
+        \food undef? "map must not leak definitions, but food was defined" assert-true
     "#;
 
     let res = dt(&[source]);
@@ -113,10 +113,10 @@ fn arrow_in_map() {
 fn arrow_in_filter() {
     let source = r#"
         [[1 "banana"] [2 "banana"] [3 "banana"] [4 "bananas make a bunch!"]]
-        [...[n str]: n even? str len odd?] filter unquote print
+        [...[n str]: n even? str len odd?] filter ... print
 
-        [n]   undef? "filter must not leak definitions, but n was defined" assert-true
-        [str] undef? "filter must not leak definitions, but str was defined" assert-true
+        \n   undef? "filter must not leak definitions, but n was defined" assert-true
+        \str undef? "filter must not leak definitions, but str was defined" assert-true
     "#;
 
     let res = dt(&[source]);
@@ -170,9 +170,9 @@ fn shadowing_arrow_in_do() {
 #[test]
 fn shadowing_in_times() {
     let source = r#"
-        [ 1 ] [ n ] def
+        [ 1 ] \n def
 
-        n [ [ n ] : n println n 1 + ] 3 times
+        n [ \n :   n println   n 1 + ] 3 times
 
         n println
     "#;
@@ -187,11 +187,11 @@ fn shadowing_in_times() {
 #[test]
 fn shadowing_in_each() {
     let source = r#"
-        [ "pepperoni" ] [ pizza ] def
+        [ "pepperoni" ] \pizza def
 
         pizza println
 
-        [ "cheese" "bbq" "combo" ] [ [ pizza ] : pizza println ] each
+        [ "cheese" "bbq" "combo" ] [ \pizza : pizza println ] each
 
         pizza println
     "#;
@@ -209,11 +209,11 @@ fn shadowing_in_each() {
 #[test]
 fn shadowing_in_map() {
     let source = r#"
-        [ "banana" ] [ x ] def
+        [ "banana" ] \x def
 
         x println
 
-        [ 1 2 3 ] [ [ x ]: x 2.0 / ] map println
+        [ 1 2 3 ] [ \x :   x 2.0 / ] map println
 
         x println
     "#;
@@ -231,11 +231,11 @@ fn shadowing_in_map() {
 #[test]
 fn shadowing_in_filter() {
     let source = r#"
-        [ "whee" ] [ happy-word ] def
+        [ "whee" ] \happy-word def
 
         happy-word println
 
-        [ "yay" "hurray" "whoo" "huzzah" ] [ [ happy-word ] : 4 happy-word len gt? ] filter println
+        [ "yay" "hurray" "whoo" "huzzah" ] [ \happy-word :   happy-word len   4 lt? ] filter println
 
         happy-word println
     "#;
