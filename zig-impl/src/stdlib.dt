@@ -1,0 +1,111 @@
+### Binding ###
+
+[ swap quote [do] concat swap def! ] \def def!
+
+[ : ] \-> def
+[ def? not ] \undef? def
+
+
+### Flags and such ###
+
+[ [ action flag ] :
+  get-args [ flag eq? ] any?
+  action swap ? ] \handle-flag def
+
+[ "dt " p version pl ] \print-version def
+[ [ print-version 0 exit ]   "--version" handle-flag ] \--version def
+
+[ "Good luck, this help hasn't been finished yet." pl   0 exit ] \print-help def
+[ [ print-help 0 exit ]   "--help" handle-flag ] \--help def
+
+[ --help --version ] \handle-flags def
+
+[ handle-flags
+    get-args deq   [_ args]:   args unwords eval ] \run-args def
+
+
+### REPL things ###
+
+[ handle-flags   "dt " p version pl   repl ] \main-repl def
+[ "» " p   get-line eval   repl ] \repl def
+[ .q ] \quit def
+
+
+### PIPE things ###
+
+[ get-lines   run-args ] \pipe-thru-args def
+
+
+### Display ###
+
+[ p ] \print def
+[ p nl ] \pl def
+[ pl ] \println def
+[ \pl map drop ] \pls def
+[ .s ] \status def
+
+
+### Filesystem and process things ###
+
+[ cwd pl ] \pwd def
+
+
+### Math and such ###
+
+[2 % 0 eq?] \even? def
+[2 % 1 eq?] \odd? def
+[% 0 eq?] \divisor? def
+
+
+### Boolean operators ###
+
+[ eq? not ] \neq? def
+[ and not ] \nand def
+[ or not ] \nor def
+
+
+### String things ###
+
+[ "" split ] \chars def
+
+[ " " split ] \words def
+[ " " join ] \unwords def
+
+[ "\n" split ] \lines def
+[ "\n" join ] \unlines def
+
+
+### Quote manipulation ###
+
+[ deq drop ] \first def
+[ pop swap drop ] \last def
+[ ... ] \unquote def
+
+
+### Control flow ###
+
+[[cmd _n]:
+    0 _n gt?   \continue :
+    [ cmd do   cmd _n 1 - times ] continue ?
+] \times def
+
+[ map drop ] \each def
+
+[[action cond]:
+  [action do   action cond while]   cond do ?
+] \while def
+
+
+### Swizzling and such ###
+
+[ swap \save : do save ] \dip def
+
+
+### Parsing ###
+
+[ lines [ "," split ] map ] \parse-csv def
+
+
+### Testing ###
+
+[[cond msg]:   [ msg pl   1 exit ] cond not ? ] \assert-true def
