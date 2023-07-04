@@ -65,7 +65,7 @@ pub const RockMachine = struct {
                 try self.push(RockVal{ .quote = context });
             },
             .bool => |b| try self.push(RockVal{ .bool = b }),
-            .i64 => |i| try self.push(RockVal{ .i64 = i }),
+            .int => |i| try self.push(RockVal{ .int = i }),
             .f64 => |f| try self.push(RockVal{ .f64 = f }),
             .string => |s| try self.push(RockVal{ .string = s[0..] }),
             .deferred_term => |cmd| try self.push(RockVal{ .deferred_command = cmd }),
@@ -171,7 +171,7 @@ pub const RockMachine = struct {
 
 pub const RockVal = union(enum) {
     bool: bool,
-    i64: i64,
+    int: i64,
     f64: f64,
     command: RockString,
     deferred_command: RockString,
@@ -188,7 +188,7 @@ pub const RockVal = union(enum) {
     pub fn intoBool(self: RockVal, state: *RockMachine) bool {
         return switch (self) {
             .bool => |b| b,
-            .i64 => |i| i > 0,
+            .int => |i| i > 0,
             .f64 => |f| f > 0,
             .string => |s| !std.mem.eql(u8, "", s),
             .quote => |q| q.items.len > 0,
@@ -199,16 +199,16 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn isI64(self: RockVal) bool {
+    pub fn isInt(self: RockVal) bool {
         return switch (self) {
-            .i64 => true,
+            .int => true,
             else => false,
         };
     }
 
-    pub fn intoI64(self: RockVal) !i64 {
+    pub fn intoInt(self: RockVal) !i64 {
         return switch (self) {
-            .i64 => |i| i,
+            .int => |i| i,
 
             .bool => |b| if (b) 1 else 0,
             .f64 => |f| @as(i64, @intFromFloat(f)),
@@ -229,7 +229,7 @@ pub const RockVal = union(enum) {
             .f64 => |f| f,
 
             .bool => |b| if (b) 1 else 0,
-            .i64 => |i| @as(f64, @floatFromInt(i)),
+            .int => |i| @as(f64, @floatFromInt(i)),
             .string => |s| std.fmt.parseFloat(f64, s),
             else => Error.NoCoersionToInteger,
         };
@@ -263,7 +263,7 @@ pub const RockVal = union(enum) {
             .deferred_command => |cmd| cmd,
             .string => |s| s,
             .bool => |b| if (b) "true" else "false",
-            .i64 => |i| try std.fmt.allocPrint(state.alloc, "{}", .{i}),
+            .int => |i| try std.fmt.allocPrint(state.alloc, "{}", .{i}),
             .f64 => |f| try std.fmt.allocPrint(state.alloc, "{}", .{f}),
             .quote => |q| switch (q.items.len) {
                 0 => "",
@@ -294,7 +294,7 @@ pub const RockVal = union(enum) {
     pub fn print(self: RockVal) !void {
         switch (self) {
             .bool => |b| try stdout.print("{}", .{b}),
-            .i64 => |i| try stdout.print("{}", .{i}),
+            .int => |i| try stdout.print("{}", .{i}),
             .f64 => |f| try stdout.print("{d}", .{f}),
             .command => |cmd| try stdout.print("{s}", .{cmd}),
             .deferred_command => |cmd| try stdout.print("\\{s}", .{cmd}),

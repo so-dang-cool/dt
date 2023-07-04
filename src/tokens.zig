@@ -70,7 +70,7 @@ pub const Token = union(enum) {
     left_bracket: void,
     right_bracket: void,
     bool: bool,
-    i64: i64,
+    int: i64,
     f64: f64,
     term: []const u8,
     deferred_term: []const u8,
@@ -102,7 +102,7 @@ pub const Token = union(enum) {
             return .{ .deferred_term = deferredTerm };
         }
         if (std.fmt.parseInt(i64, part, 10)) |i| {
-            return .{ .i64 = i };
+            return .{ .int = i };
         } else |_| {}
         if (std.fmt.parseFloat(f64, part)) |f| {
             return .{ .f64 = f };
@@ -110,28 +110,6 @@ pub const Token = union(enum) {
 
         return .{ .term = part };
     }
-
-    // fn parseString(alloc: Allocator, contents: []const u8) Token {
-    //     var hasNewlines = std.mem.containsAtLeast(u8, contents, 1, "\\n");
-    //     var hasQuotes = std.mem.containsAtLeast(u8, contents, 1, "\\");
-
-    //     // Contains no escapes, just exit
-    //     if (!hasNewlines and !hasQuotes) return .{ .string = contents };
-
-    //     // Contains escapes, handle them
-
-    //     // Newlines
-    //     var rsize = std.mem.replacementSize(u8, contents, "\\n", "\n");
-    //     var unescapedNewlines = try alloc.alloc(u8, rsize);
-    //     _ = std.mem.replace(u8, contents, "\\n", "\n", unescapedNewlines);
-
-    //     // Quotes
-    //     rsize = std.mem.replacementSize(u8, contents, "\\\"", "\"");
-    //     var unescaped = try alloc.alloc(u8, rsize);
-    //     _ = std.mem.replace(u8, contents, "\\\"", "\"", unescaped);
-
-    //     return .{ .string = unescaped };
-    // }
 
     fn assertEql(self: Token, other: Token) void {
         switch (self) {
