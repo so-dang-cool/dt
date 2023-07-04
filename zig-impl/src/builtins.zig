@@ -336,7 +336,11 @@ pub fn p(state: *RockMachine) !void {
     const val = try state.pop();
 
     switch (val) {
-        .string => |s| try stdout.print("{s}", .{s}),
+        .string => |s| {
+            var unescaped = try std.mem.replaceOwned(u8, state.alloc, s, "\\n", "\n");
+            unescaped = try std.mem.replaceOwned(u8, state.alloc, unescaped, "\\\"", "\"");
+            try stdout.print("{s}", .{unescaped});
+        },
         else => {
             try val.print();
         },
