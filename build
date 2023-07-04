@@ -10,7 +10,7 @@ help() {
 }
 
 clean() {
-    rm -r ./target ./zig-cache ./zig-out
+    rm -rf ./target ./zig-cache ./zig-out
 }
 
 build() {
@@ -23,6 +23,10 @@ test() {
 }
 
 release() {
+    zig build -Doptimize=ReleaseSmall
+}
+
+cross-release() {
     local triples=(
         aarch64-linux-gnu
         aarch64-linux-musleabi
