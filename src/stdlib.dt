@@ -79,6 +79,7 @@
 
 [ deq drop ] \first def
 [ pop swap drop ] \last def
+[ ... ] \unquote def
 
 
 ### Control flow ###
@@ -87,7 +88,12 @@
     0 _n gt?   \continue :
     [ cmd do   cmd _n 1 - times ] continue ?
 ] \times def
+
 [ map drop ] \each def
+
+[[action cond]:
+  [action do   action cond while]   cond do ?
+] \while def
 
 
 ### Swizzling and such ###

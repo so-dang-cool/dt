@@ -265,7 +265,11 @@ pub const RockVal = union(enum) {
             .bool => |b| if (b) "true" else "false",
             .i64 => |i| try std.fmt.allocPrint(state.alloc, "{}", .{i}),
             .f64 => |f| try std.fmt.allocPrint(state.alloc, "{}", .{f}),
-            else => Error.NoCoersionToString,
+            .quote => |q| switch (q.items.len) {
+                0 => "",
+                1 => q.items[0].intoString(state),
+                else => Error.NoCoersionToString,
+            },
         };
     }
 
