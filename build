@@ -58,11 +58,19 @@ cross-release() {
     )
 
     for triple in "${triples[@]}"; do
-        >&2 echo "Cross-compiling for $triple"
+        >&2 echo "** Cross-compiling for $triple"
         local out="$project_root"/target/"$triple"
         mkdir -p "$out"
 
         zig build -Doptimize=ReleaseSmall -Dtarget="$triple" -p "$out"
+    done
+}
+
+cross-tar() {
+    cd "$project_root"/target || exit 1
+    for triple in *; do
+        >&2 echo "** Making archive for $triple"
+        tar -czvf "$triple".tgz "$triple"
     done
 }
 

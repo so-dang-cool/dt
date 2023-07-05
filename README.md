@@ -46,7 +46,7 @@ hi
 
 ## Installation
 
-TBD. For now, clone the repo and run `./build.sh` with Zig 0.11.+ and a recent
+TBD. For now, clone the repo and run `./build` with Zig 0.11.+ and a recent
 Cargo toolchain. The resulting binary will be in `./zig-impl/zig-out/bin/dt`
 
 ## Credits
