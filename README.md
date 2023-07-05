@@ -9,32 +9,6 @@ In the words of [Red Green](https://www.redgreen.com):
 
 > Remember, it's only temporary... unless it works!
 
-## Explore the REPL
-
-```
-$ dt
-dt 0.9.0
-» # Comments start with #
-» 
-» 1 1 + println
-2
-» 
-» # "p" is print, "pl" is print line, "pls" is print lines (i.e. of a list of values)
-» # Let's define a command that consumes a value, prints it, then returns its double
-» 
-» [ \n :   n p " " p   n 2 *] \print-and-double def
-» 
-» # And let's do it... 7 times!
-» 
-» 1 \print-and-double 7 times   pl
-1 2 4 8 16 32 64 128
-» 
-» # Also there are conditions
-» 
-» ["hi" false ?   "bye" true ?] do pl
-bye
-```
-
 ## Use in pipes
 
 When piping in/out, the REPL is skipped. If something is piping into `dt` then
@@ -76,6 +50,32 @@ Then use like:
 
 ```
 cat wish-list | sed 's/red/green/g' | tee.dt new-wish-list
+```
+
+## Explore the REPL
+
+```
+$ dt
+dt 0.9.0
+» # Comments start with #
+» 
+» 1 1 + println
+2
+» 
+» # "p" is print, "pl" is print line, "pls" is print lines (i.e. of a list of values)
+» # Let's define a command that consumes a value, prints it, then returns its double
+» 
+» [ \n :   n p " " p   n 2 *] \print-and-double def
+» 
+» # And let's do it... 7 times!
+» 
+» 1 \print-and-double 7 times   pl
+1 2 4 8 16 32 64 128
+» 
+» # Also there are conditions
+» 
+» ["hi" false ?   "bye" true ?] do pl
+bye
 ```
 
 ## Downloads
