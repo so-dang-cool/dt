@@ -28,12 +28,10 @@ pub fn main() !void {
 
     try builtins.defineAll(&machine);
 
-    // TODO: Can this be done at comptime somehow?
-    var toks = Token.parse(arena.allocator(), stdlib);
-    while (try toks.next()) |token| try machine.interpret(token);
+    try loadStdlib(arena.allocator(), &machine);
 
     if (try readShebangFile(arena.allocator())) |fileContents| {
-        toks = Token.parse(arena.allocator(), fileContents);
+        var toks = Token.parse(arena.allocator(), fileContents);
         return while (try toks.next()) |token| try machine.interpret(token);
     } else if (!std.io.getStdIn().isTty()) {
         return handlePipedStdin(&machine);
@@ -42,6 +40,12 @@ pub fn main() !void {
     }
 
     return readEvalPrintLoop(&machine);
+}
+
+// TODO: Can this be done at comptime somehow?
+fn loadStdlib(allocator: Allocator, machine: *RockMachine) !void {
+    var toks = Token.parse(allocator, stdlib);
+    while (try toks.next()) |token| try machine.interpret(token);
 }
 
 fn handlePipedStdin(machine: *RockMachine) !void {
