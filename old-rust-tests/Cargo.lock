@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "dt-tool"
-version = "0.8.0"
+name = "dt-tests"
+version = "0.1.0"

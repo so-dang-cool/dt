@@ -11,6 +11,8 @@ help() {
 
 clean() {
     rm -rf ./zig-cache ./zig-out
+    cd "$project_root"/old-rust-tests || exit 1
+    cargo clean
 }
 
 build() {

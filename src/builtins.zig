@@ -1000,7 +1000,7 @@ pub fn do(state: *RockMachine) !void {
     var jail = try state.child();
     jail.nest = state.nest;
 
-    if (val.isCommand() or val.isDeferredCommand() or val.isString()) {
+    if (val.isCommand() or val.isDeferredCommand()) {
         const cmdName = try val.intoString(state);
 
         try jail.handleCmd(cmdName);

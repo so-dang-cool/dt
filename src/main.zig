@@ -17,7 +17,7 @@ const RockMachine = interpret.RockMachine;
 
 const builtins = @import("builtins.zig");
 
-pub const version = "0.8.0";
+pub const version = "0.9.0";
 
 const stdlib = @embedFile("stdlib.dt");
 
@@ -32,13 +32,13 @@ pub fn main() !void {
     var toks = Token.parse(arena.allocator(), stdlib);
     while (try toks.next()) |token| try machine.interpret(token);
 
-    if (!std.io.getStdIn().isTty()) {
+    if (try readShebangFile(arena.allocator())) |fileContents| {
+        toks = Token.parse(arena.allocator(), fileContents);
+        return while (try toks.next()) |token| try machine.interpret(token);
+    } else if (!std.io.getStdIn().isTty()) {
         return handlePipedStdin(&machine);
     } else if (!std.io.getStdOut().isTty()) {
         return handlePipedStdoutOnly(&machine);
-    } else if (try readShebangFile(arena.allocator())) |fileContents| {
-        toks = Token.parse(arena.allocator(), fileContents);
-        return while (try toks.next()) |token| try machine.interpret(token);
     }
 
     return readEvalPrintLoop(&machine);

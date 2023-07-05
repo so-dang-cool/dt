@@ -2,13 +2,43 @@
 
 # `dt`
 
-It's duct tape for your unix pipes. Use it when you don't have a better tool.
+It's duct tape for your unix pipes. A shell-friendly concatenative language
+for when you don't have a better tool.
 
 In the words of [Red Green](https://www.redgreen.com):
 
 > Remember, it's only temporary... unless it works!
 
-## For pipes:
+## Explore the REPL
+
+```
+$ dt
+dt 0.9.0
+» # Comments start with #
+» 
+» 1 1 + println
+2
+» 
+» # "p" is print, "pl" is print line, "pls" is print lines (i.e. of a list of values)
+» # Let's define a command that consumes a value, prints it, then returns its double
+» 
+» [ \n :   n p " " p   n 2 *] \print-and-double def
+» 
+» # And let's do it... 7 times!
+» 
+» 1 \print-and-double 7 times   pl
+1 2 4 8 16 32 64 128
+» 
+» # Also there are conditions
+» 
+» ["hi" false ?   "bye" true ?] do pl
+bye
+```
+
+## Use in pipes
+
+When piping in/out, the REPL is skipped. If something is piping into `dt` then
+standard input is fed into `dt` as a list of lines.
 
 ```
 $ echo -e "3\n2\n1" | dt rev pls
@@ -23,37 +53,43 @@ YOU
 PIKACHU
 ```
 
-## Running as an interactive shell:
+## Use as a shebang
 
-`dt` is an experimental [concatenative](https://concatenative.org/wiki/view/Concatenative%20language)
-programming language.
+When the first argument to `dt` is a file starting with `#!` it will interpret
+the file.
+
+A naive tee implementation:
+
+`tee.dt`
 
 ```
-$ dt
-dt 0.8.0
+#!/usr/bin/env dt
 
-> 1 1 + print
-2
+get-lines unlines   \stdin :
+get-args pop   \file :
 
-> [[ n ]: n print " " print n 2 *] [print-and-double] def
+stdin pl
+stdin file writef
+```
 
-> 1 [print-and-double] 7 times
-1 2 4 8 16 32 64 
+Then use like:
 
-> [[false] ["bye"] [true] ["hi"]] ? println
-hi
+```
+cat wish-list | sed 's/red/green/g' | tee.dt new-wish-list
 ```
 
 ## Downloads
 
-Download assets from [releases](https://github.com/hiljusti/dt/releases/) and put them somewhere on your PATH.
+Download assets from [releases](https://github.com/hiljusti/dt/releases/) and
+put them somewhere on your PATH.
+
+An installation script will come soon.
 
 ## Building from source
 
-Most people should not need to do this.
-
-To build from source, clone the repo and run `./build` with Zig 0.11.+ and a recent
-Cargo toolchain. The resulting binary will be in `./zig-impl/zig-out/bin/dt`
+To build from source, clone the repo and run `./build help` for instructions.
+The project currently builds with Zig 0.11.+ and a recent Cargo toolchain. The
+resulting binary for your machine will be produced in `./zig-out/bin/dt`
 
 ## Credits
 
