@@ -44,9 +44,15 @@ dt 0.8.0
 hi
 ```
 
-## Installation
+## Downloads
 
-TBD. For now, clone the repo and run `./build` with Zig 0.11.+ and a recent
+Download assets from [releases](https://github.com/hiljusti/dt/releases/) and put them somewhere on your PATH.
+
+## Building from source
+
+Most people should not need to do this.
+
+To build from source, clone the repo and run `./build` with Zig 0.11.+ and a recent
 Cargo toolchain. The resulting binary will be in `./zig-impl/zig-out/bin/dt`
 
 ## Credits
