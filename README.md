@@ -51,6 +51,6 @@ Cargo toolchain. The resulting binary will be in `./zig-impl/zig-out/bin/dt`
 
 ## Credits
 
-Shared under GPL v2.
+Shared as open source software, distributed under the terms of [the 3-Clause BSD License](https://opensource.org/license/BSD-3-clause/).
 
 A side quest of J.R. Hill | https://so.dang.cool | https://github.com/hiljusti
