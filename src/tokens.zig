@@ -49,6 +49,12 @@ pub const TokenIterator = struct {
                 const unescaped = try string.unescape(self.allocator, self.buf[strStart..end]);
                 return .{ .string = unescaped };
             },
+            '~' => { // Parse an error
+                const lastChar = std.mem.indexOfPos(u8, self.buf, start, "~") orelse self.buf.len;
+                const end = lastChar + 1;
+                self.index = end;
+                return .{ .err = self.buf[start..end] };
+            },
             '#' => { // Ignore a comment (by recursively returning the next non-comment token)
                 self.index = std.mem.indexOfAnyPos(u8, self.buf, start, "\r\n") orelse self.buf.len;
                 return self.next();
@@ -79,6 +85,7 @@ pub const Token = union(enum) {
     term: []const u8,
     deferred_term: []const u8,
     string: []const u8,
+    err: []const u8,
     none: void,
 
     pub fn parse(allocator: Allocator, code: []const u8) TokenIterator {

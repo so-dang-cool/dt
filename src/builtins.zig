@@ -30,7 +30,7 @@ pub fn defineAll(machine: *DtMachine) !void {
 
     try machine.define("exec", "execute a child process. When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false", .{ .builtin = exec });
 
-    try machine.define("def!", "define a new command", .{ .builtin = def });
+    try machine.define("def!", "define a new command", .{ .builtin = defBang });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
     try machine.define("def?", "return true if a name is defined", .{ .builtin = isDef });
     try machine.define("usage", "print the usage notes of a given command", .{ .builtin = cmdUsage });
@@ -46,8 +46,10 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("swap", "swap the top two values", .{ .builtin = swap });
     try machine.define("rot", "rotate the top three values", .{ .builtin = rot });
 
-    try machine.define("p", "print a value", .{ .builtin = p });
-    try machine.define("nl", "print a newline", .{ .builtin = nl });
+    try machine.define("p", "print a value to stdout", .{ .builtin = p });
+    try machine.define("ep", "print a value to stderr", .{ .builtin = ep });
+    try machine.define("nl", "print a newline to stdout", .{ .builtin = nl });
+    try machine.define("enl", "print a newline to stderr", .{ .builtin = enl });
     try machine.define(".s", "print the stack", .{ .builtin = dotS });
 
     try machine.define("get-line", "get a line from standard input (until newline)", .{ .builtin = getLine });
@@ -102,6 +104,7 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("to-string", "coerce value to string", .{ .builtin = toString });
     try machine.define("to-cmd", "coerce value to a deferred command", .{ .builtin = toCommand });
     try machine.define("to-quote", "coerce value to quote", .{ .builtin = toQuote });
+    try machine.define("to-error", "coerce value to an error", .{ .builtin = toError });
 }
 
 pub fn quit(state: *DtMachine) !void {
@@ -242,8 +245,8 @@ pub fn exec(state: *DtMachine) !void {
     }
 }
 
-pub fn def(state: *DtMachine) !void {
-    const usage = "USAGE: quote term def ({any})\n";
+pub fn defBang(state: *DtMachine) !void {
+    const usage = "USAGE: quote term def! ({any})\n";
 
     const vals = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
@@ -374,22 +377,33 @@ pub fn rot(state: *DtMachine) !void {
 
 pub fn p(state: *DtMachine) !void {
     const val = try state.pop();
+    try _p(val, state.alloc, stdout);
+}
 
+pub fn ep(state: *DtMachine) !void {
+    const val = try state.pop();
+    try _p(val, state.alloc, stderr);
+}
+
+fn _p(val: DtVal, allocator: Allocator, writer: std.fs.File.Writer) !void {
     switch (val) {
         .string => |s| {
-            var unescaped = try std.mem.replaceOwned(u8, state.alloc, s, "\\n", "\n");
-            unescaped = try std.mem.replaceOwned(u8, state.alloc, unescaped, "\\\"", "\"");
-            try stdout.print("{s}", .{unescaped});
+            var unescaped = try std.mem.replaceOwned(u8, allocator, s, "\\n", "\n");
+            unescaped = try std.mem.replaceOwned(u8, allocator, unescaped, "\\\"", "\"");
+            try writer.print("{s}", .{unescaped});
         },
         else => {
-            try val.print(state.alloc);
+            try val.print(allocator);
         },
     }
 }
 
-pub fn nl(state: *DtMachine) !void {
-    _ = state;
+pub fn nl(_: *DtMachine) !void {
     try stdout.print("\n", .{});
+}
+
+pub fn enl(_: *DtMachine) !void {
+    try stderr.print("\n", .{});
 }
 
 pub fn dotS(state: *DtMachine) !void {
@@ -1356,4 +1370,12 @@ pub fn toQuote(state: *DtMachine) !void {
         return DtError.NoCoersionToQuote;
     };
     try state.push(.{ .quote = quote });
+}
+
+pub fn toError(state: *DtMachine) !void {
+    const val = try state.pop();
+    var errName = try val.intoString(state);
+    errName = std.mem.trim(u8, errName, "~");
+
+    try state.push(.{ .err = errName });
 }

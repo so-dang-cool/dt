@@ -38,10 +38,16 @@
 
 ### Display ###
 
-[ p ] \print def
 [ p nl ] \pl def
+[ p ] \print def
 [ pl ] \println def
 [ \pl map drop ] \pls def
+
+[ ep enl ] \epl def
+[ ep ] \eprint def
+[ epl ] \eprintln def
+[ \epl map drop ] \epls def
+
 [ .s ] \status def
 
 

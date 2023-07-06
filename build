@@ -15,7 +15,7 @@ clean() {
     cargo clean
 }
 
-build() {
+compile() {
     zig build
 }
 
