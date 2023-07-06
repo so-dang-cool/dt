@@ -13,7 +13,7 @@ const string = @import("string.zig");
 
 const interpret = @import("interpret.zig");
 const Quote = interpret.Quote;
-const DtError = interpret.DtError;
+const Error = interpret.DtError;
 const DtVal = interpret.DtVal;
 const DtMachine = interpret.DtMachine;
 
@@ -88,7 +88,7 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
     try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
     try machine.define("any?", "return true if any value in a quote passes a predicate", .{ .builtin = any });
-    try machine.define("len", "the length of a quote or string", .{ .builtin = len });
+    try machine.define("len", "the length of a string or quote or 1 for single values", .{ .builtin = len });
 
     try machine.define("...", "expand a quote", .{ .builtin = ellipsis });
     try machine.define("rev", "reverse a quote or string", .{ .builtin = rev });
@@ -109,13 +109,13 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("to-error", "coerce value to an error", .{ .builtin = toError });
 }
 
-pub fn quit(state: *DtMachine) !void {
-    const ctx = try state.popContext();
+pub fn quit(dt: *DtMachine) !void {
+    const ctx = try dt.popContext();
 
     if (ctx.items.len > 0) {
         try stderr.print("Warning: Exited with unused values: [ ", .{});
         for (ctx.items) |item| {
-            try item.print(state.alloc);
+            try item.print(dt.alloc);
             try stderr.print(" ", .{});
         }
         try stderr.print("] \n", .{});
@@ -124,267 +124,228 @@ pub fn quit(state: *DtMachine) !void {
     std.os.exit(0);
 }
 
-pub fn exit(state: *DtMachine) !void {
-    const val = state.pop() catch DtVal{ .int = 255 };
+pub fn exit(dt: *DtMachine) !void {
+    const val = dt.pop() catch DtVal{ .int = 255 };
     const i = try val.intoInt();
 
     if (i < 0) {
-        return DtError.IntegerUnderflow;
+        return dt.rewind(val, Error.IntegerUnderflow);
     } else if (i > 255) {
-        return DtError.IntegerOverflow;
+        return dt.rewind(val, Error.IntegerOverflow);
     }
 
     const code: u8 = @intCast(i);
     std.os.exit(code);
 }
 
-pub fn version(state: *DtMachine) !void {
-    try state.push(.{ .string = main.version });
+pub fn version(dt: *DtMachine) !void {
+    try dt.push(.{ .string = main.version });
 }
 
-pub fn cwd(state: *DtMachine) !void {
-    const theCwd = try std.process.getCwdAlloc(state.alloc);
-    try state.push(.{ .string = theCwd });
+pub fn cwd(dt: *DtMachine) !void {
+    const theCwd = try std.process.getCwdAlloc(dt.alloc);
+    try dt.push(.{ .string = theCwd });
 }
 
-pub fn cd(state: *DtMachine) !void {
-    const usage = "USAGE: path cd ({any})\n";
-    _ = usage;
-
-    const val = try state.pop();
-    var path = try val.intoString(state);
+pub fn cd(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    var path = val.intoString(dt) catch |e| return dt.rewind(val, e);
 
     if (std.mem.eql(u8, path, "~")) {
-        path = try std.process.getEnvVarOwned(state.alloc, "HOME");
+        path = try std.process.getEnvVarOwned(dt.alloc, "HOME");
     }
 
     std.os.chdir(path) catch |e| {
         try stderr.print("Unable to change directory: {any}\n", .{e});
-        try state.push(val);
+        try dt.push(val);
     };
 }
 
-pub fn ls(state: *DtMachine) !void {
-    const theCwd = try std.process.getCwdAlloc(state.alloc);
+pub fn ls(dt: *DtMachine) !void {
+    const theCwd = try std.process.getCwdAlloc(dt.alloc);
     var dir = try std.fs.openIterableDirAbsolute(theCwd, .{});
     var entries = dir.iterate();
 
-    var quote = Quote.init(state.alloc);
+    var quote = Quote.init(dt.alloc);
     while (try entries.next()) |entry| {
-        var name = try state.alloc.dupe(u8, entry.name);
+        var name = try dt.alloc.dupe(u8, entry.name);
         try quote.append(.{ .string = name });
     }
 
-    try state.push(.{ .quote = quote });
+    try dt.push(.{ .quote = quote });
 
     dir.close();
 }
 
-pub fn readf(state: *DtMachine) !void {
-    const val = try state.pop();
-    const filename = val.intoString(state) catch |e| {
-        try state.push(val);
-        return e;
-    };
+pub fn readf(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    const filename = val.intoString(dt) catch |e| return dt.rewind(val, e);
 
     // We get a Dir from CWD so we can resolve relative paths
-    const theCwdPath = try std.process.getCwdAlloc(state.alloc);
+    const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
     var file = try theCwd.openFile(filename, .{ .mode = .read_only });
-    var contents = try file.readToEndAlloc(state.alloc, std.math.pow(usize, 2, 16));
+    var contents = try file.readToEndAlloc(dt.alloc, std.math.pow(usize, 2, 16));
 
-    try state.push(.{ .string = contents });
+    try dt.push(.{ .string = contents });
     file.close();
 }
 
-pub fn writef(state: *DtMachine) !void {
-    const vals = try state.popN(2);
-    const filename = vals[1].intoString(state) catch |e| {
-        try state.pushN(2, vals);
-        return e;
-    };
-    const contents = vals[0].intoString(state) catch |e| {
-        try state.pushN(2, vals);
-        return e;
-    };
+pub fn writef(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
+    const filename = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    const contents = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
 
     // We get a Dir from CWD so we can resolve relative paths
-    const theCwdPath = try std.process.getCwdAlloc(state.alloc);
+    const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
     try theCwd.writeFile(filename, contents);
     theCwd.close();
 }
 
-pub fn exec(state: *DtMachine) !void {
-    const val = try state.pop();
-    const childProcess = try val.intoString(state);
+pub fn exec(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    const childProcess = try val.intoString(dt);
     var childArgs = std.mem.splitAny(u8, childProcess, " \t");
-    var argv = ArrayList([]const u8).init(state.alloc);
+    var argv = ArrayList([]const u8).init(dt.alloc);
 
     while (childArgs.next()) |arg| try argv.append(arg);
 
     var result = std.process.Child.exec(.{
-        .allocator = state.alloc,
+        .allocator = dt.alloc,
         .argv = try argv.toOwnedSlice(),
-    }) catch |e| {
-        try stderr.print("Unable to launch child process: {any}\n", .{e});
-        try state.push(.{ .bool = false });
-        return;
-    };
+    }) catch |e| return dt.rewind(val, e);
 
     switch (result.term) {
         .Exited => |code| if (code == 0) {
             const trimmed = std.mem.trimRight(u8, result.stdout, "\r\n");
-            try state.push(.{ .string = trimmed });
+            try dt.push(.{ .string = trimmed });
             return;
         },
         else => {
             try stderr.print("{s}", .{result.stderr});
-            try state.push(.{ .bool = false });
+            try dt.push(.{ .bool = false });
         },
     }
 }
 
-pub fn defBang(state: *DtMachine) !void {
-    const usage = "USAGE: quote term def! ({any})\n";
+pub fn defBang(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
-    const vals = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
+    const quote = try vals[0].intoQuote(dt);
+    const name = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
 
-    const quote = try vals[0].intoQuote(state);
-    const name = try vals[1].intoString(state);
-
-    try state.define(name, name, .{ .quote = quote });
+    try dt.define(name, name, .{ .quote = quote });
 }
 
-pub fn defs(state: *DtMachine) !void {
-    const usage = "USAGE: defs -> [cmdnames...] ({any})\n";
-    _ = usage;
-
-    var quote = Quote.init(state.alloc);
-    var defNames = state.defs.keyIterator();
+pub fn defs(dt: *DtMachine) !void {
+    var quote = Quote.init(dt.alloc);
+    var defNames = dt.defs.keyIterator();
 
     while (defNames.next()) |defName| {
-        var cmdName = try state.alloc.dupe(u8, defName.*);
+        var cmdName = try dt.alloc.dupe(u8, defName.*);
         try quote.append(.{ .string = cmdName });
     }
 
-    try state.push(.{ .quote = quote });
+    try dt.push(.{ .quote = quote });
 }
 
-pub fn isDef(state: *DtMachine) !void {
-    const usage = "USAGE: term def? ({any})\n";
+pub fn isDef(dt: *DtMachine) !void {
+    const val = try dt.pop();
 
-    const val = state.pop() catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
+    const name = val.intoString(dt) catch |e| return dt.rewind(val, e);
 
-    const name = try val.intoString(state);
-
-    try state.push(.{ .bool = state.defs.contains(name) });
+    try dt.push(.{ .bool = dt.defs.contains(name) });
 }
 
-pub fn cmdUsage(state: *DtMachine) !void {
-    const usage = "USAGE: term usage -> str ({any})\n";
+pub fn cmdUsage(dt: *DtMachine) !void {
+    const val = try dt.pop();
 
-    const val = state.pop() catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
+    const cmdName = val.intoString(dt) catch |e| return dt.rewind(val, e);
 
-    const cmdName = try val.intoString(state);
+    const cmd = dt.defs.get(cmdName) orelse return dt.rewind(val, Error.CommandUndefined);
 
-    const cmd = state.defs.get(cmdName) orelse {
-        const err = DtError.CommandUndefined;
-        try stderr.print(usage, .{err});
-        return err;
-    };
+    var description = try dt.alloc.dupe(u8, cmd.description);
 
-    var description = try state.alloc.dupe(u8, cmd.description);
-
-    try state.push(.{ .string = description });
+    try dt.push(.{ .string = description });
 }
 
 // Variable binding
-pub fn colon(state: *DtMachine) !void {
-    const usage = "USAGE: ...vals term(s) : ({any})\n";
-
-    var termVal = try state.pop();
+pub fn colon(dt: *DtMachine) !void {
+    var termVal = try dt.pop();
 
     // Single term
     if (termVal.isCommand() or termVal.isDeferredCommand() or termVal.isString()) {
-        const cmdName = try termVal.intoString(state);
+        const cmdName = try termVal.intoString(dt);
 
-        const val = state.pop() catch |e| {
-            try stderr.print(usage, .{e});
-            try state.push(termVal);
-            return e;
-        };
+        const val = dt.pop() catch |e| return dt.rewind(termVal, e);
 
-        var quote = ArrayList(DtVal).init(state.alloc);
+        var quote = Quote.init(dt.alloc);
         try quote.append(val);
-        try state.define(cmdName, cmdName, .{ .quote = quote });
+        try dt.define(cmdName, cmdName, .{ .quote = quote });
         return;
     }
 
     // Multiple terms
 
-    var terms = (try termVal.intoQuote(state)).items;
+    var terms = (try termVal.intoQuote(dt)).items;
 
-    var vals = try state.alloc.alloc(DtVal, terms.len);
+    var vals = try dt.alloc.alloc(DtVal, terms.len);
 
     var i = terms.len;
 
     while (i > 0) : (i -= 1) {
-        vals[i - 1] = try state.pop();
+        vals[i - 1] = dt.pop() catch |e| {
+            while (i < terms.len) : (i += 1) {
+                try dt.push(vals[i]);
+            }
+            return dt.rewind(termVal, e);
+        };
     }
 
     for (terms, vals) |termV, val| {
-        const term = try termV.intoString(state);
-        var quote = ArrayList(DtVal).init(state.alloc);
+        const term = try termV.intoString(dt);
+        var quote = ArrayList(DtVal).init(dt.alloc);
         try quote.append(val);
-        try state.define(term, term, .{ .quote = quote });
+        try dt.define(term, term, .{ .quote = quote });
     }
 }
 
-pub fn dup(state: *DtMachine) !void {
-    const val = try state.pop();
-    try state.push(val);
-    try state.push(val);
+pub fn dup(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    try dt.push(val);
+    try dt.push(val);
 }
 
-pub fn drop(state: *DtMachine) !void {
-    _ = try state.pop();
+pub fn drop(dt: *DtMachine) !void {
+    _ = try dt.pop();
 }
 
-pub fn swap(state: *DtMachine) !void {
-    const vals = try state.popN(2);
-    try state.push(vals[1]);
-    try state.push(vals[0]);
+pub fn swap(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
+    try dt.push(vals[1]);
+    try dt.push(vals[0]);
 }
 
 // ... a b c (rot) ... c a b
 //   [ 0 1 2 ]       [ 2 0 1 ]
-pub fn rot(state: *DtMachine) !void {
-    const vals = try state.popN(3);
-    try state.push(vals[2]);
-    try state.push(vals[0]);
-    try state.push(vals[1]);
+pub fn rot(dt: *DtMachine) !void {
+    const vals = try dt.popN(3);
+    try dt.push(vals[2]);
+    try dt.push(vals[0]);
+    try dt.push(vals[1]);
 }
 
-pub fn p(state: *DtMachine) !void {
-    const val = try state.pop();
-    try _p(val, state.alloc, stdout);
+pub fn p(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    try _p(val, dt.alloc, stdout);
 }
 
-pub fn ep(state: *DtMachine) !void {
-    const val = try state.pop();
-    try _p(val, state.alloc, stderr);
+pub fn ep(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    try _p(val, dt.alloc, stderr);
 }
 
 fn _p(val: DtVal, allocator: Allocator, writer: std.fs.File.Writer) !void {
@@ -408,50 +369,50 @@ pub fn enl(_: *DtMachine) !void {
     try stderr.print("\n", .{});
 }
 
-pub fn dotS(state: *DtMachine) !void {
+pub fn dotS(dt: *DtMachine) !void {
     try stdout.print("[ ", .{});
 
-    var top = state.nest.first orelse return;
+    var top = dt.nest.first orelse return;
 
     for (top.data.items) |val| {
-        try val.print(state.alloc);
+        try val.print(dt.alloc);
         try stdout.print(" ", .{});
     }
 
     try stdout.print("]\n", .{});
 }
 
-pub fn readLine(state: *DtMachine) !void {
-    var line = ArrayList(u8).init(state.alloc);
+pub fn readLine(dt: *DtMachine) !void {
+    var line = ArrayList(u8).init(dt.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
 
-    try state.push(.{ .string = line.items });
+    try dt.push(.{ .string = line.items });
 }
 
-pub fn readLines(state: *DtMachine) !void {
-    var lines = Quote.init(state.alloc);
+pub fn readLines(dt: *DtMachine) !void {
+    var lines = Quote.init(dt.alloc);
 
     while (true) {
-        readLine(state) catch |err| switch (err) {
+        readLine(dt) catch |err| switch (err) {
             error.EndOfStream => break,
             else => return err,
         };
-        const val = try state.pop();
-        const line = try val.intoString(state);
+        const val = try dt.pop();
+        const line = try val.intoString(dt);
         try lines.append(.{ .string = line });
     }
 
-    try state.push(.{ .quote = lines });
+    try dt.push(.{ .quote = lines });
 }
 
-pub fn procname(state: *DtMachine) !void {
+pub fn procname(dt: *DtMachine) !void {
     var procArgs = std.process.args();
-    var name = procArgs.next() orelse return DtError.ProcessNameUnknown;
-    try state.push(.{ .string = name });
+    var name = procArgs.next() orelse return Error.ProcessNameUnknown;
+    try dt.push(.{ .string = name });
 }
 
-pub fn args(state: *DtMachine) !void {
-    var quote = Quote.init(state.alloc);
+pub fn args(dt: *DtMachine) !void {
+    var quote = Quote.init(dt.alloc);
     var procArgs = std.process.args();
     _ = procArgs.next(); // Discard process name
 
@@ -459,16 +420,16 @@ pub fn args(state: *DtMachine) !void {
         try quote.append(.{ .string = arg });
     }
 
-    try state.push(.{ .quote = quote });
+    try dt.push(.{ .quote = quote });
 }
 
-pub fn eval(state: *DtMachine) !void {
-    var val = try state.pop();
-    var code = try val.intoString(state);
+pub fn eval(dt: *DtMachine) !void {
+    var val = try dt.pop();
+    var code = val.intoString(dt) catch |e| return dt.rewind(val, e);
 
-    var tokens = Token.parse(state.alloc, code);
+    var tokens = Token.parse(dt.alloc, code);
     while (try tokens.next()) |tok| {
-        try state.interpret(tok);
+        try dt.interpret(tok);
     }
 }
 
@@ -476,222 +437,152 @@ pub fn interactive(state: *DtMachine) !void {
     try state.push(.{ .bool = std.io.getStdIn().isTty() });
 }
 
-pub fn add(state: *DtMachine) !void {
-    const usage = "USAGE: a b + -> a+b ({any})\n";
-
-    const ns = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
-
-    if (ns[0].isInt() and ns[1].isInt()) {
-        const a = try ns[0].intoInt();
-        const b = try ns[1].intoInt();
-
-        const res = @addWithOverflow(a, b);
-
-        if (res[1] == 1) {
-            try state.pushN(2, ns);
-            try stderr.print("ERROR: Adding {} and {} would overflow.\n", .{ a, b });
-            return DtError.IntegerOverflow;
-        }
-
-        try state.push(.{ .int = res[0] });
-        return;
-    }
-
-    if (ns[0].isFloat() or ns[1].isFloat()) {
-        const a = try ns[0].intoFloat();
-        const b = try ns[1].intoFloat();
-
-        try state.push(.{ .float = a + b });
-        return;
-    }
-
-    try state.pushN(2, ns);
-    try stderr.print(usage, .{DtError.WrongArguments});
-    return DtError.WrongArguments;
-}
-
-pub fn subtract(state: *DtMachine) !void {
-    const usage = "USAGE: a b - -> a+b ({any})\n";
-
-    const ns = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
-
-    if (ns[0].isInt() and ns[1].isInt()) {
-        const a = try ns[0].intoInt();
-        const b = try ns[1].intoInt();
-
-        const res = @subWithOverflow(a, b);
-
-        if (res[1] == 1) {
-            try state.pushN(2, ns);
-            try stderr.print("ERROR: Subtracting {} from {} would overflow.\n", .{ b, a });
-            return DtError.IntegerOverflow;
-        }
-
-        try state.push(.{ .int = res[0] });
-        return;
-    }
-
-    if (ns[0].isFloat() or ns[1].isFloat()) {
-        const a = try ns[0].intoFloat();
-        const b = try ns[1].intoFloat();
-
-        try state.push(.{ .float = a - b });
-        return;
-    }
-
-    try state.pushN(2, ns);
-    try stderr.print(usage, .{DtError.WrongArguments});
-    return DtError.WrongArguments;
-}
-
-pub fn multiply(state: *DtMachine) !void {
-    const usage = "USAGE: a b * -> a*b ({any})\n";
-
-    const ns = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
-
-    if (ns[0].isInt() and ns[1].isInt()) {
-        const a = try ns[0].intoInt();
-        const b = try ns[1].intoInt();
-
-        const res = @mulWithOverflow(a, b);
-
-        if (res[1] == 1) {
-            try state.pushN(2, ns);
-            try stderr.print("ERROR: Multiplying {} by {} would overflow.\n", .{ a, b });
-            return DtError.IntegerOverflow;
-        }
-
-        try state.push(.{ .int = res[0] });
-        return;
-    }
-
-    if (ns[0].isFloat() or ns[1].isFloat()) {
-        const a = try ns[0].intoFloat();
-        const b = try ns[1].intoFloat();
-
-        try state.push(.{ .float = a * b });
-        return;
-    }
-
-    try state.pushN(2, ns);
-    try stderr.print(usage, .{DtError.WrongArguments});
-    return DtError.WrongArguments;
-}
-
-pub fn divide(state: *DtMachine) !void {
-    const usage = "USAGE: a b / -> a/b ({any})\n";
-
-    const ns = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
-
-    if (ns[0].isInt() and ns[1].isInt()) {
-        const a = try ns[0].intoInt();
-        const b = try ns[1].intoInt();
-
-        if (b == 0) {
-            try state.pushN(2, ns);
-            try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
-            return DtError.DivisionByZero;
-        }
-
-        try state.push(.{ .int = @divTrunc(a, b) });
-        return;
-    }
-
-    if (ns[0].isFloat() or ns[1].isFloat()) {
-        const a = try ns[0].intoFloat();
-        const b = try ns[1].intoFloat();
-
-        if (b == 0) {
-            try state.pushN(2, ns);
-            try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
-            return DtError.DivisionByZero;
-        }
-
-        try state.push(.{ .float = a / b });
-        return;
-    }
-
-    try state.pushN(2, ns);
-    try stderr.print(usage, .{DtError.WrongArguments});
-    return DtError.WrongArguments;
-}
-
-pub fn modulo(state: *DtMachine) !void {
-    const usage = "USAGE: a b % -> a%b ({any})\n";
-
-    const ns = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
-
-    if (ns[0].isInt() and ns[1].isInt()) {
-        const a = try ns[0].intoInt();
-        const b = try ns[1].intoInt();
-
-        try state.push(.{ .int = @mod(a, b) });
-        return;
-    }
-
-    if (ns[0].isFloat() or ns[1].isFloat()) {
-        const a = try ns[0].intoFloat();
-        const b = try ns[1].intoFloat();
-
-        try state.push(.{ .float = @mod(a, b) });
-        return;
-    }
-
-    try state.pushN(2, ns);
-    try stderr.print(usage, .{DtError.WrongArguments});
-    return DtError.WrongArguments;
-}
-
-pub fn abs(state: *DtMachine) !void {
-    const usage = "USAGE: n abs -> |n| ({any})\n";
-
-    const n = try state.pop();
-
-    if (n.isInt()) {
-        const a = try n.intoInt();
-
-        try state.push(.{ .int = try std.math.absInt(a) });
-        return;
-    }
-
-    if (n.isFloat()) {
-        const a = try n.intoFloat();
-
-        try state.push(.{ .float = std.math.fabs(a) });
-        return;
-    }
-
-    try state.push(n);
-    try stderr.print(usage, .{DtError.WrongArguments});
-    return DtError.WrongArguments;
-}
-
-pub fn eq(state: *DtMachine) !void {
-    const usage = "USAGE: a b eq? -> bool ({any})\n";
-    _ = usage;
-
-    const vals = try state.popN(2);
+pub fn add(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try state.push(.{ .bool = a == b });
+        const res = @addWithOverflow(a, b);
+
+        if (res[1] == 1) {
+            try dt.pushN(2, vals);
+            try stderr.print("ERROR: Adding {} and {} would overflow.\n", .{ a, b });
+            return Error.IntegerOverflow;
+        }
+
+        try dt.push(.{ .int = res[0] });
+        return;
+    }
+
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+
+    try dt.push(.{ .float = a + b });
+}
+
+pub fn subtract(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
+
+    if (vals[0].isInt() and vals[1].isInt()) {
+        const a = try vals[0].intoInt();
+        const b = try vals[1].intoInt();
+
+        const res = @subWithOverflow(a, b);
+
+        if (res[1] == 1) {
+            try dt.pushN(2, vals);
+            try stderr.print("ERROR: Subtracting {} from {} would overflow.\n", .{ b, a });
+            return Error.IntegerOverflow;
+        }
+
+        try dt.push(.{ .int = res[0] });
+        return;
+    }
+
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+
+    try dt.push(.{ .float = a - b });
+}
+
+pub fn multiply(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
+
+    if (vals[0].isInt() and vals[1].isInt()) {
+        const a = try vals[0].intoInt();
+        const b = try vals[1].intoInt();
+
+        const res = @mulWithOverflow(a, b);
+
+        if (res[1] == 1) {
+            try dt.pushN(2, vals);
+            try stderr.print("ERROR: Multiplying {} by {} would overflow.\n", .{ a, b });
+            return Error.IntegerOverflow;
+        }
+
+        try dt.push(.{ .int = res[0] });
+        return;
+    }
+
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+
+    try dt.push(.{ .float = a * b });
+    return;
+}
+
+pub fn divide(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
+
+    if (vals[0].isInt() and vals[1].isInt()) {
+        const a = try vals[0].intoInt();
+        const b = try vals[1].intoInt();
+
+        if (b == 0) {
+            try dt.pushN(2, vals);
+            try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
+            return Error.DivisionByZero;
+        }
+
+        try dt.push(.{ .int = @divTrunc(a, b) });
+        return;
+    }
+
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+
+    if (b == 0) {
+        try dt.pushN(2, vals);
+        try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
+        return Error.DivisionByZero;
+    }
+
+    try dt.push(.{ .float = a / b });
+}
+
+pub fn modulo(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
+
+    if (vals[0].isInt() and vals[1].isInt()) {
+        const a = try vals[0].intoInt();
+        const b = try vals[1].intoInt();
+
+        try dt.push(.{ .int = @mod(a, b) });
+        return;
+    }
+
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+
+    try dt.push(.{ .float = @mod(a, b) });
+    return;
+}
+
+pub fn abs(dt: *DtMachine) !void {
+    const val = try dt.pop();
+
+    if (val.isInt()) {
+        const a = try val.intoInt();
+
+        try dt.push(.{ .int = try std.math.absInt(a) });
+        return;
+    }
+
+    const a = val.intoFloat() catch |e| return dt.rewind(val, e);
+
+    try dt.push(.{ .float = std.math.fabs(a) });
+}
+
+pub fn eq(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
+
+    if (vals[0].isInt() and vals[1].isInt()) {
+        const a = try vals[0].intoInt();
+        const b = try vals[1].intoInt();
+
+        try dt.push(.{ .bool = a == b });
         return;
     }
 
@@ -699,390 +590,319 @@ pub fn eq(state: *DtMachine) !void {
         const a = try vals[0].intoFloat();
         const b = try vals[1].intoFloat();
 
-        try state.push(.{ .bool = a == b });
+        try dt.push(.{ .bool = a == b });
         return;
     }
 
     if (vals[0].isBool() and vals[1].isBool()) {
-        const a = vals[0].intoBool(state);
-        const b = vals[1].intoBool(state);
+        const a = vals[0].intoBool(dt);
+        const b = vals[1].intoBool(dt);
 
-        try state.push(.{ .bool = a == b });
+        try dt.push(.{ .bool = a == b });
         return;
     }
 
     if (vals[0].isQuote() and vals[1].isQuote()) {
-        const a = try vals[0].intoQuote(state);
-        const b = try vals[1].intoQuote(state);
+        const a = try vals[0].intoQuote(dt);
+        const b = try vals[1].intoQuote(dt);
 
         const as: []DtVal = a.items;
         const bs: []DtVal = b.items;
 
         if (as.len != bs.len) {
-            try state.push(.{ .bool = false });
+            try dt.push(.{ .bool = false });
             return;
         }
 
-        var child = try state.child();
+        var child = try dt.child();
 
         for (as, 0..) |val, i| {
             try child.push(val);
             try child.push(bs[i]);
             try eq(&child);
             const bv = try child.pop();
-            const res = bv.intoBool(state);
+            const res = bv.intoBool(dt);
             if (!res) {
-                try state.push(.{ .bool = false });
+                try dt.push(.{ .bool = false });
                 return;
             }
         }
 
-        try state.push(.{ .bool = true });
+        try dt.push(.{ .bool = true });
         return;
     }
 
     if (!vals[0].isQuote() and !vals[1].isQuote()) {
-        const a = try vals[0].intoString(state);
-        const b = try vals[1].intoString(state);
+        const a = try vals[0].intoString(dt);
+        const b = try vals[1].intoString(dt);
 
-        try state.push(.{ .bool = std.mem.eql(u8, a, b) });
+        try dt.push(.{ .bool = std.mem.eql(u8, a, b) });
         return;
     }
 
-    try state.push(.{ .bool = false });
+    try dt.push(.{ .bool = false });
 }
 
-pub fn greaterThan(state: *DtMachine) !void {
-    const usage = "USAGE: a b gt? -> b>a ({any})\n";
-
-    const vals = try state.popN(2);
+pub fn greaterThan(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try state.push(.{ .bool = b > a });
+        try dt.push(.{ .bool = b > a });
         return;
     }
 
-    const a = vals[0].intoFloat() catch {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{DtError.WrongArguments});
-        return DtError.WrongArguments;
-    };
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
 
-    const b = vals[1].intoFloat() catch {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{DtError.WrongArguments});
-        return DtError.WrongArguments;
-    };
-
-    try state.push(.{ .bool = b > a });
+    try dt.push(.{ .bool = b > a });
 }
 
-pub fn greaterThanEq(state: *DtMachine) !void {
-    const usage = "USAGE: a b gt? -> b>=a ({any})\n";
-
-    const vals = try state.popN(2);
+pub fn greaterThanEq(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try state.push(.{ .bool = b >= a });
+        try dt.push(.{ .bool = b >= a });
         return;
     }
 
-    const a = vals[0].intoFloat() catch {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{DtError.WrongArguments});
-        return DtError.WrongArguments;
-    };
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
 
-    const b = vals[1].intoFloat() catch {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{DtError.WrongArguments});
-        return DtError.WrongArguments;
-    };
-
-    try state.push(.{ .bool = b >= a });
+    try dt.push(.{ .bool = b >= a });
 }
 
-pub fn lessThan(state: *DtMachine) !void {
-    const usage = "USAGE: a b lt? -> b<a ({any})\n";
-
-    const vals = try state.popN(2);
+pub fn lessThan(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try state.push(.{ .bool = b < a });
+        try dt.push(.{ .bool = b < a });
         return;
     }
 
-    const a = vals[0].intoFloat() catch {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{DtError.WrongArguments});
-        return DtError.WrongArguments;
-    };
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
 
-    const b = vals[1].intoFloat() catch {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{DtError.WrongArguments});
-        return DtError.WrongArguments;
-    };
-
-    try state.push(.{ .bool = b < a });
+    try dt.push(.{ .bool = b < a });
 }
 
-pub fn lessThanEq(state: *DtMachine) !void {
-    const usage = "USAGE: a b lte? -> b<=a ({any})\n";
-
-    const vals = try state.popN(2);
+pub fn lessThanEq(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try state.push(.{ .bool = b <= a });
+        try dt.push(.{ .bool = b <= a });
         return;
     }
 
-    const a = vals[0].intoFloat() catch {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{DtError.WrongArguments});
-        return DtError.WrongArguments;
-    };
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
 
-    const b = vals[1].intoFloat() catch {
-        try state.pushN(2, vals);
-        try stderr.print(usage, .{DtError.WrongArguments});
-        return DtError.WrongArguments;
-    };
-
-    try state.push(.{ .bool = b <= a });
+    try dt.push(.{ .bool = b <= a });
 }
 
-pub fn boolAnd(state: *DtMachine) !void {
-    var vals = try state.popN(2);
+pub fn boolAnd(dt: *DtMachine) !void {
+    var vals = try dt.popN(2);
 
-    var a = vals[0].intoBool(state);
-    var b = vals[1].intoBool(state);
+    var a = vals[0].intoBool(dt);
+    var b = vals[1].intoBool(dt);
 
-    try state.push(.{ .bool = a and b });
+    try dt.push(.{ .bool = a and b });
 }
 
-pub fn boolOr(state: *DtMachine) !void {
-    var vals = try state.popN(2);
+pub fn boolOr(dt: *DtMachine) !void {
+    var vals = try dt.popN(2);
 
-    var a = vals[0].intoBool(state);
-    var b = vals[1].intoBool(state);
+    var a = vals[0].intoBool(dt);
+    var b = vals[1].intoBool(dt);
 
-    try state.push(.{ .bool = a or b });
+    try dt.push(.{ .bool = a or b });
 }
 
-pub fn not(state: *DtMachine) !void {
-    var val = try state.pop();
+pub fn not(dt: *DtMachine) !void {
+    var val = try dt.pop();
 
-    var a = val.intoBool(state);
-    try state.push(.{ .bool = !a });
+    var a = val.intoBool(dt);
+    try dt.push(.{ .bool = !a });
 }
 
-pub fn split(state: *DtMachine) !void {
-    const usage = "USAGE: str delim split -> [substrs...] ({any})\n";
-    _ = usage;
+pub fn split(dt: *DtMachine) !void {
+    var vals = try dt.popN(2);
 
-    var vals = try state.popN(2);
-
-    var str = try vals[0].intoString(state);
-    var delim = try vals[1].intoString(state);
+    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    var delim = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
 
     if (delim.len > 0) {
         var parts = std.mem.split(u8, str, delim);
-        var quote = Quote.init(state.alloc);
+        var quote = Quote.init(dt.alloc);
         while (parts.next()) |part| {
             try quote.append(.{ .string = part });
         }
-        try state.push(.{ .quote = quote });
+        try dt.push(.{ .quote = quote });
     } else {
-        var quote = Quote.init(state.alloc);
+        var quote = Quote.init(dt.alloc);
         for (str) |c| {
-            var s = try state.alloc.create([1]u8);
+            var s = try dt.alloc.create([1]u8);
             s[0] = c;
             try quote.append(.{ .string = s });
         }
-        try state.push(.{ .quote = quote });
+        try dt.push(.{ .quote = quote });
     }
 }
 
-pub fn join(state: *DtMachine) !void {
-    const usage = "USAGE: [strs...] delim join -> str ({any})\n";
-    _ = usage;
-
-    var vals = try state.popN(2);
+pub fn join(dt: *DtMachine) !void {
+    var vals = try dt.popN(2);
 
     if (!vals[0].isQuote()) {
-        const str = try vals[0].intoString(state);
-        try state.push(.{ .string = str });
+        const str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+        try dt.push(.{ .string = str });
         return;
     }
 
-    var strs = try vals[0].intoQuote(state);
-    var delim = try vals[1].intoString(state);
+    var strs = try vals[0].intoQuote(dt);
+    var delim = try vals[1].intoString(dt);
 
-    var parts = try ArrayList([]const u8).initCapacity(state.alloc, strs.items.len);
+    var parts = try ArrayList([]const u8).initCapacity(dt.alloc, strs.items.len);
     for (strs.items) |part| {
-        const s = try part.intoString(state);
+        const s = try part.intoString(dt);
         try parts.append(s);
     }
-    var acc = try std.mem.join(state.alloc, delim, parts.items);
-    try state.push(.{ .string = acc });
+    var acc = try std.mem.join(dt.alloc, delim, parts.items);
+    try dt.push(.{ .string = acc });
 }
 
-pub fn upcase(state: *DtMachine) !void {
-    var val = try state.pop();
-    const before = try val.intoString(state);
-    const after = try std.ascii.allocUpperString(state.alloc, before);
-    try state.push(.{ .string = after });
+pub fn upcase(dt: *DtMachine) !void {
+    var val = try dt.pop();
+    const before = val.intoString(dt) catch |e| return dt.rewind(val, e);
+
+    const after = try std.ascii.allocUpperString(dt.alloc, before);
+
+    try dt.push(.{ .string = after });
 }
 
-pub fn downcase(state: *DtMachine) !void {
-    var val = try state.pop();
-    const before = try val.intoString(state);
-    const after = try std.ascii.allocLowerString(state.alloc, before);
-    try state.push(.{ .string = after });
+pub fn downcase(dt: *DtMachine) !void {
+    var val = try dt.pop();
+    const before = val.intoString(dt) catch |e| return dt.rewind(val, e);
+
+    const after = try std.ascii.allocLowerString(dt.alloc, before);
+
+    try dt.push(.{ .string = after });
 }
 
-pub fn startsWith(state: *DtMachine) !void {
-    var vals = try state.popN(2);
-    var str = try vals[0].intoString(state);
-    var prefix = try vals[1].intoString(state);
-    try state.push(.{ .bool = std.mem.startsWith(u8, str, prefix) });
+pub fn startsWith(dt: *DtMachine) !void {
+    var vals = try dt.popN(2);
+
+    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    var prefix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+
+    try dt.push(.{ .bool = std.mem.startsWith(u8, str, prefix) });
 }
 
-pub fn endsWith(state: *DtMachine) !void {
-    var vals = try state.popN(2);
-    var str = try vals[0].intoString(state);
-    var suffix = try vals[1].intoString(state);
-    try state.push(.{ .bool = std.mem.endsWith(u8, str, suffix) });
+pub fn endsWith(dt: *DtMachine) !void {
+    var vals = try dt.popN(2);
+
+    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    var suffix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+
+    try dt.push(.{ .bool = std.mem.endsWith(u8, str, suffix) });
 }
 
-pub fn contains(state: *DtMachine) !void {
-    var vals = try state.popN(2);
-    var str = try vals[0].intoString(state);
-    var substr = try vals[1].intoString(state);
-    try state.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
+pub fn contains(dt: *DtMachine) !void {
+    var vals = try dt.popN(2);
+
+    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    var substr = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+
+    try dt.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
 }
 
-pub fn opt(state: *DtMachine) !void {
-    const usage = "USAGE: ... term|quote bool ? -> ... ({any})\n";
+pub fn opt(dt: *DtMachine) !void {
+    var val = try dt.pop();
+    const cond = val.intoBool(dt);
 
-    var val = state.pop() catch |e| switch (e) {
-        error.StackUnderflow => {
-            try stderr.print(usage, .{e});
-            return;
-        },
-        else => return e,
-    };
-
-    const cond = val.intoBool(state);
-
-    try if (cond) do(state) else drop(state) catch |e| {
-        try state.push(val);
-        try stderr.print(usage, .{e});
-        return e;
-    };
+    try if (cond) do(dt) else drop(dt) catch |e| return dt.rewind(val, e);
 }
 
-pub fn doBang(state: *DtMachine) !void {
-    const usage = "USAGE: ... term|quote do! -> ... ({any})\n";
-    _ = usage;
-
-    var val = try state.pop();
+pub fn doBang(dt: *DtMachine) !void {
+    var val = try dt.pop();
 
     if (val.isCommand() or val.isDeferredCommand() or val.isString()) {
-        const cmdName = try val.intoString(state);
+        const cmdName = try val.intoString(dt);
 
-        try state.handleCmd(cmdName);
+        try dt.handleCmd(cmdName);
         return;
     }
 
-    const quote = try val.intoQuote(state);
+    const quote = try val.intoQuote(dt);
 
-    for (quote.items) |v| try state.handle(v);
+    for (quote.items) |v| try dt.handle(v);
 }
 
 // Same as do! but does not uplevel any definitions
-pub fn do(state: *DtMachine) !void {
-    const usage = "USAGE: ... term|quote do -> ... ({any})\n";
-    _ = usage;
+pub fn do(dt: *DtMachine) !void {
+    var val = try dt.pop();
 
-    var val = try state.pop();
-
-    var jail = try state.child();
-    jail.nest = state.nest;
+    var jail = try dt.child();
+    jail.nest = dt.nest;
 
     if (val.isCommand() or val.isDeferredCommand()) {
-        const cmdName = try val.intoString(state);
+        const cmdName = try val.intoString(dt);
 
         try jail.handleCmd(cmdName);
 
-        state.nest = jail.nest;
+        dt.nest = jail.nest;
         return;
     }
 
-    const quote = try val.intoQuote(state);
+    const quote = try val.intoQuote(dt);
 
     for (quote.items) |v| try jail.handle(v);
-    state.nest = jail.nest;
+    dt.nest = jail.nest;
 }
 
-pub fn doin(state: *DtMachine) !void {
-    const usage = "USAGE: [as...] cmd|quote doin -> [bs...] ({any})\n";
-    const vals = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
+pub fn doin(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
-    const quote = try vals[0].intoQuote(state);
+    const quote = try vals[0].intoQuote(dt);
     const f = vals[1];
 
-    _doin(state, quote, f) catch {
-        try stderr.print(usage, .{DtError.WrongArguments});
-        try state.pushN(2, vals);
-    };
+    _doin(dt, quote, f) catch |e| return dt.rewindN(2, vals, e);
 }
 
-fn _doin(state: *DtMachine, quote: Quote, f: DtVal) !void {
-    var child = try state.child();
+fn _doin(dt: *DtMachine, quote: Quote, f: DtVal) !void {
+    var child = try dt.child();
 
     try child.push(.{ .quote = quote });
     try ellipsis(&child);
     try child.push(f);
     try do(&child);
+
     const resultQuote = try child.popContext();
 
-    try state.push(.{ .quote = resultQuote });
+    try dt.push(.{ .quote = resultQuote });
 }
 
-pub fn map(state: *DtMachine) !void {
-    const usage = "USAGE: [as] (a->b) map -> [bs] ({any})\n";
+pub fn map(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
-    const vals = try state.popN(2);
-
-    const quote = try vals[0].intoQuote(state);
+    const quote = try vals[0].intoQuote(dt);
     const f = vals[1];
 
-    _map(state, quote, f) catch |err| {
-        if (err == error.BrokenPipe) return err;
-        try stderr.print(usage, .{err});
-        try state.pushN(2, vals);
-    };
+    _map(dt, quote, f) catch |e| return dt.rewindN(2, vals, e);
 }
 
-fn _map(state: *DtMachine, as: Quote, f: DtVal) !void {
-    var child = try state.child();
+fn _map(dt: *DtMachine, as: Quote, f: DtVal) !void {
+    var child = try dt.child();
 
     for (as.items) |a| {
         try child.push(a);
@@ -1092,245 +912,205 @@ fn _map(state: *DtMachine, as: Quote, f: DtVal) !void {
 
     const newQuote = try child.popContext();
 
-    try state.push(DtVal{ .quote = newQuote });
+    try dt.push(DtVal{ .quote = newQuote });
 }
 
-pub fn filter(state: *DtMachine) !void {
-    const usage = "USAGE: [as] (a->bool) filter -> [bs] ({any})\n";
+pub fn filter(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
-    const vals = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.WrongArguments;
-    };
-
-    const quote = try vals[0].intoQuote(state);
+    const quote = try vals[0].intoQuote(dt);
     const f = vals[1];
 
-    _filter(state, quote, f) catch |err| {
-        try stderr.print(usage, .{err});
-        try state.pushN(2, vals);
-    };
+    _filter(dt, quote, f) catch |e| return dt.rewindN(2, vals, e);
 }
 
-fn _filter(state: *DtMachine, as: Quote, f: DtVal) !void {
-    var quote = Quote.init(state.alloc);
+fn _filter(dt: *DtMachine, as: Quote, f: DtVal) !void {
+    var quote = Quote.init(dt.alloc);
 
     for (as.items) |a| {
-        var child = try state.child();
+        var child = try dt.child();
+
         try child.push(a);
         try child.push(f);
         try do(&child);
+
         var lastVal = try child.pop();
-        var cond = lastVal.intoBool(state);
+        var cond = lastVal.intoBool(dt);
 
         if (cond) {
             try quote.append(a);
         }
     }
 
-    try state.push(DtVal{ .quote = quote });
+    try dt.push(DtVal{ .quote = quote });
 }
 
-pub fn any(state: *DtMachine) !void {
-    const usage = "USAGE: [as] (a->bool) any? -> bool ({any})\n";
+pub fn any(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
-    const vals = state.popN(2) catch |e| {
-        try stderr.print(usage, .{e});
-        return DtError.StackUnderflow;
-    };
-
-    const quote = try vals[0].intoQuote(state);
+    const quote = try vals[0].intoQuote(dt);
     const f = vals[1];
 
     if (quote.items.len == 0) {
-        try state.push(.{ .bool = false });
+        try dt.push(.{ .bool = false });
         return;
     }
 
-    _any(state, quote, f) catch |err| {
-        try stderr.print(usage, .{err});
-        try state.pushN(2, vals);
-    };
+    _any(dt, quote, f) catch |e| return dt.rewindN(2, vals, e);
 }
 
-fn _any(state: *DtMachine, as: Quote, f: DtVal) !void {
+fn _any(dt: *DtMachine, as: Quote, f: DtVal) !void {
     for (as.items) |a| {
-        var child = try state.child();
+        var child = try dt.child();
+
         try child.push(a);
         try child.push(f);
         try do(&child);
+
         var lastVal = try child.pop();
-        var cond = lastVal.intoBool(state);
+        var cond = lastVal.intoBool(dt);
 
         if (cond) {
-            try state.push(DtVal{ .bool = true });
+            try dt.push(DtVal{ .bool = true });
             return;
         }
     }
 
-    try state.push(DtVal{ .bool = false });
+    try dt.push(DtVal{ .bool = false });
 }
 
-pub fn pop(state: *DtMachine) !void {
-    const val = try state.pop();
+pub fn pop(dt: *DtMachine) !void {
+    const val = try dt.pop();
 
-    if (!val.isQuote()) {
-        try state.push(val);
-        return DtError.WrongArguments;
-    }
-
-    var quote = try val.intoQuote(state);
+    var quote = try val.intoQuote(dt);
 
     if (quote.items.len > 0) {
         const lastVal = quote.pop();
-        try state.push(DtVal{ .quote = quote });
-        try state.push(lastVal);
+        try dt.push(DtVal{ .quote = quote });
+        try dt.push(lastVal);
         return;
     }
 
-    try state.push(val);
+    try dt.push(val);
 }
 
-pub fn push(state: *DtMachine) !void {
-    const vals = try state.popN(2);
-
-    if (!vals[0].isQuote()) {
-        try state.pushN(2, vals);
-        return DtError.WrongArguments;
-    }
+pub fn push(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
     var pushMe = vals[1];
-    var quote: ArrayList(DtVal) = try vals[0].intoQuote(state);
+    var quote = try vals[0].intoQuote(dt);
 
     try quote.append(pushMe);
-    try state.push(DtVal{ .quote = quote });
+    try dt.push(DtVal{ .quote = quote });
 }
 
-pub fn enq(state: *DtMachine) !void {
-    const vals = try state.popN(2);
-
-    if (!vals[1].isQuote()) {
-        try state.pushN(2, vals);
-        return DtError.WrongArguments;
-    }
+pub fn enq(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
     var pushMe = vals[0];
-    var quote = try vals[1].intoQuote(state);
+    var quote = try vals[1].intoQuote(dt);
 
-    var newQuote = Quote.init(state.alloc);
+    var newQuote = Quote.init(dt.alloc);
     try newQuote.append(pushMe);
     try newQuote.appendSlice(quote.items);
 
-    try state.push(.{ .quote = newQuote });
+    try dt.push(.{ .quote = newQuote });
 }
 
-pub fn deq(state: *DtMachine) !void {
-    const val = try state.pop();
+pub fn deq(dt: *DtMachine) !void {
+    const val = try dt.pop();
 
-    if (!val.isQuote()) {
-        try state.push(val);
-        return DtError.WrongArguments;
-    }
+    var quote = try val.intoQuote(dt);
 
-    var quote: ArrayList(DtVal) = try val.intoQuote(state);
-
-    if (quote.items.len > 0) {
-        const firstVal = quote.orderedRemove(0);
-        try state.push(firstVal);
-        try state.push(DtVal{ .quote = quote });
+    if (quote.items.len == 0) {
+        try dt.push(val);
         return;
     }
 
-    try state.push(val);
+    const firstVal = quote.orderedRemove(0);
+    try dt.push(firstVal);
+    try dt.push(DtVal{ .quote = quote });
 }
 
-pub fn len(state: *DtMachine) !void {
-    const val = try state.pop();
-
-    if (val.isQuote()) {
-        const quote = try val.intoQuote(state);
-        const length: i64 = @intCast(quote.items.len);
-        try state.push(.{ .int = length });
-        return;
-    }
+pub fn len(dt: *DtMachine) !void {
+    const val = try dt.pop();
 
     if (val.isString()) {
-        const s = try val.intoString(state);
+        const s = try val.intoString(dt);
         const length: i64 = @intCast(s.len);
-        try state.push(.{ .int = length });
+        try dt.push(.{ .int = length });
         return;
     }
 
-    try stderr.print("USAGE: quote|string len -> int\n", .{});
-    try state.push(val);
+    const quote = try val.intoQuote(dt);
+    const length: i64 = @intCast(quote.items.len);
+    try dt.push(.{ .int = length });
 }
 
-pub fn ellipsis(state: *DtMachine) !void {
-    const val = try state.pop();
+pub fn ellipsis(dt: *DtMachine) !void {
+    const val = try dt.pop();
 
-    var quote = try val.intoQuote(state);
+    var quote = val.intoQuote(dt) catch |e| return dt.rewind(val, e);
 
     // TODO: Push as slice
     for (quote.items) |v| {
-        try state.push(v);
+        try dt.push(v);
     }
 }
 
-pub fn rev(state: *DtMachine) !void {
-    const val = try state.pop();
+pub fn rev(dt: *DtMachine) !void {
+    const val = try dt.pop();
 
     if (val.isQuote()) {
-        const quote = try val.intoQuote(state);
+        const quote = try val.intoQuote(dt);
         const length = quote.items.len;
 
-        var newItems = try state.alloc.alloc(DtVal, length);
+        var newItems = try dt.alloc.alloc(DtVal, length);
         for (quote.items, 0..) |v, i| {
             newItems[length - i - 1] = v;
         }
 
-        var newQuote = Quote.fromOwnedSlice(state.alloc, newItems);
+        var newQuote = Quote.fromOwnedSlice(dt.alloc, newItems);
 
-        try state.push(.{ .quote = newQuote });
+        try dt.push(.{ .quote = newQuote });
         return;
     }
 
     if (val.isString()) {
-        const str = try val.intoString(state);
-        var newStr = try state.alloc.alloc(u8, str.len);
+        const str = try val.intoString(dt);
+        var newStr = try dt.alloc.alloc(u8, str.len);
 
         for (str, 0..) |c, i| {
             newStr[str.len - 1 - i] = c;
         }
 
-        try state.push(.{ .string = newStr });
+        try dt.push(.{ .string = newStr });
         return;
     }
 
-    const err = DtError.WrongArguments;
-    try stderr.print("USAGE: quote|str rev -> rts|etouq ({any})", .{err});
-    return err;
+    return dt.rewind(val, Error.WrongArguments);
 }
 
-pub fn quoteVal(state: *DtMachine) !void {
-    const val = try state.pop();
-    var quote = Quote.init(state.alloc);
+pub fn quoteVal(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    var quote = Quote.init(dt.alloc);
     try quote.append(val);
-    try state.push(.{ .quote = quote });
+    try dt.push(.{ .quote = quote });
 }
 
-pub fn quoteAll(state: *DtMachine) !void {
-    try state.quoteContext();
+pub fn quoteAll(dt: *DtMachine) !void {
+    try dt.quoteContext();
 }
 
-pub fn concat(state: *DtMachine) !void {
-    const vals = try state.popN(2);
+pub fn concat(dt: *DtMachine) !void {
+    const vals = try dt.popN(2);
 
-    var a = try vals[0].intoQuote(state);
-    var b = try vals[1].intoQuote(state);
+    var a = try vals[0].intoQuote(dt);
+    var b = try vals[1].intoQuote(dt);
 
     try a.appendSlice(b.items);
 
-    try state.push(.{ .quote = a });
+    try dt.push(.{ .quote = a });
 }
 
 pub fn toBool(state: *DtMachine) !void {
@@ -1339,55 +1119,40 @@ pub fn toBool(state: *DtMachine) !void {
     try state.push(.{ .bool = b });
 }
 
-pub fn toInt(state: *DtMachine) !void {
-    const val = try state.pop();
-    const i = val.intoInt() catch {
-        try state.push(val);
-        return DtError.NoCoersionToInteger;
-    };
-    try state.push(.{ .int = i });
+pub fn toInt(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    const i = val.intoInt() catch |e| return dt.rewind(val, e);
+    try dt.push(.{ .int = i });
 }
 
-pub fn toFloat(state: *DtMachine) !void {
-    const val = try state.pop();
-    const f = val.intoFloat() catch {
-        try state.push(val);
-        return DtError.NoCoersionToFloat;
-    };
-    try state.push(.{ .float = f });
+pub fn toFloat(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    const f = val.intoFloat() catch |e| return dt.rewind(val, e);
+    try dt.push(.{ .float = f });
 }
 
-pub fn toString(state: *DtMachine) !void {
-    const val = try state.pop();
-    const s = val.intoString(state) catch {
-        try state.push(val);
-        return DtError.NoCoersionToString;
-    };
-    try state.push(.{ .string = s });
+pub fn toString(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    const s = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    try dt.push(.{ .string = s });
 }
 
-pub fn toCommand(state: *DtMachine) !void {
-    const val = try state.pop();
-    const cmd = val.intoString(state) catch {
-        try state.push(val);
-        return DtError.NoCoersionToCommand;
-    };
-    try state.push(.{ .deferred_command = cmd });
+pub fn toCommand(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    const cmd = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    try dt.push(.{ .deferred_command = cmd });
 }
 
-pub fn toQuote(state: *DtMachine) !void {
-    const val = try state.pop();
-    const quote = val.intoQuote(state) catch {
-        try state.push(val);
-        return DtError.NoCoersionToQuote;
-    };
-    try state.push(.{ .quote = quote });
+pub fn toQuote(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    const quote = try val.intoQuote(dt);
+    try dt.push(.{ .quote = quote });
 }
 
-pub fn toError(state: *DtMachine) !void {
-    const val = try state.pop();
-    var errName = try val.intoString(state);
+pub fn toError(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    var errName = try val.intoString(dt);
     errName = std.mem.trim(u8, errName, "~");
 
-    try state.push(.{ .err = errName });
+    try dt.push(.{ .err = errName });
 }

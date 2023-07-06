@@ -32,7 +32,6 @@ pub const DtError = error{
     NoCoersionToFloat,
     NoCoersionToString,
     NoCoersionToCommand,
-    NoCoersionToQuote,
 
     ProcessNameUnknown,
 };
@@ -124,6 +123,16 @@ pub const DtMachine = struct {
         try self.defs.put(name, cmd);
     }
 
+    pub fn rewind(self: *DtMachine, val: DtVal, err: anyerror) anyerror!void {
+        try self.push(val);
+        return err;
+    }
+
+    pub fn rewindN(self: *DtMachine, comptime n: comptime_int, vals: [n]DtVal, err: anyerror) anyerror!void {
+        for (vals) |val| try self.push(val);
+        return err;
+    }
+
     pub fn push(self: *DtMachine, val: DtVal) !void {
         var top = self.nest.first orelse return DtError.ContextStackUnderflow;
         try top.data.append(val);
@@ -131,9 +140,7 @@ pub const DtMachine = struct {
 
     pub fn pushN(self: *DtMachine, comptime n: comptime_int, vals: [n]DtVal) !void {
         // TODO: push as slice
-        for (vals) |val| {
-            try self.push(val);
-        }
+        for (vals) |val| try self.push(val);
     }
 
     pub fn pop(self: *DtMachine) !DtVal {

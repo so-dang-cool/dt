@@ -149,7 +149,7 @@ pub const Token = union(enum) {
 
 // Testing!
 
-test "parse hello.rock" {
+test "parse hello.dt" {
     var expected = ArrayList(Token).init(std.testing.allocator);
     defer expected.deinit();
     try expected.append(Token.left_bracket);
