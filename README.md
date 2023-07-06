@@ -56,7 +56,7 @@ cat wish-list | sed 's/red/green/g' | tee.dt new-wish-list
 
 ```
 $ dt
-dt 0.9.0
+dt 0.10.0
 » # Comments start with #
 » 
 » 1 1 + println
@@ -67,14 +67,16 @@ dt 0.9.0
 » 
 » [ \n :   n p " " p   n 2 *] \print-and-double def
 » 
+» 
 » # And let's do it... 7 times!
 » 
 » 1 \print-and-double 7 times   pl
 1 2 4 8 16 32 64 128
 » 
+» 
 » # Also there are conditions
 » 
-» ["hi" false ?   "bye" true ?] do pl
+» ["hi" pl] false ?   ["bye" pl] true ?
 bye
 ```
 
