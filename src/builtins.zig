@@ -27,6 +27,7 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("ls", "list contents of current directory", .{ .builtin = ls });
     try machine.define("readf", "read a file as a string", .{ .builtin = readf });
     try machine.define("writef", "write a string as a file", .{ .builtin = writef });
+    // TODO: pathsep/filesep, env get, env set
 
     try machine.define("exec", "execute a child process. When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false", .{ .builtin = exec });
 
@@ -423,9 +424,8 @@ pub fn dotS(state: *DtMachine) !void {
 pub fn readLine(state: *DtMachine) !void {
     var line = ArrayList(u8).init(state.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
-    const unescaped = try string.unescape(state.alloc, line.items);
 
-    try state.push(.{ .string = unescaped });
+    try state.push(.{ .string = line.items });
 }
 
 pub fn readLines(state: *DtMachine) !void {
@@ -1215,10 +1215,13 @@ pub fn enq(state: *DtMachine) !void {
     }
 
     var pushMe = vals[0];
-    var quote: ArrayList(DtVal) = try vals[1].intoQuote(state);
+    var quote = try vals[1].intoQuote(state);
 
-    try quote.insert(0, pushMe);
-    try state.push(DtVal{ .quote = quote });
+    var newQuote = Quote.init(state.alloc);
+    try newQuote.append(pushMe);
+    try newQuote.appendSlice(quote.items);
+
+    try state.push(.{ .quote = newQuote });
 }
 
 pub fn deq(state: *DtMachine) !void {

@@ -1,17 +1,25 @@
 #!/usr/bin/env dt
 
-shebang-args first to-int   \n :
+args first \script-name:
 
-[["USAGE: " progname " N"] \ep each enl   1 exit] n not ?
+[ "USAGE: " script-name " N\n"
+  "Prints N lines of fibonacci numbers starting at zero.\n"
+  "N must be a positive integer.\n"
+] \usage:
 
-n 1 -   \n :
+[usage [do eprint] each   1 exit] \usage-fail def
 
-[ [[0 pl]   1 n gte?]
-  [[0 exit] 0 n eq? ] ] \? map
+shebang-args pop to-int \n:
+  \usage-fail n not ?
+
+n 1 - \n:
+  \usage-fail 0 n lt? ?
+
+0 pl
 
 0 1
 
 [ [a b]: b pl
-  a b + \c :
+  a b + \c:
   [1 exit] c not ?
   b c ] n times

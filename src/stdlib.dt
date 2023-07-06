@@ -1,6 +1,6 @@
 ### Binding ###
 
-[ swap quote [do] concat swap def! ] \def def!
+[ swap quote [ do ] concat swap def! ] \def def!
 
 [ : ] \-> def
 [ def? not ] \undef? def
@@ -8,9 +8,10 @@
 
 ### Flags and such ###
 
-[ [ action flag ] :
+[ [ action flag ]:
   args [ flag eq? ] any?
-  action swap ? ] \handle-flag def
+  action swap ?
+] \handle-flag def
 
 [ "dt " p version pl ] \print-version def
 [ [ print-version 0 exit ]   "--version" handle-flag ] \--version def
@@ -30,7 +31,7 @@
 
 ### Shebang things ###
 
-[args deq swap drop] \shebang-args def
+[ args deq swap drop ] \shebang-args def
 
 
 ### REPL things ###
@@ -62,9 +63,9 @@
 
 ### Math and such ###
 
-[2 % 0 eq?] \even? def
-[2 % 1 eq?] \odd? def
-[% 0 eq?] \divisor? def
+[ 2 % 0 eq? ] \even? def
+[ 2 % 1 eq? ] \odd? def
+[ % 0 eq? ] \divisor? def
 
 
 ### Boolean operators ###
@@ -94,21 +95,16 @@
 
 ### Control flow ###
 
-[[cmd _n]:
-    0 _n gt?   \continue :
-    [ cmd do   cmd _n 1 - times ] continue ?
+[ [ cmd n ]:
+  0 n gt?   \continue :
+  [ cmd do   cmd n 1 - times ] continue ?
 ] \times def
 
 [ map drop ] \each def
 
-[[action cond]:
-  [action do   action cond while]   cond do ?
+[ [ action cond ]:
+  [ action do   action cond while ]   cond do ?
 ] \while def
-
-
-### Swizzling and such ###
-
-[ swap \save : do save ] \dip def
 
 
 ### Parsing ###
@@ -118,4 +114,4 @@
 
 ### Testing ###
 
-[[cond msg]:   [ msg pl   1 exit ] cond not ? ] \assert-true def
+[ [ cond msg ]:   [ msg pl   1 exit ] cond not ? ] \assert-true def

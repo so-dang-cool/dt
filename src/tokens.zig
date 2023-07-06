@@ -6,6 +6,11 @@ const string = @import("string.zig");
 
 const stderr = std.io.getStdErr().writer(); // TODO: Remove
 
+const specialChars = .{
+    .alwaysSingle = "[]:",
+    .whitespace = " ,\t\r\n",
+};
+
 pub const TokenIterator = struct {
     allocator: Allocator,
     buf: []const u8,
@@ -18,7 +23,7 @@ pub const TokenIterator = struct {
         if (self.index >= self.buf.len) return null;
 
         // First, skip any whitespace. Return null if nothing else remains
-        const start = std.mem.indexOfNonePos(u8, self.buf, self.index, " ,\t\r\n") orelse {
+        const start = std.mem.indexOfNonePos(u8, self.buf, self.index, specialChars.whitespace) orelse {
             self.index = self.buf.len;
             return null;
         };
@@ -67,8 +72,12 @@ pub const TokenIterator = struct {
                 self.index = start + 1;
                 return .right_bracket;
             },
+            ':' => {
+                self.index = start + 1;
+                return .{ .term = ":" };
+            },
             else => { // Parse a token
-                var end = std.mem.indexOfAnyPos(u8, self.buf, start, "[] ,\t\r\n") orelse self.buf.len;
+                var end = std.mem.indexOfAnyPos(u8, self.buf, start, specialChars.alwaysSingle ++ specialChars.whitespace) orelse self.buf.len;
                 self.index = end;
                 return Token.parseOneToken(self.buf[start..end]);
             },

@@ -1,0 +1,94 @@
+#!/usr/bin/env dt
+
+# Joy combinators
+# From: http://tunes.org/~iepos/joy.html#appendix
+
+[ \drop           \zap  def
+
+  \do             \i    def
+
+  \quote          \unit def
+
+  [dup i i]       \rep  def
+
+  [dup i]         \m    def
+
+  [\as:
+    as i as]      \run  def
+
+  [[bs as]:
+    as i]         \k    def
+
+  [swap k]        \z    def
+
+  [swap zap]      \nip  def
+
+  [[bs as]:
+    as i bs i]    \sap  def
+
+  [[bs as]:
+    as bs i]      \t    def
+
+  [[bs as]:
+    as i bs]      \dip  def
+
+  \concat         \cat  def
+
+  [swap cat]      \swat def
+
+  \enq            \cons def
+
+  [swap push]     \take def
+
+  \push           \tack def
+
+  [[bs as]:
+    bs as i bs]   \sip  def
+
+  [\dup dip i]    \w    def
+
+  [\dup dip swap] \peek def
+
+  [[bs as]:
+    bs as cons
+    bs as take ]  \cake def
+
+  [[cs bs as]:
+    bs as]        \poke def
+
+  [\cons dip]     \b    def
+
+  [\swap dip i]   \c    def
+
+  [rot rot]       \dig  def
+
+  \rot            \bury def
+
+  [bury swap]     \flip def
+
+  [[cs bs as]:
+    cs bs cons
+    cs as i]      \s    def
+
+  [[ds cs bs as]:
+    ds cs cons
+    as i
+    ds bs i]:     \s'   def
+
+  [[ds cs bs as]:
+    cs ds as cons cons
+    bs as i]      \j    def
+
+  [[es ds cs bs as]:
+    ds as cons
+    es bs cons cat
+    cs bs i]      \j'   def
+
+] \using-joy-combinators def!
+
+
+
+"dt " p version pl
+"(With Joy combinators)" pl
+
+using-joy-combinators repl

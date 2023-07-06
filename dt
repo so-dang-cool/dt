@@ -4,4 +4,4 @@ set -eu
 
 zig build \
   && >&2 echo 'INFO: dt compiled (zig build exited successfully)' \
-  && exec zig-out/bin/"$(basename "$0")" "$@"
+  && exec rlwrap zig-out/bin/"$(basename "$0")" "$@"
