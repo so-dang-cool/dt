@@ -1,5 +1,5 @@
 # DT Docs
 
-The site: https://hiljusti.github.io/dt/
-Project: https://github.com/hiljusti/dt
+The site: https://booniepepper.github.io/dt/
+Project: https://github.com/booniepepper/dt
 
