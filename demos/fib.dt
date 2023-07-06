@@ -1,0 +1,17 @@
+#!/usr/bin/env dt
+
+get-args deq deq   [progname _ args]:
+
+args deq drop to-int   [n]:
+
+[["USAGE: " progname " N"] \p each nl   1 exit] n not ?
+
+0 pl
+
+0 1
+
+[ [a b]: b pl
+  a b + \c :
+  [1 exit] c not ?
+  b c ] n times
+
