@@ -143,7 +143,7 @@ test "parse hello.rock" {
     try expected.append(Token{ .deferred_term = "greet" });
     try expected.append(Token{ .term = "def" });
 
-    const helloFile = @embedFile("test/hello.rock");
+    const helloFile = @embedFile("test/hello.dt");
     const tokens = try Token.parse(std.testing.allocator, helloFile);
     defer tokens.deinit();
 

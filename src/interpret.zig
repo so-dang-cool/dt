@@ -13,29 +13,35 @@ const Token = tokens.Token;
 const string = @import("string.zig");
 const String = string.String;
 
-pub const Dictionary = StringHashMap(RockCommand);
-pub const Quote = ArrayList(RockVal);
+pub const Dictionary = StringHashMap(Command);
+pub const Quote = ArrayList(DtVal);
 
-pub const Error = error{
+pub const DtError = error{
     TooManyRightBrackets,
-    CommandUndefined,
+
     ContextStackUnderflow,
+    StackUnderflow,
+    WrongArguments,
+    CommandUndefined,
+
     DivisionByZero,
     IntegerOverflow,
     IntegerUnderflow,
+
     NoCoersionToInteger,
+    NoCoersionToFloat,
     NoCoersionToString,
-    StackUnderflow,
-    WrongArguments,
+    NoCoersionToCommand,
+    NoCoersionToQuote,
 };
 
-pub const RockMachine = struct {
+pub const DtMachine = struct {
     alloc: Allocator,
-    nest: Stack(ArrayList(RockVal)),
+    nest: Stack(ArrayList(DtVal)),
     defs: Dictionary,
     depth: u8,
 
-    pub fn init(alloc: Allocator) !RockMachine {
+    pub fn init(alloc: Allocator) !DtMachine {
         var nest = Stack(Quote){};
         var mainNode = try alloc.create(Stack(Quote).Node);
         mainNode.* = Stack(Quote).Node{ .data = Quote.init(alloc) };
@@ -49,7 +55,7 @@ pub const RockMachine = struct {
         };
     }
 
-    pub fn interpret(self: *RockMachine, tok: Token) !void {
+    pub fn interpret(self: *DtMachine, tok: Token) !void {
         switch (tok) {
             .term => |cmdName| try self.handleCmd(cmdName),
             .left_bracket => {
@@ -58,33 +64,33 @@ pub const RockMachine = struct {
             },
             .right_bracket => {
                 if (self.depth == 0) {
-                    return Error.TooManyRightBrackets;
+                    return DtError.TooManyRightBrackets;
                 }
 
                 self.depth -= 1;
 
                 var context = try self.popContext();
-                try self.push(RockVal{ .quote = context });
+                try self.push(DtVal{ .quote = context });
             },
-            .bool => |b| try self.push(RockVal{ .bool = b }),
-            .int => |i| try self.push(RockVal{ .int = i }),
-            .float => |f| try self.push(RockVal{ .float = f }),
-            .string => |s| try self.push(RockVal{ .string = s[0..] }),
-            .deferred_term => |cmd| try self.push(RockVal{ .deferred_command = cmd }),
+            .bool => |b| try self.push(DtVal{ .bool = b }),
+            .int => |i| try self.push(DtVal{ .int = i }),
+            .float => |f| try self.push(DtVal{ .float = f }),
+            .string => |s| try self.push(DtVal{ .string = s[0..] }),
+            .deferred_term => |cmd| try self.push(DtVal{ .deferred_command = cmd }),
             .none => {},
         }
     }
 
-    pub fn handle(self: *RockMachine, val: RockVal) anyerror!void {
+    pub fn handle(self: *DtMachine, val: DtVal) anyerror!void {
         switch (val) {
             .command => |cmdName| try self.handleCmd(cmdName),
             else => try self.push(val),
         }
     }
 
-    pub fn handleCmd(self: *RockMachine, cmdName: String) !void {
+    pub fn handleCmd(self: *DtMachine, cmdName: String) !void {
         if (self.depth > 0) {
-            try self.push(RockVal{ .command = cmdName });
+            try self.push(DtVal{ .command = cmdName });
             return;
         }
 
@@ -95,11 +101,11 @@ pub const RockMachine = struct {
         }
 
         try stderr.print("Undefined: {s}\n", .{cmdName});
-        return Error.CommandUndefined;
+        return DtError.CommandUndefined;
     }
 
-    pub fn child(self: *RockMachine) !RockMachine {
-        var newMachine = try RockMachine.init(self.alloc);
+    pub fn child(self: *DtMachine) !DtMachine {
+        var newMachine = try DtMachine.init(self.alloc);
 
         // TODO: Persistent map for dictionary would make this much cheaper.
         newMachine.defs = try self.defs.clone();
@@ -107,34 +113,34 @@ pub const RockMachine = struct {
         return newMachine;
     }
 
-    pub fn define(self: *RockMachine, name: String, description: String, action: RockAction) !void {
-        const cmd = RockCommand{ .name = name, .description = description, .action = action };
+    pub fn define(self: *DtMachine, name: String, description: String, action: Action) !void {
+        const cmd = Command{ .name = name, .description = description, .action = action };
         try self.defs.put(name, cmd);
     }
 
-    pub fn push(self: *RockMachine, val: RockVal) !void {
-        var top = self.nest.first orelse return Error.ContextStackUnderflow;
+    pub fn push(self: *DtMachine, val: DtVal) !void {
+        var top = self.nest.first orelse return DtError.ContextStackUnderflow;
         try top.data.append(val);
     }
 
-    pub fn pushN(self: *RockMachine, comptime n: comptime_int, vals: [n]RockVal) !void {
+    pub fn pushN(self: *DtMachine, comptime n: comptime_int, vals: [n]DtVal) !void {
         // TODO: push as slice
         for (vals) |val| {
             try self.push(val);
         }
     }
 
-    pub fn pop(self: *RockMachine) !RockVal {
-        var top = self.nest.first orelse return Error.ContextStackUnderflow;
+    pub fn pop(self: *DtMachine) !DtVal {
+        var top = self.nest.first orelse return DtError.ContextStackUnderflow;
         if (top.data.items.len < 1) {
-            return Error.StackUnderflow;
+            return DtError.StackUnderflow;
         }
         return top.data.pop();
     }
 
     // Removes and returns top N values from the stack from oldest to youngest. Last index is the most recent, 0 is the oldest.
-    pub fn popN(self: *RockMachine, comptime n: comptime_int) ![n]RockVal {
-        var vals: [n]RockVal = .{};
+    pub fn popN(self: *DtMachine, comptime n: comptime_int) ![n]DtVal {
+        var vals: [n]DtVal = .{};
 
         comptime var i = n - 1;
         inline while (i >= 0) : (i -= 1) {
@@ -150,18 +156,18 @@ pub const RockMachine = struct {
         return vals;
     }
 
-    pub fn pushContext(self: *RockMachine) !void {
+    pub fn pushContext(self: *DtMachine) !void {
         var node = try self.alloc.create(Stack(Quote).Node);
         node.* = .{ .data = Quote.init(self.alloc) };
         self.nest.prepend(node);
     }
 
-    pub fn popContext(self: *RockMachine) !Quote {
-        var node = self.nest.popFirst() orelse return Error.ContextStackUnderflow;
+    pub fn popContext(self: *DtMachine) !Quote {
+        var node = self.nest.popFirst() orelse return DtError.ContextStackUnderflow;
         return node.data;
     }
 
-    pub fn quoteContext(self: *RockMachine) !void {
+    pub fn quoteContext(self: *DtMachine) !void {
         var node = self.nest.popFirst();
         var quote = if (node) |n| n.data else Quote.init(self.alloc);
 
@@ -171,7 +177,7 @@ pub const RockMachine = struct {
     }
 };
 
-pub const RockVal = union(enum) {
+pub const DtVal = union(enum) {
     bool: bool,
     int: i64, // TODO: BigInteger?
     float: f64, // TODO: BigDecimal? Or floating point forever? Maybe decimal is more useful?
@@ -180,14 +186,14 @@ pub const RockVal = union(enum) {
     quote: Quote,
     string: String,
 
-    pub fn isBool(self: RockVal) bool {
+    pub fn isBool(self: DtVal) bool {
         return switch (self) {
             .bool => true,
             else => false,
         };
     }
 
-    pub fn intoBool(self: RockVal, state: *RockMachine) bool {
+    pub fn intoBool(self: DtVal, state: *DtMachine) bool {
         return switch (self) {
             .bool => |b| b,
             .int => |i| i > 0,
@@ -201,64 +207,64 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn isInt(self: RockVal) bool {
+    pub fn isInt(self: DtVal) bool {
         return switch (self) {
             .int => true,
             else => false,
         };
     }
 
-    pub fn intoInt(self: RockVal) !i64 {
+    pub fn intoInt(self: DtVal) !i64 {
         return switch (self) {
             .int => |i| i,
 
             .bool => |b| if (b) 1 else 0,
             .float => |f| @as(i64, @intFromFloat(f)),
             .string => |s| std.fmt.parseInt(i64, s, 10),
-            else => Error.NoCoersionToInteger,
+            else => DtError.NoCoersionToInteger,
         };
     }
 
-    pub fn isFloat(self: RockVal) bool {
+    pub fn isFloat(self: DtVal) bool {
         return switch (self) {
             .float => true,
             else => false,
         };
     }
 
-    pub fn intoFloat(self: RockVal) !f64 {
+    pub fn intoFloat(self: DtVal) !f64 {
         return switch (self) {
             .float => |f| f,
 
             .bool => |b| if (b) 1 else 0,
             .int => |i| @as(f64, @floatFromInt(i)),
             .string => |s| std.fmt.parseFloat(f64, s),
-            else => Error.NoCoersionToInteger,
+            else => DtError.NoCoersionToInteger,
         };
     }
 
-    pub fn isCommand(self: RockVal) bool {
+    pub fn isCommand(self: DtVal) bool {
         return switch (self) {
             .command => true,
             else => false,
         };
     }
 
-    pub fn isDeferredCommand(self: RockVal) bool {
+    pub fn isDeferredCommand(self: DtVal) bool {
         return switch (self) {
             .deferred_command => true,
             else => false,
         };
     }
 
-    pub fn isString(self: RockVal) bool {
+    pub fn isString(self: DtVal) bool {
         return switch (self) {
             .string => true,
             else => false,
         };
     }
 
-    pub fn intoString(self: RockVal, state: *RockMachine) !String {
+    pub fn intoString(self: DtVal, state: *DtMachine) !String {
         return switch (self) {
             .command => |cmd| cmd,
 
@@ -270,19 +276,19 @@ pub const RockVal = union(enum) {
             .quote => |q| switch (q.items.len) {
                 0 => "",
                 1 => q.items[0].intoString(state),
-                else => Error.NoCoersionToString,
+                else => DtError.NoCoersionToString,
             },
         };
     }
 
-    pub fn isQuote(self: RockVal) bool {
+    pub fn isQuote(self: DtVal) bool {
         return switch (self) {
             .quote => true,
             else => false,
         };
     }
 
-    pub fn intoQuote(self: RockVal, state: *RockMachine) !Quote {
+    pub fn intoQuote(self: DtVal, state: *DtMachine) !Quote {
         return switch (self) {
             .quote => |q| q,
             else => {
@@ -293,7 +299,7 @@ pub const RockVal = union(enum) {
         };
     }
 
-    pub fn print(self: RockVal, allocator: Allocator) !void {
+    pub fn print(self: DtVal, allocator: Allocator) !void {
         switch (self) {
             .bool => |b| try stdout.print("{}", .{b}),
             .int => |i| try stdout.print("{}", .{i}),
@@ -316,12 +322,12 @@ pub const RockVal = union(enum) {
     }
 };
 
-pub const RockCommand = struct {
+pub const Command = struct {
     name: String,
     description: String,
-    action: RockAction,
+    action: Action,
 
-    fn run(self: RockCommand, state: *RockMachine) anyerror!void {
+    fn run(self: Command, state: *DtMachine) anyerror!void {
         switch (self.action) {
             .builtin => |b| return try b(state),
             .quote => |quote| {
@@ -345,7 +351,7 @@ pub const RockCommand = struct {
                             // Even if this is the same command name, we should re-fetch in case it's been redefined
                             const cmd = state.defs.get(cmdName) orelse {
                                 try stderr.print("Command undefined: {s}\n", .{cmdName});
-                                return Error.CommandUndefined;
+                                return DtError.CommandUndefined;
                             };
                             switch (cmd.action) {
                                 .quote => |nextQuote| {
@@ -364,7 +370,7 @@ pub const RockCommand = struct {
     }
 };
 
-pub const RockAction = union(enum) {
-    builtin: *const fn (*RockMachine) anyerror!void,
+pub const Action = union(enum) {
+    builtin: *const fn (*DtMachine) anyerror!void,
     quote: Quote,
 };

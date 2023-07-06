@@ -13,11 +13,11 @@ const string = @import("string.zig");
 
 const interpret = @import("interpret.zig");
 const Quote = interpret.Quote;
-const RockError = interpret.Error;
-const RockVal = interpret.RockVal;
-const RockMachine = interpret.RockMachine;
+const DtError = interpret.DtError;
+const DtVal = interpret.DtVal;
+const DtMachine = interpret.DtMachine;
 
-pub fn defineAll(machine: *RockMachine) !void {
+pub fn defineAll(machine: *DtMachine) !void {
     try machine.define(".q", "quit, printing a warning if there are any values left on stack", .{ .builtin = quit });
     try machine.define("exit", "exit with the specified exit code", .{ .builtin = exit });
     try machine.define("version", "print the version of the interpreter", .{ .builtin = version });
@@ -104,7 +104,7 @@ pub fn defineAll(machine: *RockMachine) !void {
     try machine.define("to-quote", "coerce value to quote", .{ .builtin = toQuote });
 }
 
-pub fn quit(state: *RockMachine) !void {
+pub fn quit(state: *DtMachine) !void {
     const ctx = try state.popContext();
 
     if (ctx.items.len > 0) {
@@ -119,30 +119,30 @@ pub fn quit(state: *RockMachine) !void {
     std.os.exit(0);
 }
 
-pub fn exit(state: *RockMachine) !void {
-    const val = state.pop() catch RockVal{ .int = 255 };
+pub fn exit(state: *DtMachine) !void {
+    const val = state.pop() catch DtVal{ .int = 255 };
     const i = try val.intoInt();
 
     if (i < 0) {
-        return RockError.IntegerUnderflow;
+        return DtError.IntegerUnderflow;
     } else if (i > 255) {
-        return RockError.IntegerOverflow;
+        return DtError.IntegerOverflow;
     }
 
     const code: u8 = @intCast(i);
     std.os.exit(code);
 }
 
-pub fn version(state: *RockMachine) !void {
+pub fn version(state: *DtMachine) !void {
     try state.push(.{ .string = main.version });
 }
 
-pub fn cwd(state: *RockMachine) !void {
+pub fn cwd(state: *DtMachine) !void {
     const theCwd = try std.process.getCwdAlloc(state.alloc);
     try state.push(.{ .string = theCwd });
 }
 
-pub fn cd(state: *RockMachine) !void {
+pub fn cd(state: *DtMachine) !void {
     const usage = "USAGE: path cd ({any})\n";
     _ = usage;
 
@@ -159,7 +159,7 @@ pub fn cd(state: *RockMachine) !void {
     };
 }
 
-pub fn ls(state: *RockMachine) !void {
+pub fn ls(state: *DtMachine) !void {
     const theCwd = try std.process.getCwdAlloc(state.alloc);
     var dir = try std.fs.openIterableDirAbsolute(theCwd, .{});
     var entries = dir.iterate();
@@ -175,7 +175,7 @@ pub fn ls(state: *RockMachine) !void {
     dir.close();
 }
 
-pub fn readf(state: *RockMachine) !void {
+pub fn readf(state: *DtMachine) !void {
     const val = try state.pop();
     const filename = val.intoString(state) catch |e| {
         try state.push(val);
@@ -193,7 +193,7 @@ pub fn readf(state: *RockMachine) !void {
     file.close();
 }
 
-pub fn writef(state: *RockMachine) !void {
+pub fn writef(state: *DtMachine) !void {
     const vals = try state.popN(2);
     const filename = vals[1].intoString(state) catch |e| {
         try state.pushN(2, vals);
@@ -212,7 +212,7 @@ pub fn writef(state: *RockMachine) !void {
     theCwd.close();
 }
 
-pub fn exec(state: *RockMachine) !void {
+pub fn exec(state: *DtMachine) !void {
     const val = try state.pop();
     const childProcess = try val.intoString(state);
     var args = std.mem.splitAny(u8, childProcess, " \t");
@@ -242,12 +242,12 @@ pub fn exec(state: *RockMachine) !void {
     }
 }
 
-pub fn def(state: *RockMachine) !void {
+pub fn def(state: *DtMachine) !void {
     const usage = "USAGE: quote term def ({any})\n";
 
     const vals = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     const quote = try vals[0].intoQuote(state);
@@ -256,7 +256,7 @@ pub fn def(state: *RockMachine) !void {
     try state.define(name, name, .{ .quote = quote });
 }
 
-pub fn defs(state: *RockMachine) !void {
+pub fn defs(state: *DtMachine) !void {
     const usage = "USAGE: defs -> [cmdnames...] ({any})\n";
     _ = usage;
 
@@ -271,12 +271,12 @@ pub fn defs(state: *RockMachine) !void {
     try state.push(.{ .quote = quote });
 }
 
-pub fn isDef(state: *RockMachine) !void {
+pub fn isDef(state: *DtMachine) !void {
     const usage = "USAGE: term def? ({any})\n";
 
     const val = state.pop() catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     const name = try val.intoString(state);
@@ -284,18 +284,18 @@ pub fn isDef(state: *RockMachine) !void {
     try state.push(.{ .bool = state.defs.contains(name) });
 }
 
-pub fn cmdUsage(state: *RockMachine) !void {
+pub fn cmdUsage(state: *DtMachine) !void {
     const usage = "USAGE: term usage -> str ({any})\n";
 
     const val = state.pop() catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     const cmdName = try val.intoString(state);
 
     const cmd = state.defs.get(cmdName) orelse {
-        const err = RockError.CommandUndefined;
+        const err = DtError.CommandUndefined;
         try stderr.print(usage, .{err});
         return err;
     };
@@ -306,7 +306,7 @@ pub fn cmdUsage(state: *RockMachine) !void {
 }
 
 // Variable binding
-pub fn colon(state: *RockMachine) !void {
+pub fn colon(state: *DtMachine) !void {
     const usage = "USAGE: ...vals term(s) : ({any})\n";
 
     var termVal = try state.pop();
@@ -321,7 +321,7 @@ pub fn colon(state: *RockMachine) !void {
             return e;
         };
 
-        var quote = ArrayList(RockVal).init(state.alloc);
+        var quote = ArrayList(DtVal).init(state.alloc);
         try quote.append(val);
         try state.define(cmdName, cmdName, .{ .quote = quote });
         return;
@@ -331,7 +331,7 @@ pub fn colon(state: *RockMachine) !void {
 
     var terms = (try termVal.intoQuote(state)).items;
 
-    var vals = try state.alloc.alloc(RockVal, terms.len);
+    var vals = try state.alloc.alloc(DtVal, terms.len);
 
     var i = terms.len;
 
@@ -341,23 +341,23 @@ pub fn colon(state: *RockMachine) !void {
 
     for (terms, vals) |termV, val| {
         const term = try termV.intoString(state);
-        var quote = ArrayList(RockVal).init(state.alloc);
+        var quote = ArrayList(DtVal).init(state.alloc);
         try quote.append(val);
         try state.define(term, term, .{ .quote = quote });
     }
 }
 
-pub fn dup(state: *RockMachine) !void {
+pub fn dup(state: *DtMachine) !void {
     const val = try state.pop();
     try state.push(val);
     try state.push(val);
 }
 
-pub fn drop(state: *RockMachine) !void {
+pub fn drop(state: *DtMachine) !void {
     _ = try state.pop();
 }
 
-pub fn swap(state: *RockMachine) !void {
+pub fn swap(state: *DtMachine) !void {
     const vals = try state.popN(2);
     try state.push(vals[1]);
     try state.push(vals[0]);
@@ -365,14 +365,14 @@ pub fn swap(state: *RockMachine) !void {
 
 // ... a b c (rot) ... c a b
 //   [ 0 1 2 ]       [ 2 0 1 ]
-pub fn rot(state: *RockMachine) !void {
+pub fn rot(state: *DtMachine) !void {
     const vals = try state.popN(3);
     try state.push(vals[2]);
     try state.push(vals[0]);
     try state.push(vals[1]);
 }
 
-pub fn p(state: *RockMachine) !void {
+pub fn p(state: *DtMachine) !void {
     const val = try state.pop();
 
     switch (val) {
@@ -387,12 +387,12 @@ pub fn p(state: *RockMachine) !void {
     }
 }
 
-pub fn nl(state: *RockMachine) !void {
+pub fn nl(state: *DtMachine) !void {
     _ = state;
     try stdout.print("\n", .{});
 }
 
-pub fn dotS(state: *RockMachine) !void {
+pub fn dotS(state: *DtMachine) !void {
     try stdout.print("[ ", .{});
 
     var top = state.nest.first orelse return;
@@ -405,7 +405,7 @@ pub fn dotS(state: *RockMachine) !void {
     try stdout.print("]\n", .{});
 }
 
-pub fn getLine(state: *RockMachine) !void {
+pub fn getLine(state: *DtMachine) !void {
     var line = ArrayList(u8).init(state.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
     const unescaped = try string.unescape(state.alloc, line.items);
@@ -413,7 +413,7 @@ pub fn getLine(state: *RockMachine) !void {
     try state.push(.{ .string = unescaped });
 }
 
-pub fn getLines(state: *RockMachine) !void {
+pub fn getLines(state: *DtMachine) !void {
     var lines = Quote.init(state.alloc);
 
     while (true) {
@@ -429,7 +429,7 @@ pub fn getLines(state: *RockMachine) !void {
     try state.push(.{ .quote = lines });
 }
 
-pub fn getArgs(state: *RockMachine) !void {
+pub fn getArgs(state: *DtMachine) !void {
     var quote = Quote.init(state.alloc);
     var args = std.process.args();
     while (args.next()) |arg| {
@@ -439,7 +439,7 @@ pub fn getArgs(state: *RockMachine) !void {
     try state.push(.{ .quote = quote });
 }
 
-pub fn eval(state: *RockMachine) !void {
+pub fn eval(state: *DtMachine) !void {
     var val = try state.pop();
     var code = try val.intoString(state);
 
@@ -449,16 +449,16 @@ pub fn eval(state: *RockMachine) !void {
     }
 }
 
-pub fn interactive(state: *RockMachine) !void {
+pub fn interactive(state: *DtMachine) !void {
     try state.push(.{ .bool = std.io.getStdIn().isTty() });
 }
 
-pub fn add(state: *RockMachine) !void {
+pub fn add(state: *DtMachine) !void {
     const usage = "USAGE: a b + -> a+b ({any})\n";
 
     const ns = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     if (ns[0].isInt() and ns[1].isInt()) {
@@ -470,7 +470,7 @@ pub fn add(state: *RockMachine) !void {
         if (res[1] == 1) {
             try state.pushN(2, ns);
             try stderr.print("ERROR: Adding {} and {} would overflow.\n", .{ a, b });
-            return RockError.IntegerOverflow;
+            return DtError.IntegerOverflow;
         }
 
         try state.push(.{ .int = res[0] });
@@ -486,16 +486,16 @@ pub fn add(state: *RockMachine) !void {
     }
 
     try state.pushN(2, ns);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try stderr.print(usage, .{DtError.WrongArguments});
+    return DtError.WrongArguments;
 }
 
-pub fn subtract(state: *RockMachine) !void {
+pub fn subtract(state: *DtMachine) !void {
     const usage = "USAGE: a b - -> a+b ({any})\n";
 
     const ns = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     if (ns[0].isInt() and ns[1].isInt()) {
@@ -507,7 +507,7 @@ pub fn subtract(state: *RockMachine) !void {
         if (res[1] == 1) {
             try state.pushN(2, ns);
             try stderr.print("ERROR: Subtracting {} from {} would overflow.\n", .{ b, a });
-            return RockError.IntegerOverflow;
+            return DtError.IntegerOverflow;
         }
 
         try state.push(.{ .int = res[0] });
@@ -523,16 +523,16 @@ pub fn subtract(state: *RockMachine) !void {
     }
 
     try state.pushN(2, ns);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try stderr.print(usage, .{DtError.WrongArguments});
+    return DtError.WrongArguments;
 }
 
-pub fn multiply(state: *RockMachine) !void {
+pub fn multiply(state: *DtMachine) !void {
     const usage = "USAGE: a b * -> a*b ({any})\n";
 
     const ns = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     if (ns[0].isInt() and ns[1].isInt()) {
@@ -544,7 +544,7 @@ pub fn multiply(state: *RockMachine) !void {
         if (res[1] == 1) {
             try state.pushN(2, ns);
             try stderr.print("ERROR: Multiplying {} by {} would overflow.\n", .{ a, b });
-            return RockError.IntegerOverflow;
+            return DtError.IntegerOverflow;
         }
 
         try state.push(.{ .int = res[0] });
@@ -560,16 +560,16 @@ pub fn multiply(state: *RockMachine) !void {
     }
 
     try state.pushN(2, ns);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try stderr.print(usage, .{DtError.WrongArguments});
+    return DtError.WrongArguments;
 }
 
-pub fn divide(state: *RockMachine) !void {
+pub fn divide(state: *DtMachine) !void {
     const usage = "USAGE: a b / -> a/b ({any})\n";
 
     const ns = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     if (ns[0].isInt() and ns[1].isInt()) {
@@ -579,7 +579,7 @@ pub fn divide(state: *RockMachine) !void {
         if (b == 0) {
             try state.pushN(2, ns);
             try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
-            return RockError.DivisionByZero;
+            return DtError.DivisionByZero;
         }
 
         try state.push(.{ .int = @divTrunc(a, b) });
@@ -593,7 +593,7 @@ pub fn divide(state: *RockMachine) !void {
         if (b == 0) {
             try state.pushN(2, ns);
             try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
-            return RockError.DivisionByZero;
+            return DtError.DivisionByZero;
         }
 
         try state.push(.{ .float = a / b });
@@ -601,16 +601,16 @@ pub fn divide(state: *RockMachine) !void {
     }
 
     try state.pushN(2, ns);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try stderr.print(usage, .{DtError.WrongArguments});
+    return DtError.WrongArguments;
 }
 
-pub fn modulo(state: *RockMachine) !void {
+pub fn modulo(state: *DtMachine) !void {
     const usage = "USAGE: a b % -> a%b ({any})\n";
 
     const ns = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     if (ns[0].isInt() and ns[1].isInt()) {
@@ -630,11 +630,11 @@ pub fn modulo(state: *RockMachine) !void {
     }
 
     try state.pushN(2, ns);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try stderr.print(usage, .{DtError.WrongArguments});
+    return DtError.WrongArguments;
 }
 
-pub fn abs(state: *RockMachine) !void {
+pub fn abs(state: *DtMachine) !void {
     const usage = "USAGE: n abs -> |n| ({any})\n";
 
     const n = try state.pop();
@@ -654,11 +654,11 @@ pub fn abs(state: *RockMachine) !void {
     }
 
     try state.push(n);
-    try stderr.print(usage, .{RockError.WrongArguments});
-    return RockError.WrongArguments;
+    try stderr.print(usage, .{DtError.WrongArguments});
+    return DtError.WrongArguments;
 }
 
-pub fn eq(state: *RockMachine) !void {
+pub fn eq(state: *DtMachine) !void {
     const usage = "USAGE: a b eq? -> bool ({any})\n";
     _ = usage;
 
@@ -692,8 +692,8 @@ pub fn eq(state: *RockMachine) !void {
         const a = try vals[0].intoQuote(state);
         const b = try vals[1].intoQuote(state);
 
-        const as: []RockVal = a.items;
-        const bs: []RockVal = b.items;
+        const as: []DtVal = a.items;
+        const bs: []DtVal = b.items;
 
         if (as.len != bs.len) {
             try state.push(.{ .bool = false });
@@ -729,7 +729,7 @@ pub fn eq(state: *RockMachine) !void {
     try state.push(.{ .bool = false });
 }
 
-pub fn greaterThan(state: *RockMachine) !void {
+pub fn greaterThan(state: *DtMachine) !void {
     const usage = "USAGE: a b gt? -> b>a ({any})\n";
 
     const vals = try state.popN(2);
@@ -744,20 +744,20 @@ pub fn greaterThan(state: *RockMachine) !void {
 
     const a = vals[0].intoFloat() catch {
         try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        try stderr.print(usage, .{DtError.WrongArguments});
+        return DtError.WrongArguments;
     };
 
     const b = vals[1].intoFloat() catch {
         try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        try stderr.print(usage, .{DtError.WrongArguments});
+        return DtError.WrongArguments;
     };
 
     try state.push(.{ .bool = b > a });
 }
 
-pub fn greaterThanEq(state: *RockMachine) !void {
+pub fn greaterThanEq(state: *DtMachine) !void {
     const usage = "USAGE: a b gt? -> b>=a ({any})\n";
 
     const vals = try state.popN(2);
@@ -772,20 +772,20 @@ pub fn greaterThanEq(state: *RockMachine) !void {
 
     const a = vals[0].intoFloat() catch {
         try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        try stderr.print(usage, .{DtError.WrongArguments});
+        return DtError.WrongArguments;
     };
 
     const b = vals[1].intoFloat() catch {
         try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        try stderr.print(usage, .{DtError.WrongArguments});
+        return DtError.WrongArguments;
     };
 
     try state.push(.{ .bool = b >= a });
 }
 
-pub fn lessThan(state: *RockMachine) !void {
+pub fn lessThan(state: *DtMachine) !void {
     const usage = "USAGE: a b lt? -> b<a ({any})\n";
 
     const vals = try state.popN(2);
@@ -800,20 +800,20 @@ pub fn lessThan(state: *RockMachine) !void {
 
     const a = vals[0].intoFloat() catch {
         try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        try stderr.print(usage, .{DtError.WrongArguments});
+        return DtError.WrongArguments;
     };
 
     const b = vals[1].intoFloat() catch {
         try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        try stderr.print(usage, .{DtError.WrongArguments});
+        return DtError.WrongArguments;
     };
 
     try state.push(.{ .bool = b < a });
 }
 
-pub fn lessThanEq(state: *RockMachine) !void {
+pub fn lessThanEq(state: *DtMachine) !void {
     const usage = "USAGE: a b lte? -> b<=a ({any})\n";
 
     const vals = try state.popN(2);
@@ -828,20 +828,20 @@ pub fn lessThanEq(state: *RockMachine) !void {
 
     const a = vals[0].intoFloat() catch {
         try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        try stderr.print(usage, .{DtError.WrongArguments});
+        return DtError.WrongArguments;
     };
 
     const b = vals[1].intoFloat() catch {
         try state.pushN(2, vals);
-        try stderr.print(usage, .{RockError.WrongArguments});
-        return RockError.WrongArguments;
+        try stderr.print(usage, .{DtError.WrongArguments});
+        return DtError.WrongArguments;
     };
 
     try state.push(.{ .bool = b <= a });
 }
 
-pub fn boolAnd(state: *RockMachine) !void {
+pub fn boolAnd(state: *DtMachine) !void {
     var vals = try state.popN(2);
 
     var a = vals[0].intoBool(state);
@@ -850,7 +850,7 @@ pub fn boolAnd(state: *RockMachine) !void {
     try state.push(.{ .bool = a and b });
 }
 
-pub fn boolOr(state: *RockMachine) !void {
+pub fn boolOr(state: *DtMachine) !void {
     var vals = try state.popN(2);
 
     var a = vals[0].intoBool(state);
@@ -859,14 +859,14 @@ pub fn boolOr(state: *RockMachine) !void {
     try state.push(.{ .bool = a or b });
 }
 
-pub fn not(state: *RockMachine) !void {
+pub fn not(state: *DtMachine) !void {
     var val = try state.pop();
 
     var a = val.intoBool(state);
     try state.push(.{ .bool = !a });
 }
 
-pub fn split(state: *RockMachine) !void {
+pub fn split(state: *DtMachine) !void {
     const usage = "USAGE: str delim split -> [substrs...] ({any})\n";
     _ = usage;
 
@@ -893,7 +893,7 @@ pub fn split(state: *RockMachine) !void {
     }
 }
 
-pub fn join(state: *RockMachine) !void {
+pub fn join(state: *DtMachine) !void {
     const usage = "USAGE: [strs...] delim join -> str ({any})\n";
     _ = usage;
 
@@ -917,42 +917,42 @@ pub fn join(state: *RockMachine) !void {
     try state.push(.{ .string = acc });
 }
 
-pub fn upcase(state: *RockMachine) !void {
+pub fn upcase(state: *DtMachine) !void {
     var val = try state.pop();
     const before = try val.intoString(state);
     const after = try std.ascii.allocUpperString(state.alloc, before);
     try state.push(.{ .string = after });
 }
 
-pub fn downcase(state: *RockMachine) !void {
+pub fn downcase(state: *DtMachine) !void {
     var val = try state.pop();
     const before = try val.intoString(state);
     const after = try std.ascii.allocLowerString(state.alloc, before);
     try state.push(.{ .string = after });
 }
 
-pub fn startsWith(state: *RockMachine) !void {
+pub fn startsWith(state: *DtMachine) !void {
     var vals = try state.popN(2);
     var str = try vals[0].intoString(state);
     var prefix = try vals[1].intoString(state);
     try state.push(.{ .bool = std.mem.startsWith(u8, str, prefix) });
 }
 
-pub fn endsWith(state: *RockMachine) !void {
+pub fn endsWith(state: *DtMachine) !void {
     var vals = try state.popN(2);
     var str = try vals[0].intoString(state);
     var suffix = try vals[1].intoString(state);
     try state.push(.{ .bool = std.mem.endsWith(u8, str, suffix) });
 }
 
-pub fn contains(state: *RockMachine) !void {
+pub fn contains(state: *DtMachine) !void {
     var vals = try state.popN(2);
     var str = try vals[0].intoString(state);
     var substr = try vals[1].intoString(state);
     try state.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
 }
 
-pub fn opt(state: *RockMachine) !void {
+pub fn opt(state: *DtMachine) !void {
     const usage = "USAGE: ... term|quote bool ? -> ... ({any})\n";
 
     var val = state.pop() catch |e| switch (e) {
@@ -972,7 +972,7 @@ pub fn opt(state: *RockMachine) !void {
     };
 }
 
-pub fn doBang(state: *RockMachine) !void {
+pub fn doBang(state: *DtMachine) !void {
     const usage = "USAGE: ... term|quote do! -> ... ({any})\n";
     _ = usage;
 
@@ -991,7 +991,7 @@ pub fn doBang(state: *RockMachine) !void {
 }
 
 // Same as do! but does not uplevel any definitions
-pub fn do(state: *RockMachine) !void {
+pub fn do(state: *DtMachine) !void {
     const usage = "USAGE: ... term|quote do -> ... ({any})\n";
     _ = usage;
 
@@ -1015,23 +1015,23 @@ pub fn do(state: *RockMachine) !void {
     state.nest = jail.nest;
 }
 
-pub fn doin(state: *RockMachine) !void {
+pub fn doin(state: *DtMachine) !void {
     const usage = "USAGE: [as...] cmd|quote doin -> [bs...] ({any})\n";
     const vals = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     const quote = try vals[0].intoQuote(state);
     const f = vals[1];
 
     _doin(state, quote, f) catch {
-        try stderr.print(usage, .{RockError.WrongArguments});
+        try stderr.print(usage, .{DtError.WrongArguments});
         try state.pushN(2, vals);
     };
 }
 
-fn _doin(state: *RockMachine, quote: Quote, f: RockVal) !void {
+fn _doin(state: *DtMachine, quote: Quote, f: DtVal) !void {
     var child = try state.child();
 
     try child.push(.{ .quote = quote });
@@ -1043,7 +1043,7 @@ fn _doin(state: *RockMachine, quote: Quote, f: RockVal) !void {
     try state.push(.{ .quote = resultQuote });
 }
 
-pub fn map(state: *RockMachine) !void {
+pub fn map(state: *DtMachine) !void {
     const usage = "USAGE: [as] (a->b) map -> [bs] ({any})\n";
 
     const vals = try state.popN(2);
@@ -1058,7 +1058,7 @@ pub fn map(state: *RockMachine) !void {
     };
 }
 
-fn _map(state: *RockMachine, as: Quote, f: RockVal) !void {
+fn _map(state: *DtMachine, as: Quote, f: DtVal) !void {
     var child = try state.child();
 
     for (as.items) |a| {
@@ -1069,15 +1069,15 @@ fn _map(state: *RockMachine, as: Quote, f: RockVal) !void {
 
     const newQuote = try child.popContext();
 
-    try state.push(RockVal{ .quote = newQuote });
+    try state.push(DtVal{ .quote = newQuote });
 }
 
-pub fn filter(state: *RockMachine) !void {
+pub fn filter(state: *DtMachine) !void {
     const usage = "USAGE: [as] (a->bool) filter -> [bs] ({any})\n";
 
     const vals = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     };
 
     const quote = try vals[0].intoQuote(state);
@@ -1089,7 +1089,7 @@ pub fn filter(state: *RockMachine) !void {
     };
 }
 
-fn _filter(state: *RockMachine, as: Quote, f: RockVal) !void {
+fn _filter(state: *DtMachine, as: Quote, f: DtVal) !void {
     var quote = Quote.init(state.alloc);
 
     for (as.items) |a| {
@@ -1105,15 +1105,15 @@ fn _filter(state: *RockMachine, as: Quote, f: RockVal) !void {
         }
     }
 
-    try state.push(RockVal{ .quote = quote });
+    try state.push(DtVal{ .quote = quote });
 }
 
-pub fn any(state: *RockMachine) !void {
+pub fn any(state: *DtMachine) !void {
     const usage = "USAGE: [as] (a->bool) any? -> bool ({any})\n";
 
     const vals = state.popN(2) catch |e| {
         try stderr.print(usage, .{e});
-        return RockError.StackUnderflow;
+        return DtError.StackUnderflow;
     };
 
     const quote = try vals[0].intoQuote(state);
@@ -1130,7 +1130,7 @@ pub fn any(state: *RockMachine) !void {
     };
 }
 
-fn _any(state: *RockMachine, as: Quote, f: RockVal) !void {
+fn _any(state: *DtMachine, as: Quote, f: DtVal) !void {
     for (as.items) |a| {
         var child = try state.child();
         try child.push(a);
@@ -1140,27 +1140,27 @@ fn _any(state: *RockMachine, as: Quote, f: RockVal) !void {
         var cond = lastVal.intoBool(state);
 
         if (cond) {
-            try state.push(RockVal{ .bool = true });
+            try state.push(DtVal{ .bool = true });
             return;
         }
     }
 
-    try state.push(RockVal{ .bool = false });
+    try state.push(DtVal{ .bool = false });
 }
 
-pub fn pop(state: *RockMachine) !void {
+pub fn pop(state: *DtMachine) !void {
     const val = try state.pop();
 
     if (!val.isQuote()) {
         try state.push(val);
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     }
 
     var quote = try val.intoQuote(state);
 
     if (quote.items.len > 0) {
         const lastVal = quote.pop();
-        try state.push(RockVal{ .quote = quote });
+        try state.push(DtVal{ .quote = quote });
         try state.push(lastVal);
         return;
     }
@@ -1168,57 +1168,57 @@ pub fn pop(state: *RockMachine) !void {
     try state.push(val);
 }
 
-pub fn push(state: *RockMachine) !void {
+pub fn push(state: *DtMachine) !void {
     const vals = try state.popN(2);
 
     if (!vals[0].isQuote()) {
         try state.pushN(2, vals);
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     }
 
     var pushMe = vals[1];
-    var quote: ArrayList(RockVal) = try vals[0].intoQuote(state);
+    var quote: ArrayList(DtVal) = try vals[0].intoQuote(state);
 
     try quote.append(pushMe);
-    try state.push(RockVal{ .quote = quote });
+    try state.push(DtVal{ .quote = quote });
 }
 
-pub fn enq(state: *RockMachine) !void {
+pub fn enq(state: *DtMachine) !void {
     const vals = try state.popN(2);
 
     if (!vals[1].isQuote()) {
         try state.pushN(2, vals);
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     }
 
     var pushMe = vals[0];
-    var quote: ArrayList(RockVal) = try vals[1].intoQuote(state);
+    var quote: ArrayList(DtVal) = try vals[1].intoQuote(state);
 
     try quote.insert(0, pushMe);
-    try state.push(RockVal{ .quote = quote });
+    try state.push(DtVal{ .quote = quote });
 }
 
-pub fn deq(state: *RockMachine) !void {
+pub fn deq(state: *DtMachine) !void {
     const val = try state.pop();
 
     if (!val.isQuote()) {
         try state.push(val);
-        return RockError.WrongArguments;
+        return DtError.WrongArguments;
     }
 
-    var quote: ArrayList(RockVal) = try val.intoQuote(state);
+    var quote: ArrayList(DtVal) = try val.intoQuote(state);
 
     if (quote.items.len > 0) {
         const firstVal = quote.orderedRemove(0);
         try state.push(firstVal);
-        try state.push(RockVal{ .quote = quote });
+        try state.push(DtVal{ .quote = quote });
         return;
     }
 
     try state.push(val);
 }
 
-pub fn len(state: *RockMachine) !void {
+pub fn len(state: *DtMachine) !void {
     const val = try state.pop();
 
     if (val.isQuote()) {
@@ -1239,7 +1239,7 @@ pub fn len(state: *RockMachine) !void {
     try state.push(val);
 }
 
-pub fn ellipsis(state: *RockMachine) !void {
+pub fn ellipsis(state: *DtMachine) !void {
     const val = try state.pop();
 
     var quote = try val.intoQuote(state);
@@ -1250,14 +1250,14 @@ pub fn ellipsis(state: *RockMachine) !void {
     }
 }
 
-pub fn rev(state: *RockMachine) !void {
+pub fn rev(state: *DtMachine) !void {
     const val = try state.pop();
 
     if (val.isQuote()) {
         const quote = try val.intoQuote(state);
         const length = quote.items.len;
 
-        var newItems = try state.alloc.alloc(RockVal, length);
+        var newItems = try state.alloc.alloc(DtVal, length);
         for (quote.items, 0..) |v, i| {
             newItems[length - i - 1] = v;
         }
@@ -1280,23 +1280,23 @@ pub fn rev(state: *RockMachine) !void {
         return;
     }
 
-    const err = RockError.WrongArguments;
+    const err = DtError.WrongArguments;
     try stderr.print("USAGE: quote|str rev -> rts|etouq ({any})", .{err});
     return err;
 }
 
-pub fn quoteVal(state: *RockMachine) !void {
+pub fn quoteVal(state: *DtMachine) !void {
     const val = try state.pop();
     var quote = Quote.init(state.alloc);
     try quote.append(val);
     try state.push(.{ .quote = quote });
 }
 
-pub fn quoteAll(state: *RockMachine) !void {
+pub fn quoteAll(state: *DtMachine) !void {
     try state.quoteContext();
 }
 
-pub fn concat(state: *RockMachine) !void {
+pub fn concat(state: *DtMachine) !void {
     const vals = try state.popN(2);
 
     var a = try vals[0].intoQuote(state);
@@ -1307,38 +1307,53 @@ pub fn concat(state: *RockMachine) !void {
     try state.push(.{ .quote = a });
 }
 
-pub fn toBool(state: *RockMachine) !void {
+pub fn toBool(state: *DtMachine) !void {
     const val = try state.pop();
     const b = val.intoBool(state);
     try state.push(.{ .bool = b });
 }
 
-pub fn toInt(state: *RockMachine) !void {
+pub fn toInt(state: *DtMachine) !void {
     const val = try state.pop();
-    const i = try val.intoInt();
+    const i = val.intoInt() catch {
+        try state.push(val);
+        return DtError.NoCoersionToInteger;
+    };
     try state.push(.{ .int = i });
 }
 
-pub fn toFloat(state: *RockMachine) !void {
+pub fn toFloat(state: *DtMachine) !void {
     const val = try state.pop();
-    const f = try val.intoFloat();
+    const f = val.intoFloat() catch {
+        try state.push(val);
+        return DtError.NoCoersionToFloat;
+    };
     try state.push(.{ .float = f });
 }
 
-pub fn toString(state: *RockMachine) !void {
+pub fn toString(state: *DtMachine) !void {
     const val = try state.pop();
-    const s = try val.intoString(state);
+    const s = val.intoString(state) catch {
+        try state.push(val);
+        return DtError.NoCoersionToString;
+    };
     try state.push(.{ .string = s });
 }
 
-pub fn toCommand(state: *RockMachine) !void {
+pub fn toCommand(state: *DtMachine) !void {
     const val = try state.pop();
-    const cmd = try val.intoString(state);
+    const cmd = val.intoString(state) catch {
+        try state.push(val);
+        return DtError.NoCoersionToCommand;
+    };
     try state.push(.{ .deferred_command = cmd });
 }
 
-pub fn toQuote(state: *RockMachine) !void {
+pub fn toQuote(state: *DtMachine) !void {
     const val = try state.pop();
-    const quote = try val.intoQuote(state);
+    const quote = val.intoQuote(state) catch {
+        try state.push(val);
+        return DtError.NoCoersionToQuote;
+    };
     try state.push(.{ .quote = quote });
 }

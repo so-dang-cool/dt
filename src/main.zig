@@ -9,11 +9,11 @@ const File = std.fs.File;
 const Token = @import("tokens.zig").Token;
 
 const interpret = @import("interpret.zig");
-const RockError = interpret.RockError;
-const RockDictionary = interpret.Dictionary;
-const RockCommand = interpret.RockCommand;
-const RockAction = interpret.RockAction;
-const RockMachine = interpret.RockMachine;
+const DtError = interpret.DtError;
+const DtDictionary = interpret.Dictionary;
+const DtCommand = interpret.Command;
+const DtAction = interpret.Action;
+const DtMachine = interpret.DtMachine;
 
 const builtins = @import("builtins.zig");
 
@@ -24,7 +24,7 @@ const stdlib = @embedFile("stdlib.dt");
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
-    var machine = try RockMachine.init(arena.allocator());
+    var machine = try DtMachine.init(arena.allocator());
 
     try builtins.defineAll(&machine);
 
@@ -43,12 +43,12 @@ pub fn main() !void {
 }
 
 // TODO: Can this be done at comptime somehow?
-fn loadStdlib(allocator: Allocator, machine: *RockMachine) !void {
+fn loadStdlib(allocator: Allocator, machine: *DtMachine) !void {
     var toks = Token.parse(allocator, stdlib);
     while (try toks.next()) |token| try machine.interpret(token);
 }
 
-fn handlePipedStdin(machine: *RockMachine) !void {
+fn handlePipedStdin(machine: *DtMachine) !void {
     machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
         if (e == error.BrokenPipe) return;
         try stderr.print("RIP: {any}\n", .{e});
@@ -56,7 +56,7 @@ fn handlePipedStdin(machine: *RockMachine) !void {
     };
 }
 
-fn handlePipedStdoutOnly(machine: *RockMachine) !void {
+fn handlePipedStdoutOnly(machine: *DtMachine) !void {
     machine.interpret(.{ .term = "run-args" }) catch |e| {
         if (e == error.BrokenPipe) return;
         try stderr.print("RIP: {any}\n", .{e});
@@ -64,7 +64,7 @@ fn handlePipedStdoutOnly(machine: *RockMachine) !void {
     };
 }
 
-fn readEvalPrintLoop(machine: *RockMachine) !void {
+fn readEvalPrintLoop(machine: *DtMachine) !void {
     machine.interpret(.{ .term = "run-args" }) catch |e| {
         try stderr.print("RIP: {any}\n", .{e});
         std.os.exit(1);

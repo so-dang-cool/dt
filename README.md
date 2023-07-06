@@ -2,8 +2,8 @@
 
 # `dt`
 
-It's duct tape for your unix pipes. A shell-friendly concatenative language
-for when you don't have a better tool.
+It's duct tape for your unix pipes. A shell-friendly concatenative functional
+programming language for when you don't have a better tool.
 
 In the words of [Red Green](https://www.redgreen.com):
 
