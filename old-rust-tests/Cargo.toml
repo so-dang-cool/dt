@@ -1,14 +1,13 @@
 [package]
 name = "dt-tests"
 version = "0.1.0"
-authors = ["J.R. Hill <hiljusti@so.dang.cool>"]
+authors = ["J.R. Hill <justin@so.dang.cool>"]
 description = "dt - it's duck tape for your unix pipes"
-license = "GPL-2.0-only"
+license = "BSD-3-Clause"
 
 readme = "README.md"
-homepage = "https://github.com/hiljusti/dt"
-repository = "https://github.com/hiljusti/dt"
-#documentation = "TODO"
+homepage = "https://github.com/booniepepper/dt"
+repository = "https://github.com/booniepepper/dt"
 keywords = ["programming-language", "concatenative", "interpreter", "parser"]
 categories = []
 

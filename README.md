@@ -1,4 +1,4 @@
-![License](https://img.shields.io/github/license/hiljusti/dt)
+![License](https://img.shields.io/github/license/booniepepper/dt)
 
 # `dt`
 
@@ -82,7 +82,7 @@ bye
 
 ## Downloads
 
-Download assets from [releases](https://github.com/hiljusti/dt/releases/) and
+Download assets from [releases](https://github.com/booniepepper/dt/releases/) and
 put them somewhere on your PATH.
 
 An installation script will come soon.
@@ -97,4 +97,4 @@ resulting binary for your machine will be produced in `./zig-out/bin/dt`
 
 Shared as open source software, distributed under the terms of [the 3-Clause BSD License](https://opensource.org/license/BSD-3-clause/).
 
-A side quest of J.R. Hill | https://so.dang.cool | https://github.com/hiljusti
+A side quest of J.R. Hill | https://so.dang.cool | https://github.com/booniepepper
