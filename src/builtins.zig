@@ -52,9 +52,10 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("enl", "print a newline to stderr", .{ .builtin = enl });
     try machine.define(".s", "print the stack", .{ .builtin = dotS });
 
-    try machine.define("get-line", "get a line from standard input (until newline)", .{ .builtin = getLine });
-    try machine.define("get-lines", "get lines from standard input (until EOF)", .{ .builtin = getLines });
-    try machine.define("get-args", "get command-line args", .{ .builtin = getArgs });
+    try machine.define("read-line", "get a line from standard input (until newline)", .{ .builtin = readLine });
+    try machine.define("read-lines", "get lines from standard input (until EOF)", .{ .builtin = readLines });
+    try machine.define("procname", "get name of current process", .{ .builtin = procname });
+    try machine.define("args", "get command-line args", .{ .builtin = args });
     try machine.define("eval", "evaluate a string as commands", .{ .builtin = eval });
     try machine.define("interactive?", "determine if the input mode is interactive (a TTY) or not", .{ .builtin = interactive });
 
@@ -218,10 +219,10 @@ pub fn writef(state: *DtMachine) !void {
 pub fn exec(state: *DtMachine) !void {
     const val = try state.pop();
     const childProcess = try val.intoString(state);
-    var args = std.mem.splitAny(u8, childProcess, " \t");
+    var childArgs = std.mem.splitAny(u8, childProcess, " \t");
     var argv = ArrayList([]const u8).init(state.alloc);
 
-    while (args.next()) |arg| try argv.append(arg);
+    while (childArgs.next()) |arg| try argv.append(arg);
 
     var result = std.process.Child.exec(.{
         .allocator = state.alloc,
@@ -419,7 +420,7 @@ pub fn dotS(state: *DtMachine) !void {
     try stdout.print("]\n", .{});
 }
 
-pub fn getLine(state: *DtMachine) !void {
+pub fn readLine(state: *DtMachine) !void {
     var line = ArrayList(u8).init(state.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
     const unescaped = try string.unescape(state.alloc, line.items);
@@ -427,11 +428,11 @@ pub fn getLine(state: *DtMachine) !void {
     try state.push(.{ .string = unescaped });
 }
 
-pub fn getLines(state: *DtMachine) !void {
+pub fn readLines(state: *DtMachine) !void {
     var lines = Quote.init(state.alloc);
 
     while (true) {
-        getLine(state) catch |err| switch (err) {
+        readLine(state) catch |err| switch (err) {
             error.EndOfStream => break,
             else => return err,
         };
@@ -443,10 +444,18 @@ pub fn getLines(state: *DtMachine) !void {
     try state.push(.{ .quote = lines });
 }
 
-pub fn getArgs(state: *DtMachine) !void {
+pub fn procname(state: *DtMachine) !void {
+    var procArgs = std.process.args();
+    var name = procArgs.next() orelse return DtError.ProcessNameUnknown;
+    try state.push(.{ .string = name });
+}
+
+pub fn args(state: *DtMachine) !void {
     var quote = Quote.init(state.alloc);
-    var args = std.process.args();
-    while (args.next()) |arg| {
+    var procArgs = std.process.args();
+    _ = procArgs.next(); // Discard process name
+
+    while (procArgs.next()) |arg| {
         try quote.append(.{ .string = arg });
     }
 

@@ -9,7 +9,7 @@
 ### Flags and such ###
 
 [ [ action flag ] :
-  get-args [ flag eq? ] any?
+  args [ flag eq? ] any?
   action swap ? ] \handle-flag def
 
 [ "dt " p version pl ] \print-version def
@@ -20,20 +20,24 @@
 
 [ --help --version ] \handle-flags def
 
-[ handle-flags
-    get-args deq   [_ args]:   args unwords eval ] \run-args def
+[ handle-flags   args unwords eval ] \run-args def
+
+
+### PIPE things ###
+
+[ read-lines   run-args ] \pipe-thru-args def
+
+
+### Shebang things ###
+
+[args deq swap drop] \shebang-args def
 
 
 ### REPL things ###
 
 [ handle-flags   "dt " p version pl   repl ] \main-repl def
-[ "» " p   get-line eval   repl ] \repl def
+[ "» " p   read-line eval   repl ] \repl def
 [ .q ] \quit def
-
-
-### PIPE things ###
-
-[ get-lines   run-args ] \pipe-thru-args def
 
 
 ### Display ###

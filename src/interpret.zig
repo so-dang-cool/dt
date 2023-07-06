@@ -33,6 +33,8 @@ pub const DtError = error{
     NoCoersionToString,
     NoCoersionToCommand,
     NoCoersionToQuote,
+
+    ProcessNameUnknown,
 };
 
 pub const DtMachine = struct {

@@ -1,12 +1,13 @@
 #!/usr/bin/env dt
 
-get-args deq deq   [progname _ args]:
+shebang-args first to-int   \n :
 
-args deq drop to-int   [n]:
+[["USAGE: " progname " N"] \ep each enl   1 exit] n not ?
 
-[["USAGE: " progname " N"] \p each nl   1 exit] n not ?
+n 1 -   \n :
 
-0 pl
+[ [[0 pl]   1 n gte?]
+  [[0 exit] 0 n eq? ] ] \? map
 
 0 1
 
@@ -14,4 +15,3 @@ args deq drop to-int   [n]:
   a b + \c :
   [1 exit] c not ?
   b c ] n times
-
