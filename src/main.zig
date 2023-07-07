@@ -51,7 +51,11 @@ fn loadStdlib(allocator: Allocator, machine: *DtMachine) !void {
 fn handlePipedStdin(machine: *DtMachine) !void {
     machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
         if (e == error.BrokenPipe) return;
+
+        try machine.red();
         try stderr.print("RIP: {any}\n", .{e});
+        try machine.norm();
+
         std.os.exit(1);
     };
 }
@@ -59,23 +63,34 @@ fn handlePipedStdin(machine: *DtMachine) !void {
 fn handlePipedStdoutOnly(machine: *DtMachine) !void {
     machine.interpret(.{ .term = "run-args" }) catch |e| {
         if (e == error.BrokenPipe) return;
+
+        try machine.red();
         try stderr.print("RIP: {any}\n", .{e});
+        try machine.norm();
+
         std.os.exit(1);
     };
 }
 
 fn readEvalPrintLoop(machine: *DtMachine) !void {
     machine.interpret(.{ .term = "run-args" }) catch |e| {
+        try machine.red();
         try stderr.print("RIP: {any}\n", .{e});
+        try machine.norm();
+
         std.os.exit(1);
     };
 
     while (true) machine.interpret(.{ .term = "main-repl" }) catch |e| switch (e) {
         error.EndOfStream => {
-            try stderr.print("\nSee you next time.\n", .{});
+            try stderr.print("\n", .{});
             return;
         },
-        else => try stderr.print("Recovering from: {any}\n", .{e}),
+        else => {
+            try machine.red();
+            try stderr.print("Recovering from: {any}\n", .{e});
+            try machine.norm();
+        },
     };
 }
 

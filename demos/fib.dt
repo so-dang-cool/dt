@@ -10,10 +10,10 @@ args first \script-name:
 [usage [do eprint] each   1 exit] \usage-fail def
 
 shebang-args pop to-int \n:
-  \usage-fail n not ?
+  \usage-fail n not do?
 
 n 1 - \n:
-  \usage-fail 0 n lt? ?
+  \usage-fail 0 n lt? do?
 
 0 pl
 
@@ -21,5 +21,5 @@ n 1 - \n:
 
 [ [a b]: b pl
   a b + \c:
-  [1 exit] c not ?
+  [1 exit] c not do?
   b c ] n times

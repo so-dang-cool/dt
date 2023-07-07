@@ -10,7 +10,7 @@
 
 [ [ action flag ]:
   args [ flag eq? ] any?
-  action swap ?
+  action swap do?
 ] \handle-flag def
 
 [ "dt " p version pl ] \print-version def
@@ -36,7 +36,8 @@
 
 ### REPL things ###
 
-[ handle-flags   "dt " p version pl   repl ] \main-repl def
+[ red "dt " p version pl   norm inspire pl ] \repl-greet def
+[ handle-flags   repl-greet   repl ] \main-repl def
 [ "» " p   read-line eval   repl ] \repl def
 [ .q ] \quit def
 
@@ -97,13 +98,13 @@
 
 [ [ cmd n ]:
   0 n gt?   \continue :
-  [ cmd do   cmd n 1 - times ] continue ?
+  [ cmd do   cmd n 1 - times ] continue do?
 ] \times def
 
 [ map drop ] \each def
 
 [ [ action cond ]:
-  [ action do   action cond while ]   cond do ?
+  [ action do   action cond while ]   cond do do?
 ] \while def
 
 
@@ -114,4 +115,4 @@
 
 ### Testing ###
 
-[ [ cond msg ]:   [ msg pl   1 exit ] cond not ? ] \assert-true def
+[ [ cond msg ]:   [ msg pl   1 exit ] cond not do? ] \assert-true def

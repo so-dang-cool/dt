@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Stack = std.SinglyLinkedList;
+
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
@@ -17,6 +18,8 @@ const Error = interpret.DtError;
 const DtVal = interpret.DtVal;
 const DtMachine = interpret.DtMachine;
 
+const bangDescription = "If nested, any commands or variables defined will be available in the calling scope";
+
 pub fn defineAll(machine: *DtMachine) !void {
     try machine.define(".q", "quit, printing a warning if there are any values left on stack", .{ .builtin = quit });
     try machine.define("exit", "exit with the specified exit code", .{ .builtin = exit });
@@ -31,16 +34,17 @@ pub fn defineAll(machine: *DtMachine) !void {
 
     try machine.define("exec", "execute a child process. When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false", .{ .builtin = exec });
 
-    try machine.define("def!", "define a new command", .{ .builtin = defBang });
+    try machine.define("def!", "define a new command. " ++ bangDescription, .{ .builtin = defBang });
     try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
     try machine.define("def?", "return true if a name is defined", .{ .builtin = isDef });
     try machine.define("usage", "print the usage notes of a given command", .{ .builtin = cmdUsage });
     try machine.define(":", "bind variables", .{ .builtin = colon });
 
-    try machine.define("do!", "execute a command or quote", .{ .builtin = doBang });
+    try machine.define("do!", "execute a command or quote. " ++ bangDescription, .{ .builtin = doBang });
     try machine.define("do", "execute a command or quote", .{ .builtin = do });
     try machine.define("doin", "execute a command or quote in a previous quote", .{ .builtin = doin });
-    try machine.define("?", "consumes a command/quote and a value and performs it if the value is truthy", .{ .builtin = opt });
+    try machine.define("do!?", "consume a boolean and either do or drop a command or quote. " ++ bangDescription, .{ .builtin = doBangMaybe });
+    try machine.define("do?", "consume a boolean and either do or drop a command or quote", .{ .builtin = doMaybe });
 
     try machine.define("dup", "duplicate the top value", .{ .builtin = dup });
     try machine.define("drop", "drop the top value", .{ .builtin = drop });
@@ -51,6 +55,9 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("ep", "print a value to stderr", .{ .builtin = ep });
     try machine.define("nl", "print a newline to stdout", .{ .builtin = nl });
     try machine.define("enl", "print a newline to stderr", .{ .builtin = enl });
+    try machine.define("red", "make stdout/stderr red", .{ .builtin = red });
+    try machine.define("green", "make stdout/stderr green and bold (for the colorblind)", .{ .builtin = green });
+    try machine.define("norm", "reset stdout/stderr colors", .{ .builtin = norm });
     try machine.define(".s", "print the stack", .{ .builtin = dotS });
 
     try machine.define("read-line", "get a line from standard input (until newline)", .{ .builtin = readLine });
@@ -66,6 +73,7 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("/", "divide two numeric values", .{ .builtin = divide });
     try machine.define("%", "modulo two numeric values", .{ .builtin = modulo });
     try machine.define("abs", "consume a number and produce its absolute value", .{ .builtin = abs });
+    try machine.define("rand", "produces a random integer", .{ .builtin = rand });
 
     try machine.define("eq?", "consume two values and return true if they are equal", .{ .builtin = eq });
     try machine.define("gt?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThan });
@@ -108,18 +116,23 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("to-def", "coerce value to a deferred command", .{ .builtin = toDef });
     try machine.define("to-quote", "coerce value to quote", .{ .builtin = toQuote });
     try machine.define("to-error", "coerce value to an error", .{ .builtin = toError });
+
+    try machine.define("inspire", "get inspired", .{ .builtin = inspire });
 }
 
 pub fn quit(dt: *DtMachine) !void {
     const ctx = try dt.popContext();
 
     if (ctx.items.len > 0) {
+        try dt.red();
         try stderr.print("Warning: Exited with unused values: [ ", .{});
+
         for (ctx.items) |item| {
             try item.print(dt.alloc);
             try stderr.print(" ", .{});
         }
         try stderr.print("] \n", .{});
+        try dt.norm();
     }
 
     std.os.exit(0);
@@ -156,10 +169,7 @@ pub fn cd(dt: *DtMachine) !void {
         path = try std.process.getEnvVarOwned(dt.alloc, "HOME");
     }
 
-    std.os.chdir(path) catch |e| {
-        try stderr.print("Unable to change directory: {any}\n", .{e});
-        try dt.push(val);
-    };
+    std.os.chdir(path) catch |e| return dt.rewind(val, e);
 }
 
 pub fn ls(dt: *DtMachine) !void {
@@ -226,7 +236,10 @@ pub fn exec(dt: *DtMachine) !void {
             return;
         },
         else => {
+            try dt.red();
             try stderr.print("{s}", .{result.stderr});
+            try dt.norm();
+
             try dt.push(.{ .bool = false });
         },
     }
@@ -349,6 +362,18 @@ pub fn ep(dt: *DtMachine) !void {
     try _p(val, dt.alloc, stderr);
 }
 
+pub fn red(dt: *DtMachine) !void {
+    try dt.red();
+}
+
+pub fn green(dt: *DtMachine) !void {
+    try dt.green();
+}
+
+pub fn norm(dt: *DtMachine) !void {
+    try dt.norm();
+}
+
 fn _p(val: DtVal, allocator: Allocator, writer: std.fs.File.Writer) !void {
     switch (val) {
         .string => |s| {
@@ -447,11 +472,7 @@ pub fn add(dt: *DtMachine) !void {
 
         const res = @addWithOverflow(a, b);
 
-        if (res[1] == 1) {
-            try dt.pushN(2, vals);
-            try stderr.print("ERROR: Adding {} and {} would overflow.\n", .{ a, b });
-            return Error.IntegerOverflow;
-        }
+        if (res[1] == 1) return dt.rewindN(2, vals, Error.IntegerOverflow);
 
         try dt.push(.{ .int = res[0] });
         return;
@@ -472,11 +493,7 @@ pub fn subtract(dt: *DtMachine) !void {
 
         const res = @subWithOverflow(a, b);
 
-        if (res[1] == 1) {
-            try dt.pushN(2, vals);
-            try stderr.print("ERROR: Subtracting {} from {} would overflow.\n", .{ b, a });
-            return Error.IntegerOverflow;
-        }
+        if (res[1] == 1) return dt.rewindN(2, vals, Error.IntegerUnderflow);
 
         try dt.push(.{ .int = res[0] });
         return;
@@ -497,11 +514,7 @@ pub fn multiply(dt: *DtMachine) !void {
 
         const res = @mulWithOverflow(a, b);
 
-        if (res[1] == 1) {
-            try dt.pushN(2, vals);
-            try stderr.print("ERROR: Multiplying {} by {} would overflow.\n", .{ a, b });
-            return Error.IntegerOverflow;
-        }
+        if (res[1] == 1) return dt.rewindN(2, vals, Error.IntegerOverflow);
 
         try dt.push(.{ .int = res[0] });
         return;
@@ -521,11 +534,7 @@ pub fn divide(dt: *DtMachine) !void {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        if (b == 0) {
-            try dt.pushN(2, vals);
-            try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
-            return Error.DivisionByZero;
-        }
+        if (b == 0) return dt.rewindN(2, vals, Error.DivisionByZero);
 
         try dt.push(.{ .int = @divTrunc(a, b) });
         return;
@@ -534,11 +543,7 @@ pub fn divide(dt: *DtMachine) !void {
     const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
     const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
 
-    if (b == 0) {
-        try dt.pushN(2, vals);
-        try stderr.print("ERROR: Cannot divide {} by zero.\n", .{a});
-        return Error.DivisionByZero;
-    }
+    if (b == 0) return dt.rewindN(2, vals, Error.DivisionByZero);
 
     try dt.push(.{ .float = a / b });
 }
@@ -574,6 +579,11 @@ pub fn abs(dt: *DtMachine) !void {
     const a = val.intoFloat() catch |e| return dt.rewind(val, e);
 
     try dt.push(.{ .float = std.math.fabs(a) });
+}
+
+pub fn rand(dt: *DtMachine) !void {
+    const n = std.crypto.random.int(i64);
+    try dt.push(.{ .int = n });
 }
 
 pub fn eq(dt: *DtMachine) !void {
@@ -827,13 +837,6 @@ pub fn contains(dt: *DtMachine) !void {
     try dt.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
 }
 
-pub fn opt(dt: *DtMachine) !void {
-    var val = try dt.pop();
-    const cond = val.intoBool(dt);
-
-    try if (cond) do(dt) else drop(dt) catch |e| return dt.rewind(val, e);
-}
-
 pub fn doBang(dt: *DtMachine) !void {
     var val = try dt.pop();
 
@@ -869,6 +872,20 @@ pub fn do(dt: *DtMachine) !void {
 
     for (quote.items) |v| try jail.handle(v);
     dt.nest = jail.nest;
+}
+
+pub fn doBangMaybe(dt: *DtMachine) !void {
+    var val = try dt.pop();
+    const cond = val.intoBool(dt);
+
+    try if (cond) doBang(dt) else drop(dt) catch |e| return dt.rewind(val, e);
+}
+
+pub fn doMaybe(dt: *DtMachine) !void {
+    var val = try dt.pop();
+    const cond = val.intoBool(dt);
+
+    try if (cond) do(dt) else drop(dt) catch |e| return dt.rewind(val, e);
 }
 
 pub fn doin(dt: *DtMachine) !void {
@@ -1162,4 +1179,9 @@ pub fn toError(dt: *DtMachine) !void {
     errName = std.mem.trim(u8, errName, "~");
 
     try dt.push(.{ .err = errName });
+}
+
+pub fn inspire(dt: *DtMachine) !void {
+    const i = std.crypto.random.uintLessThan(usize, dt.inspiration.len);
+    try dt.push(.{ .string = dt.inspiration[i] });
 }

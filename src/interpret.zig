@@ -6,12 +6,15 @@ const StringHashMap = std.StringHashMap;
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
+const Color = std.io.tty.Color;
 
 const tokens = @import("tokens.zig");
 const Token = tokens.Token;
 
 const string = @import("string.zig");
 const String = string.String;
+
+const inspiration = @embedFile("inspiration");
 
 pub const Dictionary = StringHashMap(Command);
 pub const Quote = ArrayList(DtVal);
@@ -38,9 +41,16 @@ pub const DtError = error{
 
 pub const DtMachine = struct {
     alloc: Allocator,
+
     nest: Stack(ArrayList(DtVal)),
-    defs: Dictionary,
     depth: u8,
+
+    defs: Dictionary,
+
+    stdoutConfig: std.io.tty.Config,
+    stderrConfig: std.io.tty.Config,
+
+    inspiration: []String,
 
     pub fn init(alloc: Allocator) !DtMachine {
         var nest = Stack(Quote){};
@@ -48,11 +58,20 @@ pub const DtMachine = struct {
         mainNode.* = Stack(Quote).Node{ .data = Quote.init(alloc) };
         nest.prepend(mainNode);
 
+        var inspirations = ArrayList(String).init(alloc);
+        var lines = std.mem.tokenizeScalar(u8, inspiration, '\n');
+        while (lines.next()) |line| {
+            try inspirations.append(line);
+        }
+
         return .{
             .alloc = alloc,
             .nest = nest,
-            .defs = Dictionary.init(alloc),
             .depth = 0,
+            .defs = Dictionary.init(alloc),
+            .stdoutConfig = std.io.tty.detectConfig(std.io.getStdOut()),
+            .stderrConfig = std.io.tty.detectConfig(std.io.getStdErr()),
+            .inspiration = inspirations.items,
         };
     }
 
@@ -97,7 +116,6 @@ pub const DtMachine = struct {
         }
 
         if (self.defs.get(cmdName)) |cmd| {
-            // try stderr.print("Running command: {s}\n", .{cmd.name});
             cmd.run(self) catch |e| {
                 if (e == error.EndOfStream) return e;
                 try self.push(DtVal{ .err = @errorName(e) });
@@ -105,8 +123,29 @@ pub const DtMachine = struct {
             return;
         }
 
+        try self.red();
         try stderr.print("Undefined: {s}\n", .{cmdName});
+        try self.norm();
         return DtError.CommandUndefined;
+    }
+
+    pub fn red(self: *DtMachine) !void {
+        try self.norm();
+        try self.stdoutConfig.setColor(stdout, Color.red);
+        try self.stderrConfig.setColor(stderr, Color.red);
+    }
+
+    pub fn green(self: *DtMachine) !void {
+        try self.stdoutConfig.setColor(stdout, Color.green);
+        try self.stdoutConfig.setColor(stdout, Color.bold);
+
+        try self.stderrConfig.setColor(stderr, Color.green);
+        try self.stdoutConfig.setColor(stdout, Color.bold);
+    }
+
+    pub fn norm(self: *DtMachine) !void {
+        try self.stdoutConfig.setColor(stdout, Color.reset);
+        try self.stderrConfig.setColor(stderr, Color.reset);
     }
 
     pub fn child(self: *DtMachine) !DtMachine {
@@ -369,7 +408,9 @@ pub const Command = struct {
                         .command => |cmdName| {
                             // Even if this is the same command name, we should re-fetch in case it's been redefined
                             const cmd = state.defs.get(cmdName) orelse {
-                                try stderr.print("Command undefined: {s}\n", .{cmdName});
+                                try state.red();
+                                try stderr.print("Undefined: {s}\n", .{cmdName});
+                                try state.norm();
                                 return DtError.CommandUndefined;
                             };
                             switch (cmd.action) {
