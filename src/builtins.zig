@@ -104,7 +104,8 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("to-int", "coerce value to integer", .{ .builtin = toInt });
     try machine.define("to-float", "coerce value to floating-point number", .{ .builtin = toFloat });
     try machine.define("to-string", "coerce value to string", .{ .builtin = toString });
-    try machine.define("to-cmd", "coerce value to a deferred command", .{ .builtin = toCommand });
+    try machine.define("to-cmd", "coerce value to a command", .{ .builtin = toCommand });
+    try machine.define("to-def", "coerce value to a deferred command", .{ .builtin = toDef });
     try machine.define("to-quote", "coerce value to quote", .{ .builtin = toQuote });
     try machine.define("to-error", "coerce value to an error", .{ .builtin = toError });
 }
@@ -1138,6 +1139,12 @@ pub fn toString(dt: *DtMachine) !void {
 }
 
 pub fn toCommand(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    const cmd = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    try dt.push(.{ .command = cmd });
+}
+
+pub fn toDef(dt: *DtMachine) !void {
     const val = try dt.pop();
     const cmd = val.intoString(dt) catch |e| return dt.rewind(val, e);
     try dt.push(.{ .deferred_command = cmd });
