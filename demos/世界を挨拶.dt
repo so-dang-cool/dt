@@ -1,0 +1,15 @@
+#!/usr/bin/env dt
+
+# Not working yet... We'll need unicode support!
+# Must split on \u{3000}, and handle glyphs well. Maybe just use Zigstr once it supports Zig 0.11
+
+\def　\です　def!
+\do　\を　です
+\pl　\言って　です
+\get-line　\聴いて　です
+
+[["よろしくね、"　名前　"。"]　を　言って]　\挨拶　です
+
+"お名前は?　"　言って　聴いて　\名前　です
+
+\挨拶　を
