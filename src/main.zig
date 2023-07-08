@@ -23,6 +23,7 @@ const stdlib = @embedFile("stdlib.dt");
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
 
     var machine = try DtMachine.init(arena.allocator());
 
