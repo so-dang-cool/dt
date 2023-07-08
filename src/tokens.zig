@@ -51,8 +51,7 @@ pub const TokenIterator = struct {
                     }
                 }
                 self.index = end + 1;
-                const unescaped = try string.unescape(self.allocator, self.buf[strStart..end]);
-                return .{ .string = unescaped };
+                return .{ .string = self.buf[strStart..end] };
             },
             '~' => { // Parse an error
                 const lastChar = std.mem.indexOfPos(u8, self.buf, start, "~") orelse self.buf.len;
@@ -142,6 +141,7 @@ pub const Token = union(enum) {
             .string => |s| std.debug.assert(std.mem.eql(u8, other.string, s)),
             .term => |t| std.debug.assert(std.mem.eql(u8, other.term, t)),
             .deferred_term => |t| std.debug.assert(std.mem.eql(u8, other.deferred_term, t)),
+            .err => |e| std.debug.assert(std.mem.eql(u8, other.err, e)),
             .none => std.debug.assert(other == Token.none),
         }
     }
@@ -160,15 +160,12 @@ test "parse hello.dt" {
     try expected.append(Token{ .term = "def" });
 
     const helloFile = @embedFile("test/hello.dt");
-    const tokens = try Token.parse(std.testing.allocator, helloFile);
-    defer tokens.deinit();
+    var tokens = Token.parse(std.testing.allocator, helloFile);
 
-    std.debug.assert(tokens.items.len == 6);
     var i: u8 = 0;
-    while (i < 6) {
-        std.debug.print("Expected: {any}, Actual: {any} ... ", .{ expected.items[i], tokens.items[i] });
-        expected.items[i].assertEql(tokens.items[i]);
-        std.debug.print("PASS\n", .{});
-        i += 1;
+    while (try tokens.next()) |token| : (i += 1) {
+        std.log.info("Expected: {any}, Actual: {any} ... ", .{ expected.items[i], token });
+        expected.items[i].assertEql(token);
+        std.log.info("PASS\n", .{});
     }
 }

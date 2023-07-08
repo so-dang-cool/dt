@@ -20,6 +20,7 @@ compile() {
 }
 
 test() {
+    zig build test
     cd "$project_root"/old-rust-tests || exit 1
     cargo test
 }

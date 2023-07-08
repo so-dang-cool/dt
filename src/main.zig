@@ -115,3 +115,7 @@ fn readShebangFile(allocator: Allocator) !?[]const u8 {
 
     return null;
 }
+
+test {
+    std.testing.refAllDecls(@This());
+}

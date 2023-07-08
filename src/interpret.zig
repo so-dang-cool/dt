@@ -95,7 +95,10 @@ pub const DtMachine = struct {
             .bool => |b| try self.push(DtVal{ .bool = b }),
             .int => |i| try self.push(DtVal{ .int = i }),
             .float => |f| try self.push(DtVal{ .float = f }),
-            .string => |s| try self.push(DtVal{ .string = s }),
+            .string => |s| {
+                const unescaped = try string.unescape(self.alloc, s);
+                try self.push(DtVal{ .string = unescaped });
+            },
             .deferred_term => |cmd| try self.push(DtVal{ .deferred_command = cmd }),
             .err => |e| try self.push(.{ .err = e }),
             .none => {},
