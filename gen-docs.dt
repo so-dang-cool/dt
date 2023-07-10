@@ -46,6 +46,8 @@ FROZEN_DEFS
 
 "\n" join
 
+.s
+
 \html :
   html "stdlib.html" writef
   html ["archive/stdlib-"] version push ".html" push "" join writef
