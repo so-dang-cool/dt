@@ -1,0 +1,52 @@
+### Flags and such ###
+
+[ [ action flag ]:
+  args [ flag eq? ] any?
+  action swap do?
+] \handle-flag def
+
+[ "dt " p version pl ] \print-version def
+
+[ [ print-version 0 exit ]   "--version" handle-flag ] \--version def
+
+[ print-version
+  [ "USAGE: dt FLAGS CODE..."
+    "dt is \"duct tape\" for your unix pipes."
+    ""
+    "dt can be used in pipes to transform data with general purpose programming"
+    "operations. It can also excel in short shebang scripts, or be explored as"
+    "an interactive REPL (read-eval-print loop)."
+    ""
+    "More info at https://dt.plumbing"
+  ] pls
+  0 exit
+] \print-help def
+
+[ [ print-help 0 exit ]   "--help" handle-flag ] \--help def
+
+[ --help --version ] \handle-flags def
+
+[ handle-flags   args unwords eval ] \run-args def!
+
+
+### PIPE things ###
+
+[ read-lines   run-args ] \pipe-thru-args def!
+
+
+### Shebang things ###
+
+[ args deq swap drop ] \shebang-args def!
+
+
+### REPL things ###
+
+[ red "dt " p version pl   norm inspire pl ] \repl-greet def
+
+[ \.q \quit def
+  \.q \exit def
+] \repl-prelude def
+
+[ handle-flags   repl-greet   repl-prelude   repl ] \main-repl def!
+
+[ "» " p   read-line eval   repl ] \repl def!

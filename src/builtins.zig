@@ -376,14 +376,9 @@ pub fn norm(dt: *DtMachine) !void {
 
 fn _p(val: DtVal, allocator: Allocator, writer: std.fs.File.Writer) !void {
     switch (val) {
-        .string => |s| {
-            var unescaped = try std.mem.replaceOwned(u8, allocator, s, "\\n", "\n");
-            unescaped = try std.mem.replaceOwned(u8, allocator, unescaped, "\\\"", "\"");
-            try writer.print("{s}", .{unescaped});
-        },
-        else => {
-            try val.print(allocator);
-        },
+        // When printing strings, do not show " around a string.
+        .string => |s| try writer.print("{s}", .{s}),
+        else => try val.print(allocator),
     }
 }
 

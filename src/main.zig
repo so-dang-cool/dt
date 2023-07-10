@@ -20,6 +20,7 @@ const builtins = @import("builtins.zig");
 pub const version = "0.11.1"; // Update in build.zig.zon as well. TODO: Change to @import when it's supported for zon
 
 const stdlib = @embedFile("stdlib.dt");
+const dtlib = @embedFile("dt.dt");
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -28,71 +29,60 @@ pub fn main() !void {
     var machine = try DtMachine.init(arena.allocator());
 
     try builtins.defineAll(&machine);
+    try machine.loadFile(stdlib);
+    try machine.loadFile(dtlib);
 
-    try loadStdlib(arena.allocator(), &machine);
+    const stdinPiped = !std.io.getStdIn().isTty();
+    const stdoutPiped = !std.io.getStdOut().isTty();
 
     if (try readShebangFile(arena.allocator())) |fileContents| {
-        var toks = Token.parse(arena.allocator(), fileContents);
-        return while (try toks.next()) |token| try machine.interpret(token);
-    } else if (!std.io.getStdIn().isTty()) {
+        return machine.loadFile(fileContents) catch |e| return doneOrDie(&machine, e);
+    } else if (stdinPiped) {
         return handlePipedStdin(&machine);
-    } else if (!std.io.getStdOut().isTty()) {
+    } else if (stdoutPiped) {
         return handlePipedStdoutOnly(&machine);
     }
 
     return readEvalPrintLoop(&machine);
 }
 
-// TODO: Can this be done at comptime somehow?
-fn loadStdlib(allocator: Allocator, machine: *DtMachine) !void {
-    var toks = Token.parse(allocator, stdlib);
-    while (try toks.next()) |token| try machine.interpret(token);
+fn handlePipedStdin(dt: *DtMachine) !void {
+    dt.handleCmd("pipe-thru-args") catch |e| return doneOrDie(dt, e);
 }
 
-fn handlePipedStdin(machine: *DtMachine) !void {
-    machine.interpret(.{ .term = "pipe-thru-args" }) catch |e| {
-        if (e == error.BrokenPipe) return;
-
-        try machine.red();
-        try stderr.print("RIP: {any}\n", .{e});
-        try machine.norm();
-
-        std.os.exit(1);
-    };
+fn handlePipedStdoutOnly(dt: *DtMachine) !void {
+    dt.handleCmd("run-args") catch |e| return doneOrDie(dt, e);
 }
 
-fn handlePipedStdoutOnly(machine: *DtMachine) !void {
-    machine.interpret(.{ .term = "run-args" }) catch |e| {
-        if (e == error.BrokenPipe) return;
+fn readEvalPrintLoop(dt: *DtMachine) !void {
+    dt.handleCmd("run-args") catch |e| return doneOrDie(dt, e);
 
-        try machine.red();
-        try stderr.print("RIP: {any}\n", .{e});
-        try machine.norm();
-
-        std.os.exit(1);
-    };
-}
-
-fn readEvalPrintLoop(machine: *DtMachine) !void {
-    machine.interpret(.{ .term = "run-args" }) catch |e| {
-        try machine.red();
-        try stderr.print("RIP: {any}\n", .{e});
-        try machine.norm();
-
-        std.os.exit(1);
-    };
-
-    while (true) machine.interpret(.{ .term = "main-repl" }) catch |e| switch (e) {
+    while (true) dt.handleCmd("main-repl") catch |e| switch (e) {
         error.EndOfStream => {
             try stderr.print("\n", .{});
             return;
         },
         else => {
-            try machine.red();
+            try dt.red();
             try stderr.print("Recovering from: {any}\n", .{e});
-            try machine.norm();
+            try dt.norm();
         },
     };
+}
+
+fn doneOrDie(dt: *DtMachine, reason: anyerror) !void {
+    try stderr.print("\n", .{});
+    switch (reason) {
+        error.EndOfStream => return,
+        error.BrokenPipe => return,
+        else => {
+            try dt.red();
+            try stderr.print("RIP: {any}\n", .{reason});
+            try dt.norm();
+
+            std.os.exit(1);
+        },
+    }
 }
 
 fn readShebangFile(allocator: Allocator) !?[]const u8 {

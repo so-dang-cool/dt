@@ -132,6 +132,11 @@ pub const DtMachine = struct {
         return DtError.CommandUndefined;
     }
 
+    pub fn loadFile(self: *DtMachine, code: []const u8) !void {
+        var toks = Token.parse(self.alloc, code);
+        while (try toks.next()) |token| try self.interpret(token);
+    }
+
     pub fn red(self: *DtMachine) !void {
         try self.norm();
         try self.stdoutConfig.setColor(stdout, Color.red);
@@ -374,10 +379,7 @@ pub const DtVal = union(enum) {
                 }
                 try stdout.print("]", .{});
             },
-            .string => |s| {
-                const escaped = try string.escape(allocator, s);
-                try stdout.print("\"{s}\"", .{escaped});
-            },
+            .string => |s| try stdout.print("\"{s}\"", .{s}),
             .err => |e| try stdout.print("~{s}~", .{e}),
         }
     }

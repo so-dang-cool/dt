@@ -1,0 +1,8 @@
+#!/usr/bin/env dt
+
+# TODO: Try making a very simple repl-based shell
+
+ls .s
+
+repl
+

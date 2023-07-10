@@ -27,14 +27,11 @@ pub fn escape(allocator: Allocator, unescaped: String) !String {
 }
 
 pub fn unescape(allocator: Allocator, unescaped: String) !String {
-    var buf: []u8 = undefined;
+    var result = try allocator.dupe(u8, unescaped);
 
     for (escapes) |esc| {
-        buf = std.mem.replaceOwned(u8, allocator, unescaped, esc.to, esc.from) catch |e| {
-            allocator.free(buf);
-            return e;
-        };
+        result = try std.mem.replaceOwned(u8, allocator, result, esc.to, esc.from);
     }
 
-    return buf;
+    return result;
 }
