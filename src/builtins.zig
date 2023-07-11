@@ -115,7 +115,6 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("to-cmd", "coerce value to a command", .{ .builtin = toCommand });
     try machine.define("to-def", "coerce value to a deferred command", .{ .builtin = toDef });
     try machine.define("to-quote", "coerce value to quote", .{ .builtin = toQuote });
-    try machine.define("to-error", "coerce value to an error", .{ .builtin = toError });
 
     try machine.define("inspire", "get inspired", .{ .builtin = inspire });
 }
@@ -1166,14 +1165,6 @@ pub fn toQuote(dt: *DtMachine) !void {
     const val = try dt.pop();
     const quote = try val.intoQuote(dt);
     try dt.push(.{ .quote = quote });
-}
-
-pub fn toError(dt: *DtMachine) !void {
-    const val = try dt.pop();
-    var errName = try val.intoString(dt);
-    errName = std.mem.trim(u8, errName, "~");
-
-    try dt.push(.{ .err = errName });
 }
 
 pub fn inspire(dt: *DtMachine) !void {

@@ -53,12 +53,6 @@ pub const TokenIterator = struct {
                 self.index = end + 1;
                 return .{ .string = self.buf[strStart..end] };
             },
-            '~' => { // Parse an error
-                const lastChar = std.mem.indexOfPos(u8, self.buf, start, "~") orelse self.buf.len;
-                const end = lastChar + 1;
-                self.index = end;
-                return .{ .err = self.buf[start..end] };
-            },
             '#' => { // Ignore a comment (by recursively returning the next non-comment token)
                 self.index = std.mem.indexOfAnyPos(u8, self.buf, start, "\r\n") orelse self.buf.len;
                 return self.next();
@@ -93,7 +87,6 @@ pub const Token = union(enum) {
     term: []const u8,
     deferred_term: []const u8,
     string: []const u8,
-    err: []const u8,
     none: void,
 
     pub fn parse(allocator: Allocator, code: []const u8) TokenIterator {
@@ -141,7 +134,6 @@ pub const Token = union(enum) {
             .string => |s| std.debug.assert(std.mem.eql(u8, other.string, s)),
             .term => |t| std.debug.assert(std.mem.eql(u8, other.term, t)),
             .deferred_term => |t| std.debug.assert(std.mem.eql(u8, other.deferred_term, t)),
-            .err => |e| std.debug.assert(std.mem.eql(u8, other.err, e)),
             .none => std.debug.assert(other == Token.none),
         }
     }

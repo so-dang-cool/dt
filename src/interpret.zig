@@ -100,7 +100,6 @@ pub const DtMachine = struct {
                 try self.push(DtVal{ .string = unescaped });
             },
             .deferred_term => |cmd| try self.push(DtVal{ .deferred_command = cmd }),
-            .err => |e| try self.push(.{ .err = e }),
             .none => {},
         }
     }
@@ -119,10 +118,7 @@ pub const DtMachine = struct {
         }
 
         if (self.defs.get(cmdName)) |cmd| {
-            cmd.run(self) catch |e| {
-                if (e == error.EndOfStream) return e;
-                try self.push(DtVal{ .err = @errorName(e) });
-            };
+            try cmd.run(self);
             return;
         }
 
@@ -245,7 +241,6 @@ pub const DtVal = union(enum) {
     deferred_command: String,
     quote: Quote,
     string: String,
-    err: String,
 
     pub fn isBool(self: DtVal) bool {
         return switch (self) {
@@ -265,9 +260,6 @@ pub const DtVal = union(enum) {
             // Commands are truthy if defined
             .command => |cmd| state.defs.contains(cmd),
             .deferred_command => |cmd| state.defs.contains(cmd),
-
-            // Errors are all falsy
-            .err => false,
         };
     }
 
@@ -334,7 +326,6 @@ pub const DtVal = union(enum) {
 
             .deferred_command => |cmd| cmd,
             .string => |s| s,
-            .err => |e| try std.fmt.allocPrint(state.alloc, "~{s}~", .{e}),
             .bool => |b| if (b) "true" else "false",
             .int => |i| try std.fmt.allocPrint(state.alloc, "{}", .{i}),
             .float => |f| try std.fmt.allocPrint(state.alloc, "{}", .{f}),
@@ -380,7 +371,6 @@ pub const DtVal = union(enum) {
                 try stdout.print("]", .{});
             },
             .string => |s| try stdout.print("\"{s}\"", .{s}),
-            .err => |e| try stdout.print("~{s}~", .{e}),
         }
     }
 };
