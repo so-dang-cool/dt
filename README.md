@@ -52,11 +52,14 @@ Then use like:
 cat wish-list | sed 's/red/green/g' | tee.dt new-wish-list
 ```
 
-## Explore the REPL
+## Interactive mode
+
+Running `dt` with no pipes in or out starts a read-eval-print loop (REPL).
 
 ```
 $ dt
-dt 0.10.0
+dt 1.x.x
+Now, this is only temporary... unless it works.
 » # Comments start with #
 » 
 » 1 1 + println
@@ -78,14 +81,30 @@ dt 0.10.0
 » 
 » ["hi" pl] false ?   ["bye" pl] true ?
 bye
+» 
+» quit
 ```
+
+For a best experience, also install
+[`rlwrap`](https://github.com/hanslub42/rlwrap) and set a shell alias like so:
+
+```
+$ alias dtsh='rlwrap dt'
+$ dtsh
+dt 1.x.x
+Now, this is only temporary... unless it works.
+» 
+```
+
+The above example assumes a bash-like shell. Details on the syntax and
+configuration files to set an alias that persists will vary by your shell.
 
 ## Downloads
 
 Download assets from [releases](https://github.com/booniepepper/dt/releases/) and
 put them somewhere on your PATH.
 
-An installation script will come soon.
+An installation script may come soon.
 
 ## Building from source
 

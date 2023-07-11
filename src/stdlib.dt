@@ -149,4 +149,4 @@
 
 [ [ cond msg ]:   [ msg epl   1 exit ] cond not do? ]
 "( <cond> <message> -- ) Naive assertion that requires a condition to be truthy. If falsy, it will print a message to standard error and fail with an exit code of 1."
-\assert-true def
+\assert-true define
