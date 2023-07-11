@@ -166,12 +166,14 @@ pub const DtMachine = struct {
         try self.defs.put(name, cmd);
     }
 
-    pub fn rewind(self: *DtMachine, val: DtVal, err: anyerror) anyerror!void {
+    pub fn rewind(self: *DtMachine, log: anytype, val: DtVal, err: anyerror) anyerror!void {
+        log.warn("{any}, rewinding {any}", .{ @errorName(err), val });
         try self.push(val);
         return err;
     }
 
-    pub fn rewindN(self: *DtMachine, comptime n: comptime_int, vals: [n]DtVal, err: anyerror) anyerror!void {
+    pub fn rewindN(self: *DtMachine, comptime n: comptime_int, log: anytype, vals: [n]DtVal, err: anyerror) anyerror!void {
+        log.warn("{any}, rewinding {any}", .{ @errorName(err), vals });
         for (vals) |val| try self.push(val);
         return err;
     }

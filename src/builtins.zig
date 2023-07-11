@@ -171,15 +171,17 @@ pub fn cwd(dt: *DtMachine) !void {
 }
 
 pub fn cd(dt: *DtMachine) !void {
+    const log = std.log.scoped(.cd);
+
     const val = try dt.pop();
-    var path = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    var path = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     if (std.mem.eql(u8, path, "~")) {
         // TODO: Consider windows and other OS conventions.
         path = try std.process.getEnvVarOwned(dt.alloc, "HOME");
     }
 
-    std.os.chdir(path) catch |e| return dt.rewind(val, e);
+    std.os.chdir(path) catch |e| return dt.rewind(log, val, e);
 }
 
 pub fn ls(dt: *DtMachine) !void {
@@ -202,13 +204,13 @@ pub fn readf(dt: *DtMachine) !void {
     const log = std.log.scoped(.readf);
 
     const val = try dt.pop();
-    const filename = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    const filename = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
-    var contents = _readf(dt, theCwd, filename) catch |e| {
+    var contents = _readf(dt, log, theCwd, filename) catch |e| {
         try dt.red();
         switch (e) {
             error.IsDir => log.warn("\"{s}\" is a directory.", .{filename}),
@@ -225,16 +227,19 @@ pub fn readf(dt: *DtMachine) !void {
     try dt.push(.{ .string = contents });
 }
 
-fn _readf(dt: *DtMachine, dir: std.fs.Dir, filename: []const u8) ![]const u8 {
+fn _readf(dt: *DtMachine, log: anytype, dir: std.fs.Dir, filename: []const u8) ![]const u8 {
+    _ = log;
     var file = try dir.openFile(filename, .{ .mode = .read_only });
     defer file.close();
     return try file.readToEndAlloc(dt.alloc, std.math.pow(usize, 2, 16));
 }
 
 pub fn writef(dt: *DtMachine) !void {
+    const log = std.log.scoped(.writef);
+
     const vals = try dt.popN(2);
-    const filename = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
-    const contents = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    const filename = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const contents = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
@@ -257,7 +262,7 @@ pub fn exec(dt: *DtMachine) !void {
     var result = std.process.Child.exec(.{
         .allocator = dt.alloc,
         .argv = try argv.toOwnedSlice(),
-    }) catch |e| return dt.rewind(val, e);
+    }) catch |e| return dt.rewind(log, val, e);
 
     switch (result.term) {
         .Exited => |code| if (code == 0) {
@@ -276,10 +281,12 @@ pub fn exec(dt: *DtMachine) !void {
 }
 
 pub fn defBang(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"def!");
+
     const vals = try dt.popN(2);
 
     const quote = try vals[0].intoQuote(dt);
-    const name = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    const name = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.define(name, name, .{ .quote = quote });
 }
@@ -297,19 +304,23 @@ pub fn defs(dt: *DtMachine) !void {
 }
 
 pub fn isDef(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"def?");
+
     const val = try dt.pop();
 
-    const name = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    const name = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     try dt.push(.{ .bool = dt.defs.contains(name) });
 }
 
 pub fn cmdUsage(dt: *DtMachine) !void {
+    const log = std.log.scoped(.usage);
+
     const val = try dt.pop();
 
-    const cmdName = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    const cmdName = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
-    const cmd = dt.defs.get(cmdName) orelse return dt.rewind(val, Error.CommandUndefined);
+    const cmd = dt.defs.get(cmdName) orelse return dt.rewind(log, val, Error.CommandUndefined);
 
     var description = try dt.alloc.dupe(u8, cmd.description);
 
@@ -318,13 +329,15 @@ pub fn cmdUsage(dt: *DtMachine) !void {
 
 // Variable binding
 pub fn colon(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@":");
+
     var termVal = try dt.pop();
 
     // Single term
     if (termVal.isCommand() or termVal.isDeferredCommand() or termVal.isString()) {
         const cmdName = try termVal.intoString(dt);
 
-        const val = dt.pop() catch |e| return dt.rewind(termVal, e);
+        const val = dt.pop() catch |e| return dt.rewind(log, termVal, e);
 
         var quote = Quote.init(dt.alloc);
         try quote.append(val);
@@ -345,7 +358,7 @@ pub fn colon(dt: *DtMachine) !void {
             while (i < terms.len) : (i += 1) {
                 try dt.push(vals[i]);
             }
-            return dt.rewind(termVal, e);
+            return dt.rewind(log, termVal, e);
         };
     }
 
@@ -475,8 +488,10 @@ pub fn args(dt: *DtMachine) !void {
 }
 
 pub fn eval(dt: *DtMachine) !void {
+    const log = std.log.scoped(.eval);
+
     var val = try dt.pop();
-    var code = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    var code = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     var tokens = Token.parse(dt.alloc, code);
     while (try tokens.next()) |tok| {
@@ -489,6 +504,8 @@ pub fn interactive(state: *DtMachine) !void {
 }
 
 pub fn add(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"+");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -497,19 +514,21 @@ pub fn add(dt: *DtMachine) !void {
 
         const res = @addWithOverflow(a, b);
 
-        if (res[1] == 1) return dt.rewindN(2, vals, Error.IntegerOverflow);
+        if (res[1] == 1) return dt.rewindN(2, log, vals, Error.IntegerOverflow);
 
         try dt.push(.{ .int = res[0] });
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .float = a + b });
 }
 
 pub fn subtract(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"-");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -518,19 +537,21 @@ pub fn subtract(dt: *DtMachine) !void {
 
         const res = @subWithOverflow(a, b);
 
-        if (res[1] == 1) return dt.rewindN(2, vals, Error.IntegerUnderflow);
+        if (res[1] == 1) return dt.rewindN(2, log, vals, Error.IntegerUnderflow);
 
         try dt.push(.{ .int = res[0] });
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .float = a - b });
 }
 
 pub fn multiply(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"*");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -539,41 +560,45 @@ pub fn multiply(dt: *DtMachine) !void {
 
         const res = @mulWithOverflow(a, b);
 
-        if (res[1] == 1) return dt.rewindN(2, vals, Error.IntegerOverflow);
+        if (res[1] == 1) return dt.rewindN(2, log, vals, Error.IntegerOverflow);
 
         try dt.push(.{ .int = res[0] });
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .float = a * b });
     return;
 }
 
 pub fn divide(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"/");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        if (b == 0) return dt.rewindN(2, vals, Error.DivisionByZero);
+        if (b == 0) return dt.rewindN(2, log, vals, Error.DivisionByZero);
 
         try dt.push(.{ .int = @divTrunc(a, b) });
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
-    if (b == 0) return dt.rewindN(2, vals, Error.DivisionByZero);
+    if (b == 0) return dt.rewindN(2, log, vals, Error.DivisionByZero);
 
     try dt.push(.{ .float = a / b });
 }
 
 pub fn modulo(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"%");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -584,14 +609,16 @@ pub fn modulo(dt: *DtMachine) !void {
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .float = @mod(a, b) });
     return;
 }
 
 pub fn abs(dt: *DtMachine) !void {
+    const log = std.log.scoped(.abs);
+
     const val = try dt.pop();
 
     if (val.isInt()) {
@@ -601,7 +628,7 @@ pub fn abs(dt: *DtMachine) !void {
         return;
     }
 
-    const a = val.intoFloat() catch |e| return dt.rewind(val, e);
+    const a = val.intoFloat() catch |e| return dt.rewind(log, val, e);
 
     try dt.push(.{ .float = std.math.fabs(a) });
 }
@@ -680,6 +707,8 @@ pub fn eq(dt: *DtMachine) !void {
 }
 
 pub fn greaterThan(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"gt?");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -690,13 +719,15 @@ pub fn greaterThan(dt: *DtMachine) !void {
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = b > a });
 }
 
 pub fn greaterThanEq(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"gte?");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -707,13 +738,15 @@ pub fn greaterThanEq(dt: *DtMachine) !void {
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = b >= a });
 }
 
 pub fn lessThan(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"lt?");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -724,13 +757,15 @@ pub fn lessThan(dt: *DtMachine) !void {
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = b < a });
 }
 
 pub fn lessThanEq(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"lte?");
+
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -741,8 +776,8 @@ pub fn lessThanEq(dt: *DtMachine) !void {
         return;
     }
 
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, vals, e);
+    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
+    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = b <= a });
 }
@@ -773,10 +808,12 @@ pub fn not(dt: *DtMachine) !void {
 }
 
 pub fn split(dt: *DtMachine) !void {
+    const log = std.log.scoped(.split);
+
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
-    var delim = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    var delim = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     if (delim.len > 0) {
         var parts = std.mem.split(u8, str, delim);
@@ -797,10 +834,12 @@ pub fn split(dt: *DtMachine) !void {
 }
 
 pub fn join(dt: *DtMachine) !void {
+    const log = std.log.scoped(.join);
+
     var vals = try dt.popN(2);
 
     if (!vals[0].isQuote()) {
-        const str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+        const str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
         try dt.push(.{ .string = str });
         return;
     }
@@ -818,8 +857,10 @@ pub fn join(dt: *DtMachine) !void {
 }
 
 pub fn upcase(dt: *DtMachine) !void {
+    const log = std.log.scoped(.upcase);
+
     var val = try dt.pop();
-    const before = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    const before = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     const after = try std.ascii.allocUpperString(dt.alloc, before);
 
@@ -827,8 +868,10 @@ pub fn upcase(dt: *DtMachine) !void {
 }
 
 pub fn downcase(dt: *DtMachine) !void {
+    const log = std.log.scoped(.downcase);
+
     var val = try dt.pop();
-    const before = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    const before = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     const after = try std.ascii.allocLowerString(dt.alloc, before);
 
@@ -836,28 +879,34 @@ pub fn downcase(dt: *DtMachine) !void {
 }
 
 pub fn startsWith(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"starts-with?");
+
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
-    var prefix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    var prefix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = std.mem.startsWith(u8, str, prefix) });
 }
 
 pub fn endsWith(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"ends-with?");
+
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
-    var suffix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    var suffix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = std.mem.endsWith(u8, str, suffix) });
 }
 
 pub fn contains(dt: *DtMachine) !void {
+    const log = std.log.scoped(.contains);
+
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
-    var substr = vals[1].intoString(dt) catch |e| return dt.rewindN(2, vals, e);
+    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    var substr = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
 }
@@ -900,26 +949,32 @@ pub fn do(dt: *DtMachine) !void {
 }
 
 pub fn doBangMaybe(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"do!?");
+
     var val = try dt.pop();
     const cond = val.intoBool(dt);
 
-    try if (cond) doBang(dt) else drop(dt) catch |e| return dt.rewind(val, e);
+    try if (cond) doBang(dt) else drop(dt) catch |e| return dt.rewind(log, val, e);
 }
 
 pub fn doMaybe(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"do?");
+
     var val = try dt.pop();
     const cond = val.intoBool(dt);
 
-    try if (cond) do(dt) else drop(dt) catch |e| return dt.rewind(val, e);
+    try if (cond) do(dt) else drop(dt) catch |e| return dt.rewind(log, val, e);
 }
 
 pub fn doin(dt: *DtMachine) !void {
+    const log = std.log.scoped(.doin);
+
     const vals = try dt.popN(2);
 
     const quote = try vals[0].intoQuote(dt);
     const f = vals[1];
 
-    _doin(dt, quote, f) catch |e| return dt.rewindN(2, vals, e);
+    _doin(dt, quote, f) catch |e| return dt.rewindN(2, log, vals, e);
 }
 
 fn _doin(dt: *DtMachine, quote: Quote, f: DtVal) !void {
@@ -936,12 +991,14 @@ fn _doin(dt: *DtMachine, quote: Quote, f: DtVal) !void {
 }
 
 pub fn map(dt: *DtMachine) !void {
+    const log = std.log.scoped(.map);
+
     const vals = try dt.popN(2);
 
     const quote = try vals[0].intoQuote(dt);
     const f = vals[1];
 
-    _map(dt, quote, f) catch |e| return dt.rewindN(2, vals, e);
+    _map(dt, quote, f) catch |e| return dt.rewindN(2, log, vals, e);
 }
 
 fn _map(dt: *DtMachine, as: Quote, f: DtVal) !void {
@@ -959,12 +1016,14 @@ fn _map(dt: *DtMachine, as: Quote, f: DtVal) !void {
 }
 
 pub fn filter(dt: *DtMachine) !void {
+    const log = std.log.scoped(.filter);
+
     const vals = try dt.popN(2);
 
     const quote = try vals[0].intoQuote(dt);
     const f = vals[1];
 
-    _filter(dt, quote, f) catch |e| return dt.rewindN(2, vals, e);
+    _filter(dt, quote, f) catch |e| return dt.rewindN(2, log, vals, e);
 }
 
 fn _filter(dt: *DtMachine, as: Quote, f: DtVal) !void {
@@ -989,6 +1048,8 @@ fn _filter(dt: *DtMachine, as: Quote, f: DtVal) !void {
 }
 
 pub fn any(dt: *DtMachine) !void {
+    const log = std.log.scoped(.any);
+
     const vals = try dt.popN(2);
 
     const quote = try vals[0].intoQuote(dt);
@@ -999,7 +1060,7 @@ pub fn any(dt: *DtMachine) !void {
         return;
     }
 
-    _any(dt, quote, f) catch |e| return dt.rewindN(2, vals, e);
+    _any(dt, quote, f) catch |e| return dt.rewindN(2, log, vals, e);
 }
 
 fn _any(dt: *DtMachine, as: Quote, f: DtVal) !void {
@@ -1091,9 +1152,11 @@ pub fn len(dt: *DtMachine) !void {
 }
 
 pub fn ellipsis(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"...");
+
     const val = try dt.pop();
 
-    var quote = val.intoQuote(dt) catch |e| return dt.rewind(val, e);
+    var quote = val.intoQuote(dt) catch |e| return dt.rewind(log, val, e);
 
     // TODO: Push as slice
     for (quote.items) |v| {
@@ -1102,6 +1165,8 @@ pub fn ellipsis(dt: *DtMachine) !void {
 }
 
 pub fn rev(dt: *DtMachine) !void {
+    const log = std.log.scoped(.rev);
+
     const val = try dt.pop();
 
     if (val.isQuote()) {
@@ -1131,7 +1196,7 @@ pub fn rev(dt: *DtMachine) !void {
         return;
     }
 
-    return dt.rewind(val, Error.WrongArguments);
+    return dt.rewind(log, val, Error.WrongArguments);
 }
 
 pub fn quoteVal(dt: *DtMachine) !void {
@@ -1163,32 +1228,42 @@ pub fn toBool(state: *DtMachine) !void {
 }
 
 pub fn toInt(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"to-int");
+
     const val = try dt.pop();
-    const i = val.intoInt() catch |e| return dt.rewind(val, e);
+    const i = val.intoInt() catch |e| return dt.rewind(log, val, e);
     try dt.push(.{ .int = i });
 }
 
 pub fn toFloat(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"to-float");
+
     const val = try dt.pop();
-    const f = val.intoFloat() catch |e| return dt.rewind(val, e);
+    const f = val.intoFloat() catch |e| return dt.rewind(log, val, e);
     try dt.push(.{ .float = f });
 }
 
 pub fn toString(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"to-string");
+
     const val = try dt.pop();
-    const s = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    const s = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
     try dt.push(.{ .string = s });
 }
 
 pub fn toCommand(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"to-cmd");
+
     const val = try dt.pop();
-    const cmd = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    const cmd = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
     try dt.push(.{ .command = cmd });
 }
 
 pub fn toDef(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"to-def");
+
     const val = try dt.pop();
-    const cmd = val.intoString(dt) catch |e| return dt.rewind(val, e);
+    const cmd = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
     try dt.push(.{ .deferred_command = cmd });
 }
 
