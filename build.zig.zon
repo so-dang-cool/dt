@@ -1,5 +1,5 @@
 .{
     .name = "dt",
-    .version = "0.11.1", // Update in main.zig as well
+    .version = "0.11.2", // Update in main.zig as well
     .dependencies = .{},
 }
