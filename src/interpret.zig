@@ -167,13 +167,13 @@ pub const DtMachine = struct {
     }
 
     pub fn rewind(self: *DtMachine, log: anytype, val: DtVal, err: anyerror) anyerror!void {
-        log.warn("{any}, rewinding {any}", .{ @errorName(err), val });
+        log.warn("{s}, rewinding {any}", .{ @errorName(err), val });
         try self.push(val);
         return err;
     }
 
     pub fn rewindN(self: *DtMachine, comptime n: comptime_int, log: anytype, vals: [n]DtVal, err: anyerror) anyerror!void {
-        log.warn("{any}, rewinding {any}", .{ @errorName(err), vals });
+        log.warn("{s}, rewinding {any}", .{ @errorName(err), vals });
         for (vals) |val| try self.push(val);
         return err;
     }

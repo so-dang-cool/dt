@@ -41,7 +41,7 @@
 
 ### REPL things ###
 
-[ red "dt " p version pl   norm inspire pl ] \repl-greet def
+[ red "dt " ep version epl   norm inspire epl ] \repl-greet def
 
 [ \quit \.q def
   \quit \exit def

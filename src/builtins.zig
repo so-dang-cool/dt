@@ -21,103 +21,105 @@ const DtMachine = interpret.DtMachine;
 const bangDescription = "If nested, any commands or variables defined will be available in the calling scope.";
 
 pub fn defineAll(machine: *DtMachine) !void {
-    try machine.define("quit", "Quit. Prints a warning if there are any values left on stack.", .{ .builtin = quit });
-    try machine.define("exit", "exit with the specified exit code", .{ .builtin = exit });
-    try machine.define("version", "print the version of the interpreter", .{ .builtin = version });
+    try machine.define("quit", "( -- ) Quit. Prints a warning if there are any values left on stack.", .{ .builtin = quit });
+    try machine.define("exit", "( <exitcode> -- ) Exit with the specified exit code.", .{ .builtin = exit });
+    try machine.define("version", "( -- <version> ) Produce the version of dt in use.", .{ .builtin = version });
 
-    try machine.define("cwd", "current working directory", .{ .builtin = cwd });
-    try machine.define("cd", "change directory", .{ .builtin = cd });
-    try machine.define("ls", "list contents of current directory", .{ .builtin = ls });
-    try machine.define("readf", "read a file as a string", .{ .builtin = readf });
-    try machine.define("writef", "write a string as a file", .{ .builtin = writef });
+    try machine.define("cwd", "( -- <dirname> ) Produce the current working directory.", .{ .builtin = cwd });
+    try machine.define("cd", "( <dirname> -- ) Change the process's working directory.", .{ .builtin = cd });
+    try machine.define("ls", "( -- [<filename>] ) Produce a quote of files and directories in the process's working directory.", .{ .builtin = ls });
+    try machine.define("readf", "( <filename> -- <contents> ) Read a file's contents as a string.", .{ .builtin = readf });
+    try machine.define("writef", "( <contents> <filename> -- ) Write a string as a file. If a file previously existed, it will be overwritten.", .{ .builtin = writef });
+    try machine.define("appendf", "( <contents> <filename> -- ) Write a string to a file. If a file previously existed, the new content will be appended.", .{ .builtin = appendf });
     // TODO: pathsep/filesep, env get, env set
 
-    try machine.define("exec", "execute a child process. When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false", .{ .builtin = exec });
+    try machine.define("exec", "( <process> -- ) Execute a child process (from a String). When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false.", .{ .builtin = exec });
 
-    try machine.define("def!", "define a new command. " ++ bangDescription, .{ .builtin = defBang });
-    try machine.define("defs", "produce a quote of all definition names", .{ .builtin = defs });
-    try machine.define("def?", "return true if a name is defined", .{ .builtin = isDef });
-    try machine.define("usage", "print the usage notes of a given command", .{ .builtin = cmdUsage });
-    try machine.define(":", "bind variables", .{ .builtin = colon });
+    try machine.define("def!", "( <action> <name> -- ) Defines a new command. " ++ bangDescription, .{ .builtin = @"def!" });
+    try machine.define("defs", "( -- [<name>] ) Produce a quote of all defined commands.", .{ .builtin = defs });
+    try machine.define("def?", "( <name> -- <bool> ) Determine whether a command is defined.", .{ .builtin = @"def?" });
+    try machine.define("usage", "( <name> -- <description> ) Print the usage notes of a given command.", .{ .builtin = usage });
+    try machine.define("def-usage", "( <name> <description> -- ) Define the usage notes of a given command.", .{ .builtin = @"def-usage" });
+    try machine.define(":", "( ... [<name>] -- ) Bind variables to a quote of names.", .{ .builtin = @":" });
 
-    try machine.define("do!", "execute a command or quote. " ++ bangDescription, .{ .builtin = doBang });
-    try machine.define("do", "execute a command or quote", .{ .builtin = do });
-    try machine.define("doin", "execute a command or quote in a previous quote", .{ .builtin = doin });
-    try machine.define("do!?", "consume a boolean and either do or drop a command or quote. " ++ bangDescription, .{ .builtin = doBangMaybe });
-    try machine.define("do?", "consume a boolean and either do or drop a command or quote", .{ .builtin = doMaybe });
+    try machine.define("do!", "( <action> -- ? ) Execute an action. " ++ bangDescription, .{ .builtin = @"do!" });
+    try machine.define("do", "( <action> -- ? ) Execute an action.", .{ .builtin = do });
+    try machine.define("doin", "( <context> <action> -- ) Execute an action in a context.", .{ .builtin = doin });
+    try machine.define("do!?", "( <action> <condition> -- ? ) Conditionally execute an action. " ++ bangDescription, .{ .builtin = @"do!?" });
+    try machine.define("do?", "( <action> <condition> -- ? ) Conditionally execute an action.", .{ .builtin = @"do?" });
 
-    try machine.define("dup", "duplicate the top value", .{ .builtin = dup });
-    try machine.define("drop", "drop the top value", .{ .builtin = drop });
-    try machine.define("swap", "swap the top two values", .{ .builtin = swap });
-    try machine.define("rot", "rotate the top three values", .{ .builtin = rot });
+    try machine.define("dup", "( <a> -- <a> <a> ) Duplicate the most recent value.", .{ .builtin = dup });
+    try machine.define("drop", "( <a> -- ) Drop the most recent value.", .{ .builtin = drop });
+    try machine.define("swap", "( <a> <b> -- <b> <a> ) Swap the two most recent values.", .{ .builtin = swap });
+    try machine.define("rot", "( <a> <b> <c> -- <c> <a> <b> ) Rotate the three most recent values.", .{ .builtin = rot });
 
-    try machine.define("p", "print a value to stdout", .{ .builtin = p });
-    try machine.define("ep", "print a value to stderr", .{ .builtin = ep });
-    try machine.define("nl", "print a newline to stdout", .{ .builtin = nl });
-    try machine.define("enl", "print a newline to stderr", .{ .builtin = enl });
-    try machine.define("red", "make stdout/stderr red", .{ .builtin = red });
-    try machine.define("green", "make stdout/stderr green and bold (for the colorblind)", .{ .builtin = green });
-    try machine.define("norm", "reset stdout/stderr colors", .{ .builtin = norm });
-    try machine.define(".s", "print the stack", .{ .builtin = dotS });
+    try machine.define("p", "( <a> -- ) Print the most recent value to standard output.", .{ .builtin = p });
+    try machine.define("ep", "( <a> -- ) Print the most recent value to standard error.", .{ .builtin = ep });
+    try machine.define("nl", "( -- ) Print a newline to standard output.", .{ .builtin = nl });
+    try machine.define("enl", "( -- ) Print a newline to standard error.", .{ .builtin = enl });
+    try machine.define("red", "( -- ) Print a control character for red to standard output and standard error.", .{ .builtin = red });
+    try machine.define("green", "( -- ) Print a control character for green and bold (for the colorblind) to standard output and standard error.", .{ .builtin = green });
+    try machine.define("norm", "( -- ) Print a control character to reset any styling to standard output and standard error.", .{ .builtin = norm });
+    try machine.define(".s", "( -- ) Print the state of the process: all available values.", .{ .builtin = @".s" });
 
-    try machine.define("read-line", "get a line from standard input (until newline)", .{ .builtin = readLine });
-    try machine.define("read-lines", "get lines from standard input (until EOF)", .{ .builtin = readLines });
-    try machine.define("procname", "get name of current process", .{ .builtin = procname });
-    try machine.define("args", "get command-line args", .{ .builtin = args });
-    try machine.define("eval", "evaluate a string as commands", .{ .builtin = eval });
-    try machine.define("interactive?", "determine if the input mode is interactive (a TTY) or not", .{ .builtin = interactive });
+    try machine.define("read-line", "( -- <line> ) Read a string from standard input until newline.", .{ .builtin = @"read-line" });
+    try machine.define("read-lines", "( -- [<line>] ) Read strings, separated by newlines, from standard input until EOF. (For example: until ctrl+d in a unixy system, or until a pipe is closed.)", .{ .builtin = @"read-lines" });
+    try machine.define("procname", "( -- <name> ) Produce the name of the current process. This can be used, for example, to get the name of a shebang script.", .{ .builtin = procname });
+    try machine.define("args", "( -- [<arg>] ) Produce the arguments provided to the process when it was launched.", .{ .builtin = args });
+    try machine.define("eval", "( <code> -- ? ) Evaluate a string as dt commands and execute them.", .{ .builtin = eval });
+    try machine.define("interactive?", "( -- <bool> ) Determine if the input mode is interactive (a TTY) or not.", .{ .builtin = @"interactive?" });
 
-    try machine.define("+", "add two numeric values", .{ .builtin = add });
-    try machine.define("-", "subtract two numeric values", .{ .builtin = subtract });
-    try machine.define("*", "multiply two numeric values", .{ .builtin = multiply });
-    try machine.define("/", "divide two numeric values", .{ .builtin = divide });
-    try machine.define("%", "modulo two numeric values", .{ .builtin = modulo });
-    try machine.define("abs", "consume a number and produce its absolute value", .{ .builtin = abs });
-    try machine.define("rand", "produces a random integer", .{ .builtin = rand });
+    try machine.define("+", "( <a> <b> -- <c> ) Add two numeric values.", .{ .builtin = @"+" });
+    try machine.define("-", "( <a> <b> -- <c> ) Subtract two numeric values. In standard notation: a - b = c", .{ .builtin = @"-" });
+    try machine.define("*", "( <a> <b> -- <c> ) Multiply two numeric values.", .{ .builtin = @"*" });
+    try machine.define("/", "( <a> <b> -- <c> ) Divide two numeric values. In standard notation: a / b = c", .{ .builtin = @"/" });
+    try machine.define("%", "( <a> <b> -- <c> ) Modulo two numeric values. In standard notation: a % b = c", .{ .builtin = @"%" });
+    try machine.define("abs", "( <a> -- <b> ) Determine the absolute value of a number.", .{ .builtin = abs });
+    try machine.define("rand", "( -- <a> ) Produces a random integer.", .{ .builtin = rand });
 
-    try machine.define("eq?", "consume two values and return true if they are equal", .{ .builtin = eq });
-    try machine.define("gt?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThan });
-    try machine.define("gte?", "consume two numbers and return true if the most recent is greater", .{ .builtin = greaterThanEq });
-    try machine.define("lt?", "consume two numbers and return true if the most recent is less", .{ .builtin = lessThan });
-    try machine.define("lte?", "consume two numbers and return true if the most recent is less", .{ .builtin = lessThanEq });
+    try machine.define("eq?", "( <a> <b> -- <bool> ) Determine if two values are equal. Works for most types with coersion.", .{ .builtin = @"eq?" });
+    try machine.define("gt?", "( <a> <b> -- <bool> ) Determine if a number is greater than another. In standard notation: a > b", .{ .builtin = @"gt?" });
+    try machine.define("gte?", "( <a> <b> -- <bool> ) Determine if a number is greater-than/equal-to another. In standard notation: a ≧ b", .{ .builtin = @"gte?" });
+    try machine.define("lt?", "( <a> <b> -- <bool> ) Determine if a number is less than another. In standard notation: a < b", .{ .builtin = @"lt?" });
+    try machine.define("lte?", "( <a> <b> -- <bool> ) Determine if a number is less-than/equal-to another. In standard notation: a ≦ b", .{ .builtin = @"lte?" });
 
-    try machine.define("and", "consume two booleans and produce their logical and", .{ .builtin = boolAnd });
-    try machine.define("or", "consume two booleans and produce their logical or", .{ .builtin = boolOr });
-    try machine.define("not", "consume a booleans and produce its logical not", .{ .builtin = not });
+    try machine.define("and", "( <a> <b> -- <bool> ) Determine if two values are both truthy.", .{ .builtin = boolAnd });
+    try machine.define("or", "( <a> <b> -- <bool> ) Determine if either of two values are truthy.", .{ .builtin = boolOr });
+    try machine.define("not", "( <a> -- <bool> ) Determine the inverse truthiness of a value.", .{ .builtin = not });
 
-    try machine.define("split", "consume a string and a delimiter, and produce a quote of the string split on all occurrences of the substring", .{ .builtin = split });
-    try machine.define("join", "consume a quote of strings and a delimiter, and produce a string with the delimiter interspersed", .{ .builtin = join });
-    try machine.define("upcase", "convert a string to uppercase", .{ .builtin = upcase });
-    try machine.define("downcase", "convert a string to lowercase", .{ .builtin = downcase });
-    try machine.define("starts-with?", "consume a string and a prefix, and return true if the string has the prefix", .{ .builtin = startsWith });
-    try machine.define("ends-with?", "consume a string and a suffix, and return true if the string has the suffix", .{ .builtin = endsWith });
-    try machine.define("contains?", "consume a string and a substring, and return true if the string contains the substring", .{ .builtin = contains });
+    try machine.define("split", "( <string> <delim> -- [<substring>] ) Split a string on all occurrences of a delimiter.", .{ .builtin = split });
+    try machine.define("join", "( [<substring>] <delim> -- <string> ) Join strings with a delimiter.", .{ .builtin = join });
+    try machine.define("upcase", "( <string> -- <upper> ) Convert a string to its uppercase form.", .{ .builtin = upcase });
+    try machine.define("downcase", "( <string> -- <lower> ) Convert a string to its lowercase form.", .{ .builtin = downcase });
+    try machine.define("starts-with?", "( <string> <prefix> -- <bool> ) Determine if a string starts with a prefix.", .{ .builtin = startsWith });
+    try machine.define("ends-with?", "( <string> <suffix> -- <bool> ) Determine if a string ends with a suffix.", .{ .builtin = endsWith });
+    try machine.define("contains?", "( <haystack> <needle> -- <bool> ) With Strings, determine if a string contains a substring. With quotes, determine if a quote contains a value.", .{ .builtin = contains });
 
-    try machine.define("map", "apply a command to all values in a quote", .{ .builtin = map });
-    try machine.define("filter", "only keep values in that pass a predicate in a quote", .{ .builtin = filter });
-    try machine.define("any?", "return true if any value in a quote passes a predicate", .{ .builtin = any });
-    try machine.define("len", "the length of a string or quote or 1 for single values", .{ .builtin = len });
+    try machine.define("map", "( <original> <action> -- <transformed> ) Apply an action to all values in a quote.", .{ .builtin = map });
+    try machine.define("filter", "( <original> <condition> -- <preserved> ) Require some condition of all values in a quote. Truthy results are preserved, and falsy results are not.", .{ .builtin = filter });
+    try machine.define("any?", "( <original> <condition> -- <bool> ) Determine whether any value in a quote passes a condition. Stops at the first truthy result.", .{ .builtin = any });
+    try machine.define("len", "( <a> -- <length> ) The length of a string or quote. (Always 1 for single values.)", .{ .builtin = len });
 
-    try machine.define("...", "expand a quote", .{ .builtin = ellipsis });
-    try machine.define("rev", "reverse a quote or string", .{ .builtin = rev });
-    try machine.define("quote", "quote a value", .{ .builtin = quoteVal });
-    try machine.define("quote-all", "quote all current context", .{ .builtin = quoteAll });
-    try machine.define("anything?", "true if any value at all precedes", .{ .builtin = @"anything?" });
-    try machine.define("concat", "concatenate two quotes. Values are coerced into quotes. (For String concatenation, see join)", .{ .builtin = concat });
-    try machine.define("push", "move an item into a quote", .{ .builtin = push });
-    try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = pop });
-    try machine.define("enq", "move an item into the first position of a quote", .{ .builtin = enq });
-    try machine.define("deq", "remove an item from the first position of a quote", .{ .builtin = deq });
+    try machine.define("...", "( <original> -- ? ) Unpack a quote.", .{ .builtin = ellipsis });
+    try machine.define("rev", "( <original> -- <reversed> ) Reverse a quote or string. Other types are unmodified.", .{ .builtin = rev });
+    try machine.define("quote", "( <a> -- [<a>] ) Quote a value.", .{ .builtin = quoteVal });
+    try machine.define("quote-all", "( ? -- [<?>] ) Quote all current context.", .{ .builtin = quoteAll });
+    try machine.define("anything?", "( -- <bool> ) True if any value is present.", .{ .builtin = @"anything?" });
+    try machine.define("concat", "( [<a>] [<b>] -- [<c>] ) Concatenate two quotes. Values are coerced into quotes. (For String concatenation, see join.)", .{ .builtin = concat });
+    try machine.define("push", "( [<a>] <b> -- [<c>] ) Push a value into a quote as its new last value.", .{ .builtin = push });
+    try machine.define("pop", "( [<a>] -- [<b>] <c> ) Pop the last value from a quote.", .{ .builtin = pop });
+    try machine.define("enq", "( <a> [<b>] -- [<c>] ) Enqueue a value into a quote as its new first value.", .{ .builtin = enq });
+    try machine.define("deq", "( [<a>] -- <b> [<c>] ) Dequeue the first value from a quote.", .{ .builtin = deq });
 
-    try machine.define("to-bool", "coerce value to boolean", .{ .builtin = toBool });
-    try machine.define("to-int", "coerce value to integer", .{ .builtin = toInt });
-    try machine.define("to-float", "coerce value to floating-point number", .{ .builtin = toFloat });
-    try machine.define("to-string", "coerce value to string", .{ .builtin = toString });
-    try machine.define("to-cmd", "coerce value to a command", .{ .builtin = toCommand });
-    try machine.define("to-def", "coerce value to a deferred command", .{ .builtin = toDef });
-    try machine.define("to-quote", "coerce value to quote", .{ .builtin = toQuote });
+    try machine.define("to-bool", "( <a> -- <bool> ) Coerce a value to a boolean.", .{ .builtin = @"to-bool" });
+    try machine.define("to-int", "( <a> -- <int> ) Coerce a value to an integer.", .{ .builtin = @"to-int" });
+    try machine.define("to-float", "( <a> -- <float> ) Coerce a value to a floating-point number.", .{ .builtin = @"to-float" });
+    try machine.define("to-string", "( <a> -- <string> ) Coerce a value to a string.", .{ .builtin = @"to-string" });
+    try machine.define("to-cmd", "( <a> -- <cmd> ) Coerce a value to a command.", .{ .builtin = @"to-cmd" });
+    try machine.define("to-def", "( <a> -- <def> ) Coerce a value to a deferred command. (Read as \"definition\" or \"deferred\".)", .{ .builtin = @"to-def" });
+    try machine.define("to-quote", "( <a> -- [<a>] ) Coerce value to a quote. To quote a quote, use quote.", .{ .builtin = @"to-quote" });
 
-    try machine.define("inspire", "get inspired", .{ .builtin = inspire });
+    try machine.define("inspire", "( -- <wisdom> ) Get inspiration.", .{ .builtin = inspire });
 }
 
 pub fn quit(dt: *DtMachine) !void {
@@ -250,6 +252,25 @@ pub fn writef(dt: *DtMachine) !void {
     theCwd.close();
 }
 
+pub fn appendf(dt: *DtMachine) !void {
+    const log = std.log.scoped(.writef);
+
+    const vals = try dt.popN(2);
+    const filename = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const contents = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+
+    // We get a Dir from CWD so we can resolve relative paths
+    const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
+    var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
+    defer theCwd.close();
+
+    var file = try theCwd.openFile(filename, .{ .mode = .write_only });
+    defer file.close();
+
+    try file.seekFromEnd(0);
+    try file.writeAll(contents);
+}
+
 pub fn exec(dt: *DtMachine) !void {
     const log = std.log.scoped(.exec);
 
@@ -281,7 +302,7 @@ pub fn exec(dt: *DtMachine) !void {
     }
 }
 
-pub fn defBang(dt: *DtMachine) !void {
+pub fn @"def!"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"def!");
 
     const vals = try dt.popN(2);
@@ -304,21 +325,19 @@ pub fn defs(dt: *DtMachine) !void {
     try dt.push(.{ .quote = quote });
 }
 
-pub fn isDef(dt: *DtMachine) !void {
+pub fn @"def?"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"def?");
 
     const val = try dt.pop();
-
     const name = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     try dt.push(.{ .bool = dt.defs.contains(name) });
 }
 
-pub fn cmdUsage(dt: *DtMachine) !void {
+pub fn usage(dt: *DtMachine) !void {
     const log = std.log.scoped(.usage);
 
     const val = try dt.pop();
-
     const cmdName = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     const cmd = dt.defs.get(cmdName) orelse return dt.rewind(log, val, Error.CommandUndefined);
@@ -328,8 +347,20 @@ pub fn cmdUsage(dt: *DtMachine) !void {
     try dt.push(.{ .string = description });
 }
 
+pub fn @"def-usage"(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"def-usage");
+
+    const vals = try dt.popN(2);
+    const name = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const description = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+
+    const cmd = dt.defs.get(name) orelse return dt.rewindN(2, log, vals, Error.CommandUndefined);
+
+    try dt.define(name, description, cmd.action);
+}
+
 // Variable binding
-pub fn colon(dt: *DtMachine) !void {
+pub fn @":"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@":");
 
     var termVal = try dt.pop();
@@ -434,7 +465,7 @@ pub fn norm(dt: *DtMachine) !void {
     try dt.norm();
 }
 
-pub fn dotS(dt: *DtMachine) !void {
+pub fn @".s"(dt: *DtMachine) !void {
     try stdout.print("[ ", .{});
 
     var top = dt.nest.first orelse {
@@ -450,18 +481,18 @@ pub fn dotS(dt: *DtMachine) !void {
     try stdout.print("]\n", .{});
 }
 
-pub fn readLine(dt: *DtMachine) !void {
+pub fn @"read-line"(dt: *DtMachine) !void {
     var line = ArrayList(u8).init(dt.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
 
     try dt.push(.{ .string = line.items });
 }
 
-pub fn readLines(dt: *DtMachine) !void {
+pub fn @"read-lines"(dt: *DtMachine) !void {
     var lines = Quote.init(dt.alloc);
 
     while (true) {
-        readLine(dt) catch |err| switch (err) {
+        @"read-line"(dt) catch |err| switch (err) {
             error.EndOfStream => break,
             else => return err,
         };
@@ -503,11 +534,11 @@ pub fn eval(dt: *DtMachine) !void {
     }
 }
 
-pub fn interactive(state: *DtMachine) !void {
+pub fn @"interactive?"(state: *DtMachine) !void {
     try state.push(.{ .bool = std.io.getStdIn().isTty() });
 }
 
-pub fn add(dt: *DtMachine) !void {
+pub fn @"+"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"+");
 
     const vals = try dt.popN(2);
@@ -530,7 +561,7 @@ pub fn add(dt: *DtMachine) !void {
     try dt.push(.{ .float = a + b });
 }
 
-pub fn subtract(dt: *DtMachine) !void {
+pub fn @"-"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"-");
 
     const vals = try dt.popN(2);
@@ -553,7 +584,7 @@ pub fn subtract(dt: *DtMachine) !void {
     try dt.push(.{ .float = a - b });
 }
 
-pub fn multiply(dt: *DtMachine) !void {
+pub fn @"*"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"*");
 
     const vals = try dt.popN(2);
@@ -577,7 +608,7 @@ pub fn multiply(dt: *DtMachine) !void {
     return;
 }
 
-pub fn divide(dt: *DtMachine) !void {
+pub fn @"/"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"/");
 
     const vals = try dt.popN(2);
@@ -600,7 +631,7 @@ pub fn divide(dt: *DtMachine) !void {
     try dt.push(.{ .float = a / b });
 }
 
-pub fn modulo(dt: *DtMachine) !void {
+pub fn @"%"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"%");
 
     const vals = try dt.popN(2);
@@ -642,7 +673,7 @@ pub fn rand(dt: *DtMachine) !void {
     try dt.push(.{ .int = n });
 }
 
-pub fn eq(dt: *DtMachine) !void {
+pub fn @"eq?"(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
 
     if (vals[0].isInt() and vals[1].isInt()) {
@@ -686,7 +717,7 @@ pub fn eq(dt: *DtMachine) !void {
         for (as, 0..) |val, i| {
             try child.push(val);
             try child.push(bs[i]);
-            try eq(&child);
+            try @"eq?"(&child);
             const bv = try child.pop();
             const res = bv.intoBool(dt);
             if (!res) {
@@ -710,7 +741,7 @@ pub fn eq(dt: *DtMachine) !void {
     try dt.push(.{ .bool = false });
 }
 
-pub fn greaterThan(dt: *DtMachine) !void {
+pub fn @"gt?"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"gt?");
 
     const vals = try dt.popN(2);
@@ -719,17 +750,17 @@ pub fn greaterThan(dt: *DtMachine) !void {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try dt.push(.{ .bool = b > a });
+        try dt.push(.{ .bool = a > b });
         return;
     }
 
     const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
     const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
-    try dt.push(.{ .bool = b > a });
+    try dt.push(.{ .bool = a > b });
 }
 
-pub fn greaterThanEq(dt: *DtMachine) !void {
+pub fn @"gte?"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"gte?");
 
     const vals = try dt.popN(2);
@@ -738,17 +769,17 @@ pub fn greaterThanEq(dt: *DtMachine) !void {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try dt.push(.{ .bool = b >= a });
+        try dt.push(.{ .bool = a >= b });
         return;
     }
 
     const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
     const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
-    try dt.push(.{ .bool = b >= a });
+    try dt.push(.{ .bool = a >= b });
 }
 
-pub fn lessThan(dt: *DtMachine) !void {
+pub fn @"lt?"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"lt?");
 
     const vals = try dt.popN(2);
@@ -757,17 +788,17 @@ pub fn lessThan(dt: *DtMachine) !void {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try dt.push(.{ .bool = b < a });
+        try dt.push(.{ .bool = a < b });
         return;
     }
 
     const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
     const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
-    try dt.push(.{ .bool = b < a });
+    try dt.push(.{ .bool = a < b });
 }
 
-pub fn lessThanEq(dt: *DtMachine) !void {
+pub fn @"lte?"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"lte?");
 
     const vals = try dt.popN(2);
@@ -776,14 +807,14 @@ pub fn lessThanEq(dt: *DtMachine) !void {
         const a = try vals[0].intoInt();
         const b = try vals[1].intoInt();
 
-        try dt.push(.{ .bool = b <= a });
+        try dt.push(.{ .bool = a <= b });
         return;
     }
 
     const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
     const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
 
-    try dt.push(.{ .bool = b <= a });
+    try dt.push(.{ .bool = a <= b });
 }
 
 pub fn boolAnd(dt: *DtMachine) !void {
@@ -909,13 +940,34 @@ pub fn contains(dt: *DtMachine) !void {
 
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
-    var substr = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    if (vals[0].isString() and vals[1].isString()) {
+        var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+        var substr = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
-    try dt.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
+        try dt.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
+        return;
+    }
+
+    var child = try dt.child();
+
+    var haystack = try vals[0].intoQuote(dt);
+    var needle = vals[1];
+
+    for (haystack.items) |item| {
+        try child.push(item);
+        try child.push(needle);
+        try @"eq?"(&child);
+        const found = (try child.pop()).intoBool(&child);
+        if (found) {
+            try dt.push(.{ .bool = true });
+            return;
+        }
+    }
+
+    try dt.push(.{ .bool = false });
 }
 
-pub fn doBang(dt: *DtMachine) !void {
+pub fn @"do!"(dt: *DtMachine) !void {
     var val = try dt.pop();
 
     if (val.isCommand() or val.isDeferredCommand() or val.isString()) {
@@ -952,16 +1004,16 @@ pub fn do(dt: *DtMachine) !void {
     dt.nest = jail.nest;
 }
 
-pub fn doBangMaybe(dt: *DtMachine) !void {
+pub fn @"do!?"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"do!?");
 
     var val = try dt.pop();
     const cond = val.intoBool(dt);
 
-    try if (cond) doBang(dt) else drop(dt) catch |e| return dt.rewind(log, val, e);
+    try if (cond) @"do!"(dt) else drop(dt) catch |e| return dt.rewind(log, val, e);
 }
 
-pub fn doMaybe(dt: *DtMachine) !void {
+pub fn @"do?"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"do?");
 
     var val = try dt.pop();
@@ -1170,6 +1222,7 @@ pub fn ellipsis(dt: *DtMachine) !void {
 
 pub fn rev(dt: *DtMachine) !void {
     const log = std.log.scoped(.rev);
+    _ = log;
 
     const val = try dt.pop();
 
@@ -1200,7 +1253,8 @@ pub fn rev(dt: *DtMachine) !void {
         return;
     }
 
-    return dt.rewind(log, val, Error.WrongArguments);
+    // Some scalar value.
+    try dt.push(val);
 }
 
 pub fn quoteVal(dt: *DtMachine) !void {
@@ -1230,13 +1284,13 @@ pub fn concat(dt: *DtMachine) !void {
     try dt.push(.{ .quote = a });
 }
 
-pub fn toBool(state: *DtMachine) !void {
+pub fn @"to-bool"(state: *DtMachine) !void {
     const val = try state.pop();
     const b = val.intoBool(state);
     try state.push(.{ .bool = b });
 }
 
-pub fn toInt(dt: *DtMachine) !void {
+pub fn @"to-int"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"to-int");
 
     const val = try dt.pop();
@@ -1244,7 +1298,7 @@ pub fn toInt(dt: *DtMachine) !void {
     try dt.push(.{ .int = i });
 }
 
-pub fn toFloat(dt: *DtMachine) !void {
+pub fn @"to-float"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"to-float");
 
     const val = try dt.pop();
@@ -1252,7 +1306,7 @@ pub fn toFloat(dt: *DtMachine) !void {
     try dt.push(.{ .float = f });
 }
 
-pub fn toString(dt: *DtMachine) !void {
+pub fn @"to-string"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"to-string");
 
     const val = try dt.pop();
@@ -1260,7 +1314,7 @@ pub fn toString(dt: *DtMachine) !void {
     try dt.push(.{ .string = s });
 }
 
-pub fn toCommand(dt: *DtMachine) !void {
+pub fn @"to-cmd"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"to-cmd");
 
     const val = try dt.pop();
@@ -1268,7 +1322,7 @@ pub fn toCommand(dt: *DtMachine) !void {
     try dt.push(.{ .command = cmd });
 }
 
-pub fn toDef(dt: *DtMachine) !void {
+pub fn @"to-def"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"to-def");
 
     const val = try dt.pop();
@@ -1276,7 +1330,7 @@ pub fn toDef(dt: *DtMachine) !void {
     try dt.push(.{ .deferred_command = cmd });
 }
 
-pub fn toQuote(dt: *DtMachine) !void {
+pub fn @"to-quote"(dt: *DtMachine) !void {
     const val = try dt.pop();
     const quote = try val.intoQuote(dt);
     try dt.push(.{ .quote = quote });

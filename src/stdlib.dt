@@ -61,7 +61,7 @@
 ### Control flow ###
 
 [ [ cmd n ]:
-  0 n gt?   \continue :
+  n 0 gt?   \continue :
   [ cmd do   cmd n 1 - times ] continue do?
 ] \times def
 
