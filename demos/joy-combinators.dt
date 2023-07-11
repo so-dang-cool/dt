@@ -73,7 +73,7 @@
   [[ds cs bs as]:
     ds cs cons
     as i
-    ds bs i]:     \s'   def
+    ds bs i]      \s'   def
 
   [[ds cs bs as]:
     cs ds as cons cons
@@ -91,4 +91,8 @@
 "dt " p version pl
 "(With Joy combinators)" pl
 
-using-joy-combinators repl
+
+using-joy-combinators
+
+repl
+
