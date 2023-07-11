@@ -70,6 +70,7 @@ pub fn dt_oneliner(source: &str) -> DtRunResult {
 
 #[allow(dead_code)]
 pub fn dt(args: &[&str]) -> DtRunResult {
+    println!("ARGS: {:?}", args);
     Command::new(DT_PATH)
         // .args(DEV_MODE_ARGS)
         .args(args)

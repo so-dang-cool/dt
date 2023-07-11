@@ -130,7 +130,7 @@ pub fn quit(dt: *DtMachine) !void {
         try stderr.print("warning(quit): Exited with unused values: [ ", .{});
 
         for (ctx.items) |item| {
-            try item.print(dt.alloc);
+            try item.print(stderr);
             try stderr.print(" ", .{});
         }
         try stderr.print("] \n", .{});
@@ -429,19 +429,19 @@ pub fn rot(dt: *DtMachine) !void {
 
 pub fn p(dt: *DtMachine) !void {
     const val = try dt.pop();
-    try _p(val, dt.alloc, stdout);
+    try _p(val, stdout);
 }
 
 pub fn ep(dt: *DtMachine) !void {
     const val = try dt.pop();
-    try _p(val, dt.alloc, stderr);
+    try _p(val, stderr);
 }
 
-fn _p(val: DtVal, allocator: Allocator, writer: std.fs.File.Writer) !void {
+fn _p(val: DtVal, writer: std.fs.File.Writer) !void {
     switch (val) {
         // When printing strings, do not show " around a string.
         .string => |s| try writer.print("{s}", .{s}),
-        else => try val.print(allocator),
+        else => try val.print(writer),
     }
 }
 
@@ -466,19 +466,19 @@ pub fn norm(dt: *DtMachine) !void {
 }
 
 pub fn @".s"(dt: *DtMachine) !void {
-    try stdout.print("[ ", .{});
+    try stderr.print("[ ", .{});
 
     var top = dt.nest.first orelse {
-        try stdout.print("]", .{});
+        try stderr.print("]", .{});
         return;
     };
 
     for (top.data.items) |val| {
-        try val.print(dt.alloc);
-        try stdout.print(" ", .{});
+        try val.print(stderr);
+        try stderr.print(" ", .{});
     }
 
-    try stdout.print("]\n", .{});
+    try stderr.print("]\n", .{});
 }
 
 pub fn @"read-line"(dt: *DtMachine) !void {
@@ -979,7 +979,7 @@ pub fn @"do!"(dt: *DtMachine) !void {
 
     const quote = try val.intoQuote(dt);
 
-    for (quote.items) |v| try dt.handle(v);
+    for (quote.items) |v| try dt.handleVal(v);
 }
 
 // Same as do! but does not uplevel any definitions
@@ -1000,7 +1000,7 @@ pub fn do(dt: *DtMachine) !void {
 
     const quote = try val.intoQuote(dt);
 
-    for (quote.items) |v| try jail.handle(v);
+    for (quote.items) |v| try jail.handleVal(v);
     dt.nest = jail.nest;
 }
 

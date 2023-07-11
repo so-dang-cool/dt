@@ -104,14 +104,25 @@ pub const DtMachine = struct {
         }
     }
 
-    pub fn handle(self: *DtMachine, val: DtVal) anyerror!void {
+    pub fn handleVal(self: *DtMachine, val: DtVal) anyerror!void {
+        const log = std.log.scoped(.@"dt.handleVal");
+
         switch (val) {
-            .command => |cmdName| try self.handleCmd(cmdName),
+            .command => |name| {
+                self.handleCmd(name) catch |e| {
+                    if (e != error.CommandUndefined) return e;
+                    try self.red();
+                    log.warn("Undefined: {s}", .{name});
+                    try self.norm();
+                };
+            },
             else => try self.push(val),
         }
     }
 
     pub fn handleCmd(self: *DtMachine, cmdName: String) !void {
+        const log = std.log.scoped(.@"dt.handleCmd");
+
         if (self.depth > 0) {
             try self.push(DtVal{ .command = cmdName });
             return;
@@ -120,12 +131,11 @@ pub const DtMachine = struct {
         if (self.defs.get(cmdName)) |cmd| {
             try cmd.run(self);
             return;
+        } else {
+            try self.red();
+            log.warn("Undefined: {s}", .{cmdName});
+            try self.norm();
         }
-
-        try self.red();
-        try stderr.print("Undefined: {s}\n", .{cmdName});
-        try self.norm();
-        return DtError.CommandUndefined;
     }
 
     pub fn loadFile(self: *DtMachine, code: []const u8) !void {
@@ -357,22 +367,22 @@ pub const DtVal = union(enum) {
         };
     }
 
-    pub fn print(self: DtVal, allocator: Allocator) !void {
+    pub fn print(self: DtVal, writer: std.fs.File.Writer) !void {
         switch (self) {
-            .bool => |b| try stdout.print("{}", .{b}),
-            .int => |i| try stdout.print("{}", .{i}),
-            .float => |f| try stdout.print("{d}", .{f}),
-            .command => |cmd| try stdout.print("{s}", .{cmd}),
-            .deferred_command => |cmd| try stdout.print("\\{s}", .{cmd}),
+            .bool => |b| try writer.print("{}", .{b}),
+            .int => |i| try writer.print("{}", .{i}),
+            .float => |f| try writer.print("{d}", .{f}),
+            .command => |cmd| try writer.print("{s}", .{cmd}),
+            .deferred_command => |cmd| try writer.print("\\{s}", .{cmd}),
             .quote => |q| {
-                try stdout.print("[ ", .{});
+                try writer.print("[ ", .{});
                 for (q.items) |val| {
-                    try val.print(allocator);
-                    try stdout.print(" ", .{});
+                    try val.print(writer);
+                    try writer.print(" ", .{});
                 }
-                try stdout.print("]", .{});
+                try writer.print("]", .{});
             },
-            .string => |s| try stdout.print("\"{s}\"", .{s}),
+            .string => |s| try writer.print("\"{s}\"", .{s}),
         }
     }
 };
@@ -395,7 +405,7 @@ pub const Command = struct {
                     again = false;
 
                     for (vals[0..lastIndex]) |val| {
-                        try state.handle(val);
+                        try state.handleVal(val);
                     }
 
                     const lastVal = vals[lastIndex];
@@ -404,12 +414,7 @@ pub const Command = struct {
                         // Tail calls optimized, yay!
                         .command => |cmdName| {
                             // Even if this is the same command name, we should re-fetch in case it's been redefined
-                            const cmd = state.defs.get(cmdName) orelse {
-                                try state.red();
-                                try stderr.print("Undefined: {s}\n", .{cmdName});
-                                try state.norm();
-                                return DtError.CommandUndefined;
-                            };
+                            const cmd = state.defs.get(cmdName) orelse return DtError.CommandUndefined;
                             switch (cmd.action) {
                                 .quote => |nextQuote| {
                                     again = true;
@@ -419,7 +424,7 @@ pub const Command = struct {
                                 .builtin => |b| return try b(state),
                             }
                         },
-                        else => try state.handle(lastVal),
+                        else => try state.handleVal(lastVal),
                     }
                 }
             },

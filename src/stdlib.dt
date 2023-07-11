@@ -1,61 +1,121 @@
 ### Binding ###
 
-[ swap quote [ do ] concat swap def! ] \def def!
+[ swap quote [ do ] concat swap def! ]
+\def def!
+\def "( <action> <name> -- ) Define a command." def-usage
 
-[ : ] \-> def
-[ def? not ] \undef? def
+[ swap rot dup rot def   swap def-usage ]
+\define def!
+\define "( <action> <description> <name> -- ) Define a command with a description." def-usage
+
+[ dup rot swap dup rot   [ do ] enq swap def!   usage def-usage ]
+\alias def!
+\alias "( <prevname> <newname> -- ) Alias a new command from another, copying the description of the previous command." def-usage
+
+[ def? not ] "( <name> -- <bool> ) Determine whether a command is undefined."
+\undef? define
 
 
 ### Display ###
 
-[ p nl ] \pl def
-[ p ] \print def
-[ pl ] \println def
-[ \pl each ] \pls def
+# Display: stdout
 
-[ ep enl ] \epl def
-[ ep ] \eprint def
-[ epl ] \eprintln def
-[ \epl each ] \epls def
+[ p nl ]
+"( <a> -- ) Print the most recent value and a newline to standard output."
+\pl define
 
-[ .s ] \status def
+[ \pl each ]
+"( [<a>] -- ) Print the values of the most recent quote, each followed by a newline, to standard output."
+\pls define
+
+\p \print alias
+\pl \println alias
+\pls \printlns alias
+
+# Display: stderr
+
+[ ep enl ]
+"( <a> -- ) Print the most recent value and a newline to standard error."
+\epl define
+
+[ \epl each ]
+"( [<a>] -- ) Print the values of the most recent quote, each followed by a newline, to standard error."
+\epls define
+
+\ep \eprint alias
+\epl \eprintln alias
+\epls \eprintlns alias
+
+# Display: misc
+
+\.s \status alias
 
 
 ### Filesystem and process things ###
 
-[ cwd pl ] \pwd def
+[ cwd pl ]
+"( -- ) Print the current working directory to standard output."
+\pwd define
 
 
 ### Math and such ###
 
-[ 2 % 0 eq? ] \even? def
-[ 2 % 1 eq? ] \odd? def
-[ % 0 eq? ] \divisor? def
+[ 2 % 0 eq? ] "( <a> -- <bool> ) Determine if a number is even." \even? define
+[ 2 % 1 eq? ] "( <a> -- <bool> ) Determine if a number is odd." \odd? define
+[ % 0 eq? ] "( <a> <b> -- <bool> ) Determine if a number a is evenly divisible by number b." \divisor? define
 
 
 ### Boolean operators ###
 
-[ eq? not ] \neq? def
-[ and not ] \nand def
-[ or not ] \nor def
+[ eq? not ]
+"( <a> <b> -- <bool> ) Determine if two values are unequal."
+\neq? define
+
+[ and not ]
+"( <a> <b> -- <bool> ) Determine if two values are not both truthy."
+\nand define
+
+[ or not ]
+"( <a> <b> -- <bool> ) Determine if neither of two values are truthy."
+\nor define
 
 
 ### String things ###
 
-[ "" split ] \chars def
+[ "" split ]
+"( <string> -- [<substring>] ) Splits a string into individual characters, where a character is a single byte. (Not friendly to UTF-8 runes.)"
+\chars define
 
-[ " " split ] \words def
-[ " " join ] \unwords def
+# TODO: runes
 
-[ "\n" split ] \lines def
-[ "\n" join ] \unlines def
+[ " " split ]
+"( <string> -- [<substring>] ) Splits a string on spaces."
+\words define
+
+[ " " join ]
+"( [<substring>] -- <string> ) Joins strings with spaces."
+\unwords define
+
+[ "\n" split ]
+"( <string> -- [<substring>] ) Splits a string on newlines."
+\lines define
+
+[ "\n" join ]
+"( [<substring>] -- <string> ) Joins strings with newlines."
+\unlines define
 
 
 ### Quote manipulation ###
 
-[ deq drop ] \first def
-[ pop swap drop ] \last def
-[ ... ] \unquote def
+[ deq drop ]
+"( [<a>] -- <b> ) The first element of a quote."
+\first define
+
+[ pop swap drop ]
+"( [<a>] -- <b> ) The last element of a quote."
+\last define
+
+\... \unquote alias
 
 
 ### Control flow ###
@@ -63,20 +123,30 @@
 [ [ cmd n ]:
   n 0 gt?   \continue :
   [ cmd do   cmd n 1 - times ] continue do?
-] \times def
+]
+"( <action> <n> -- ? ) Perform a given action n times."
+\times define
 
-[ map drop ] \each def
+[ map drop ]
+"( [<a>] <action> -- ) Perform a given action with each value in a quote."
+\each define
 
 [ [ action cond ]:
   [ action do   action cond while ]   cond do do?
-] \while def
+]
+"( <action> <cond> -- ? ) Perform an action while the condition is truthy."
+\while define
 
 
 ### Parsing ###
 
-[ lines [ "," split ] map ] \parse-csv def
+[ lines [ "," split ] map ]
+"( <string> -- [[<cells>]] ) Naive conversion of a raw string in comma-separated value (CSV) format to a quote of lines of cells"
+\parse-csv define
 
 
 ### Testing ###
 
-[ [ cond msg ]:   [ msg pl   1 exit ] cond not do? ] \assert-true def
+[ [ cond msg ]:   [ msg epl   1 exit ] cond not do? ]
+"( <cond> <message> -- ) Naive assertion that requires a condition to be truthy. If falsy, it will print a message to standard error and fail with an exit code of 1."
+\assert-true def

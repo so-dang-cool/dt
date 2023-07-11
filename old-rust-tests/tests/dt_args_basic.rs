@@ -3,7 +3,7 @@ use dt_test_utils::dt;
 
 #[test]
 fn status() {
-    assert_eq!("[ ]\n", dt(&["quote-all", "drop", "status"]).stdout);
+    assert_eq!("[ ]\n", dt(&["quote-all", "drop", "status"]).stderr);
 }
 
 #[test]
