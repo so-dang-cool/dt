@@ -102,6 +102,7 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("rev", "reverse a quote or string", .{ .builtin = rev });
     try machine.define("quote", "quote a value", .{ .builtin = quoteVal });
     try machine.define("quote-all", "quote all current context", .{ .builtin = quoteAll });
+    try machine.define("anything?", "true if any value at all precedes", .{ .builtin = @"anything?" });
     try machine.define("concat", "concatenate two quotes. Values are coerced into quotes. (For String concatenation, see join)", .{ .builtin = concat });
     try machine.define("push", "move an item into a quote", .{ .builtin = push });
     try machine.define("pop", "move the last item of a quote to top of stack", .{ .builtin = pop });
@@ -436,7 +437,10 @@ pub fn norm(dt: *DtMachine) !void {
 pub fn dotS(dt: *DtMachine) !void {
     try stdout.print("[ ", .{});
 
-    var top = dt.nest.first orelse return;
+    var top = dt.nest.first orelse {
+        try stdout.print("]", .{});
+        return;
+    };
 
     for (top.data.items) |val| {
         try val.print(dt.alloc);
@@ -1208,6 +1212,11 @@ pub fn quoteVal(dt: *DtMachine) !void {
 
 pub fn quoteAll(dt: *DtMachine) !void {
     try dt.quoteContext();
+}
+
+pub fn @"anything?"(dt: *DtMachine) !void {
+    const top = dt.nest.first orelse return Error.ContextStackUnderflow;
+    try dt.push(.{ .bool = top.data.items.len != 0 });
 }
 
 pub fn concat(dt: *DtMachine) !void {

@@ -58,6 +58,7 @@ fn handlePipedStdoutOnly(dt: *DtMachine) !void {
 fn readEvalPrintLoop(dt: *DtMachine) !void {
     dt.handleCmd("run-args") catch |e| return doneOrDie(dt, e);
 
+    // TODO: Can this catch be done in the stdlib? Other people need to catch errors too!
     while (true) dt.handleCmd("main-repl") catch |e| switch (e) {
         error.EndOfStream => {
             try stderr.print("\n", .{});

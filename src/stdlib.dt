@@ -11,12 +11,12 @@
 [ p nl ] \pl def
 [ p ] \print def
 [ pl ] \println def
-[ \pl map drop ] \pls def
+[ \pl each ] \pls def
 
 [ ep enl ] \epl def
 [ ep ] \eprint def
 [ epl ] \eprintln def
-[ \epl map drop ] \epls def
+[ \epl each ] \epls def
 
 [ .s ] \status def
 
