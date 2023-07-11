@@ -43,8 +43,9 @@
 
 [ red "dt " p version pl   norm inspire pl ] \repl-greet def
 
-[ \.q \quit def
-  \.q \exit def
+[ \quit \.q def
+  \quit \exit def
+  # TODO: define a help command
 ] \repl-prelude def
 
 [ handle-flags   repl-greet   repl-prelude   repl ] \main-repl def!

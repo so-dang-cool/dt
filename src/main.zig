@@ -65,7 +65,7 @@ fn readEvalPrintLoop(dt: *DtMachine) !void {
         },
         else => {
             try dt.red();
-            try stderr.print("Recovering from: {any}\n", .{e});
+            try stderr.print("\nRestarting REPL after error: {s}\n\n", .{@errorName(e)});
             try dt.norm();
         },
     };

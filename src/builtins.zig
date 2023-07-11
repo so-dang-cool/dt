@@ -18,10 +18,10 @@ const Error = interpret.DtError;
 const DtVal = interpret.DtVal;
 const DtMachine = interpret.DtMachine;
 
-const bangDescription = "If nested, any commands or variables defined will be available in the calling scope";
+const bangDescription = "If nested, any commands or variables defined will be available in the calling scope.";
 
 pub fn defineAll(machine: *DtMachine) !void {
-    try machine.define(".q", "quit, printing a warning if there are any values left on stack", .{ .builtin = quit });
+    try machine.define("quit", "Quit. Prints a warning if there are any values left on stack.", .{ .builtin = quit });
     try machine.define("exit", "exit with the specified exit code", .{ .builtin = exit });
     try machine.define("version", "print the version of the interpreter", .{ .builtin = version });
 
@@ -124,7 +124,7 @@ pub fn quit(dt: *DtMachine) !void {
 
     if (ctx.items.len > 0) {
         try dt.red();
-        try stderr.print("Warning: Exited with unused values: [ ", .{});
+        try stderr.print("warning(quit): Exited with unused values: [ ", .{});
 
         for (ctx.items) |item| {
             try item.print(dt.alloc);
@@ -138,13 +138,23 @@ pub fn quit(dt: *DtMachine) !void {
 }
 
 pub fn exit(dt: *DtMachine) !void {
+    const log = std.log.scoped(.exit);
+
     const val = dt.pop() catch DtVal{ .int = 255 };
-    const i = try val.intoInt();
+    var i = val.intoInt() catch it: {
+        log.err("Attempted to exit with a value that could not be coerced to integer: {any}", .{val});
+        log.err("The program will exit with status code of 1.", .{});
+        break :it 1;
+    };
 
     if (i < 0) {
-        return dt.rewind(val, Error.IntegerUnderflow);
+        log.err("Attempted to exit with a value less than 0 ({})", .{i});
+        log.err("The program will exit with status code of 1.", .{});
+        i = 1;
     } else if (i > 255) {
-        return dt.rewind(val, Error.IntegerOverflow);
+        log.err("Attempted to exit with a value greater than 255 ({})", .{i});
+        log.err("The program will exit with status code of 255.", .{});
+        i = 255;
     }
 
     const code: u8 = @intCast(i);
@@ -165,6 +175,7 @@ pub fn cd(dt: *DtMachine) !void {
     var path = val.intoString(dt) catch |e| return dt.rewind(val, e);
 
     if (std.mem.eql(u8, path, "~")) {
+        // TODO: Consider windows and other OS conventions.
         path = try std.process.getEnvVarOwned(dt.alloc, "HOME");
     }
 
@@ -188,6 +199,8 @@ pub fn ls(dt: *DtMachine) !void {
 }
 
 pub fn readf(dt: *DtMachine) !void {
+    const log = std.log.scoped(.readf);
+
     const val = try dt.pop();
     const filename = val.intoString(dt) catch |e| return dt.rewind(val, e);
 
@@ -195,11 +208,27 @@ pub fn readf(dt: *DtMachine) !void {
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
-    var file = try theCwd.openFile(filename, .{ .mode = .read_only });
-    var contents = try file.readToEndAlloc(dt.alloc, std.math.pow(usize, 2, 16));
+    var contents = _readf(dt, theCwd, filename) catch |e| {
+        try dt.red();
+        switch (e) {
+            error.IsDir => log.warn("\"{s}\" is a directory.", .{filename}),
+            error.FileNotFound => log.warn("\"{s}\" not found.", .{filename}),
+            else => {
+                try dt.norm();
+                return e;
+            },
+        }
+        try dt.norm();
+        return;
+    };
 
     try dt.push(.{ .string = contents });
-    file.close();
+}
+
+fn _readf(dt: *DtMachine, dir: std.fs.Dir, filename: []const u8) ![]const u8 {
+    var file = try dir.openFile(filename, .{ .mode = .read_only });
+    defer file.close();
+    return try file.readToEndAlloc(dt.alloc, std.math.pow(usize, 2, 16));
 }
 
 pub fn writef(dt: *DtMachine) !void {
@@ -216,6 +245,8 @@ pub fn writef(dt: *DtMachine) !void {
 }
 
 pub fn exec(dt: *DtMachine) !void {
+    const log = std.log.scoped(.exec);
+
     const val = try dt.pop();
     const childProcess = try val.intoString(dt);
     var childArgs = std.mem.splitAny(u8, childProcess, " \t");
@@ -236,7 +267,7 @@ pub fn exec(dt: *DtMachine) !void {
         },
         else => {
             try dt.red();
-            try stderr.print("{s}", .{result.stderr});
+            log.warn("{s}", .{result.stderr});
             try dt.norm();
 
             try dt.push(.{ .bool = false });
@@ -361,18 +392,6 @@ pub fn ep(dt: *DtMachine) !void {
     try _p(val, dt.alloc, stderr);
 }
 
-pub fn red(dt: *DtMachine) !void {
-    try dt.red();
-}
-
-pub fn green(dt: *DtMachine) !void {
-    try dt.green();
-}
-
-pub fn norm(dt: *DtMachine) !void {
-    try dt.norm();
-}
-
 fn _p(val: DtVal, allocator: Allocator, writer: std.fs.File.Writer) !void {
     switch (val) {
         // When printing strings, do not show " around a string.
@@ -387,6 +406,18 @@ pub fn nl(_: *DtMachine) !void {
 
 pub fn enl(_: *DtMachine) !void {
     try stderr.print("\n", .{});
+}
+
+pub fn red(dt: *DtMachine) !void {
+    try dt.red();
+}
+
+pub fn green(dt: *DtMachine) !void {
+    try dt.green();
+}
+
+pub fn norm(dt: *DtMachine) !void {
+    try dt.norm();
 }
 
 pub fn dotS(dt: *DtMachine) !void {
