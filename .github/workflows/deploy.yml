@@ -1,4 +1,4 @@
-name: Deploy static content to Pages
+name: Deploy dt.plumbing site content
 
 on:
   push:
