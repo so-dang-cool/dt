@@ -150,7 +150,7 @@
 
         <p>
           Explore definitions with <span class="lighter">defs</span> and
-          <span class='lighter'>describe</span>.
+          <span class='lighter'>usage</span>.
         </p>
         <pre>
         $ dt defs pls | head -n 3
@@ -158,8 +158,8 @@
         +
         -
 
-        $ dt [not] describe pls
-        Consumes one boolean value and produces its inverse.
+        $ dt   \\pls usage pls   quit
+        ( [<a>] -- ) Print the values of the most recent quote, each followed by a newline, to standard output.
         </pre>
 
         <p>
@@ -168,23 +168,27 @@
           yet. Instead we write <span class="lighter">3 4 +</span>.
         </p>
         <pre>
-        $ dt 3 4 + pl
+        $ dt 3 4 + pl   quit
         7
         </pre>
 
         <p>
-          All commands operate in the same left-to-right way, including
-          <span class="lighter">def</span> which is a command that defines
-          more commands. In dt, a command covers what other languages might
-          call functions, variables, procedures, subroutines, bindings, etc.
-          Some commands are built-in, and others are defined in dt source code.
-          Anyway let's <span class="lighter">def</span> some stuff and use it.
+          All commands are evaluated left-to-right, including <span class="lighter">def</span>
+          which is a command that defines more commands. In dt, a command
+          is a binding to a value or a "quote" of values and commands. In other
+          words, a command is what other languages call functions, variables,
+          procedures, subroutines, bindings, etc. Some commands are built-in,
+          others are defined in dt source code. Anyway let's
+          <span class="lighter">def</span> some stuff to use it. (I'm going to
+          feed the code as a single string to avoid escapes, and assume a
+          shell that can interpret multiline strings.)
         </p>
         <pre>
-        $ dt [3] [three] def \
-             [4] [four] def \
-             [+ pl] [add-and-print] def \
-             three four add-and-print
+        $ dt '3 \three def
+              4 \four def
+              [+ pl] \add-and-print def
+              three four add-and-print
+              quit'
         7
         </pre>
         <p>
@@ -199,7 +203,30 @@
           <span class="lighter">add-and-print</span>. Calling this performed
           its two commands.
         </p>
-
+        <p>
+          Sometimes you just want to bind as values that would not execute the
+          code immediately (For example: to bind a quote as a list). for this
+          we can use <span class="lighter">:</span> to bind values.
+        </p>
+        <pre>
+        $ dt  3 4 [+ pl]   [three four add-and-print]: \
+              three four add-and-print \
+              status \
+              quit
+        [ 3 4 [ + pl ] ]
+        </pre>
+        <p>
+          This bound three values to three identifiers. It didn't execute the
+          last quotation though, it simply provided it again. Let's finish up
+          by executing with <span class="lighter">do</span>.
+        </p>
+        <pre>
+        $ dt  3 4 [+ pl]   [three four add-and-print]: \
+              three four add-and-print \
+              do \
+              quit
+        7
+        </pre>
         <hr>
 
 <!-- syntax -->
@@ -207,7 +234,7 @@
         <h2 id="syntax">Basic Syntax <a href="#syntax">⌾</a></h2>
         <p>
           The <span class="lighter">[</span> and <span class="lighter">]</span>
-          characters begin and end quotations. Quotations are sequences of none
+          characters begin and end quotations. Quotations are sequences of zero
           or more values, each of any kind. Commands in a quotation are not
           immediately executed.
         </p>
