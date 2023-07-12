@@ -1,0 +1,7 @@
+#!/usr/bin/env dt
+
+read-lines unlines   \stdin :
+args pop   \file :
+
+stdin pl
+stdin file writef

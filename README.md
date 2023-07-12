@@ -39,8 +39,8 @@ A naive tee implementation:
 ```
 #!/usr/bin/env dt
 
-get-lines unlines   \stdin :
-get-args pop   \file :
+read-lines unlines   \stdin :
+args pop   \file :
 
 stdin pl
 stdin file writef
