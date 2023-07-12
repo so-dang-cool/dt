@@ -117,9 +117,12 @@ resulting binary for your machine will be produced in `./zig-out/bin/dt`
 
 ## The nerdy stuff
 
-**Most people should skip this section.** Certified language nerds only beyond
-this point, and I _will_ be checking your references! Also keep me honest in
-correctly categorizing the language.
+**⚠️ Most people should skip this section! ⚠️**
+
+_Certified language nerds only beyond this point, and I will be checking your
+references! Also, please keep me honest in correctly categorizing the language.
+The focus is on usefulness more than advancing PLDI, but I'm open to criticism,
+suggestions, and crazy ideas._
 
 The `dt` language is in the [concatenative language](https://concatenative.org)
 family. That means it's a functional programming language (functions are
