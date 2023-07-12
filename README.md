@@ -137,7 +137,8 @@ and impure logic; side-effects are allowed and not managed.
 
 _For the adept: The language is point-free with opt-in bindings. Everything
 is evaluated in strict left-to-right sequence, and all operations can have
-arbitrary arity. Typing is dynamic, and the language is homoiconic._
+arbitrary arity both in and out, including runtime-dynamic arity. Typing is
+dynamic, and the language is homoiconic._
 
 It's inspired by many other tools and languages like Unix-style pipes and
 shells, `awk`, Forth, Joy, Factor, Haskell, ML, Lisps, Lua, Tcl, Ruby, and
