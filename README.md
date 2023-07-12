@@ -151,6 +151,9 @@ grammatical order similar to Japanese, Korean, or Latin. _(But with much more
 context elision, even more than Japanese!)_
 
 `dt` is implemented in Zig with no plans to self-host or rewrite in Rust or Go.
+Please do suggest better strategies for memory management and optimizations! I
+have some experience working at this level, but still much to learn. The
+current implementation is still fairly naive.
 
 ## Credits
 
