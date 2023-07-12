@@ -113,7 +113,7 @@ An installation script may come soon.
 
 To build from source, clone the repo and run `./build help` for instructions.
 The project currently builds with Zig 0.11.+ and a recent Cargo toolchain. The
-resulting binary for your machine will be produced in `./zig-out/bin/dt`
+resulting binary for your machine will be produced as `./zig-out/bin/dt`
 
 ## The nerdy stuff
 
