@@ -88,8 +88,8 @@ fn doneOrDie(dt: *DtMachine, reason: anyerror) !void {
 }
 
 fn readShebangFile(allocator: Allocator) !?[]const u8 {
-    var args = std.process.args();
-    _ = args.skip();
+    var args = try std.process.argsWithAllocator(allocator);
+    _ = args.skip(); // Discard process name
 
     if (args.next()) |maybeFilepath| {
         // We get a Dir from CWD so we can resolve relative paths

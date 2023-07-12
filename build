@@ -55,7 +55,7 @@ cross-release() {
         powerpc-linux-musl
         riscv64-linux-gnu
         riscv64-linux-musl
-        # wasm32-wasi-musl TODO
+        wasm32-wasi-musl
         x86_64-linux-gnu
         x86_64-linux-musl
     )

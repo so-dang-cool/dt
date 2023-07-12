@@ -7,6 +7,8 @@ const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
+const builtin = @import("builtin");
+
 const Token = @import("tokens.zig").Token;
 
 const main = @import("main.zig");
@@ -26,15 +28,18 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("version", "( -- <version> ) Produce the version of dt in use.", .{ .builtin = version });
 
     try machine.define("cwd", "( -- <dirname> ) Produce the current working directory.", .{ .builtin = cwd });
-    try machine.define("cd", "( <dirname> -- ) Change the process's working directory.", .{ .builtin = cd });
+    if (builtin.os.tag != .wasi) {
+        try machine.define("cd", "( <dirname> -- ) Change the process's working directory.", .{ .builtin = cd });
+    }
     try machine.define("ls", "( -- [<filename>] ) Produce a quote of files and directories in the process's working directory.", .{ .builtin = ls });
     try machine.define("readf", "( <filename> -- <contents> ) Read a file's contents as a string.", .{ .builtin = readf });
     try machine.define("writef", "( <contents> <filename> -- ) Write a string as a file. If a file previously existed, it will be overwritten.", .{ .builtin = writef });
     try machine.define("appendf", "( <contents> <filename> -- ) Write a string to a file. If a file previously existed, the new content will be appended.", .{ .builtin = appendf });
     // TODO: pathsep/filesep, env get, env set
 
-    try machine.define("exec", "( <process> -- ) Execute a child process (from a String). When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false.", .{ .builtin = exec });
-
+    if (builtin.os.tag != .wasi) {
+        try machine.define("exec", "( <process> -- ) Execute a child process (from a String). When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false.", .{ .builtin = exec });
+    }
     try machine.define("def!", "( <action> <name> -- ) Defines a new command. " ++ bangDescription, .{ .builtin = @"def!" });
     try machine.define("defs", "( -- [<name>] ) Produce a quote of all defined commands.", .{ .builtin = defs });
     try machine.define("def?", "( <name> -- <bool> ) Determine whether a command is defined.", .{ .builtin = @"def?" });
@@ -505,14 +510,14 @@ pub fn @"read-lines"(dt: *DtMachine) !void {
 }
 
 pub fn procname(dt: *DtMachine) !void {
-    var procArgs = std.process.args();
+    var procArgs = try std.process.argsWithAllocator(dt.alloc);
     var name = procArgs.next() orelse return Error.ProcessNameUnknown;
     try dt.push(.{ .string = name });
 }
 
 pub fn args(dt: *DtMachine) !void {
     var quote = Quote.init(dt.alloc);
-    var procArgs = std.process.args();
+    var procArgs = try std.process.argsWithAllocator(dt.alloc);
     _ = procArgs.next(); // Discard process name
 
     while (procArgs.next()) |arg| {
