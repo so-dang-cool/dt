@@ -2,8 +2,8 @@
 
 # `dt`
 
-It's duct tape for your unix pipes. A shell-friendly concatenative functional
-programming language for when you don't have a better tool.
+It's duct tape for your unix pipes. A programming language for doing small
+stuff fast and easy.
 
 In the words of [Red Green](https://www.redgreen.com):
 
@@ -30,7 +30,7 @@ PIKACHU
 ## Use as a shebang
 
 When the first argument to `dt` is a file starting with `#!` it will interpret
-the file.
+the file. In short: `dt` supports shebang scripting.
 
 A naive tee implementation:
 
@@ -54,7 +54,8 @@ cat wish-list | sed 's/red/green/g' | tee.dt new-wish-list
 
 ## Interactive mode
 
-Running `dt` with no pipes in or out starts a read-eval-print loop (REPL).
+Running `dt` by itself with no pipes in or out starts a read-eval-print loop
+(REPL).
 
 ```
 $ dt
@@ -65,21 +66,23 @@ Now, this is only temporary... unless it works.
 » 1 1 + println
 2
 » 
+» # Printing is common, so there are a bunch of printing shorthands.
 » # "p" is print, "pl" is print line, "pls" is print lines (i.e. of a list of values)
-» # Let's define a command that consumes a value, prints it, then returns its double
+» # Let's define a command that consumes a value, prints it, then returns its double.
 » 
 » [ \n :   n p " " p   n 2 *] \print-and-double def
 » 
 » 
 » # And let's do it... 7 times!
 » 
-» 1 \print-and-double 7 times   pl
-1 2 4 8 16 32 64 128
+» 1 \print-and-double 7 times   drop
+1 2 4 8 16 32 64
 » 
 » 
-» # Also there are conditions
+» # You can conditionally execute code
 » 
-» ["hi" pl] false ?   ["bye" pl] true ?
+» ["hi" pl] false do?
+» ["bye" pl] true do?
 bye
 » 
 » quit
@@ -112,8 +115,40 @@ To build from source, clone the repo and run `./build help` for instructions.
 The project currently builds with Zig 0.11.+ and a recent Cargo toolchain. The
 resulting binary for your machine will be produced in `./zig-out/bin/dt`
 
+## The nerdy stuff
+
+**Most people should skip this section.** Certified language nerds only beyond
+this point, and I _will_ be checking your references! Also keep me honest in
+correctly categorizing the language.
+
+The `dt` language is in the [concatenative language](https://concatenative.org)
+family. That means it's a functional programming language (functions are
+first-class, values have immutable semantics) with a concatenative
+style rather than the traditional applicative style.
+
+The language has an imperative _feel_ in the sense that all "functions" are
+linguistically imperative "commands." There is no distinguishing from pure and
+impure logic; side-effects are allowed and not managed or separated.
+
+_For the adept: The language is point-free with opt-in bindings. Everything
+is evaluated in strict left-to-right sequence, and all operations can have
+arbitrary arity. Typing is dynamic, and the language is homoiconic._
+
+It's inspired by many other tools and languages like Unix-style pipes and
+shells, `awk`, Forth, Joy, Factor, Haskell, ML, Lisps, Lua, Tcl, Ruby, and
+Perl. `dt` does not intended to be better or replace any of these, they're all
+fantastic and have their place! It's simply meant to be a best tool for
+different kinds of jobs.
+
+Linguistically, `dt` command definitions follows a convention of using
+[subject-object-verb (SOV)](https://en.wikipedia.org/wiki/Subject%E2%80%93object%E2%80%93verb_word_order)
+grammatical order similar to Japanese, Korean, or Latin. _(But with much more
+context elision, even more than Japanese!)_
+
+`dt` is implemented in Zig with no plans to self-host or rewrite in Rust or Go.
+
 ## Credits
 
 Shared as open source software, distributed under the terms of [the 3-Clause BSD License](https://opensource.org/license/BSD-3-clause/).
 
-A side quest of J.R. Hill | https://so.dang.cool | https://github.com/booniepepper
+By J.R. Hill | https://so.dang.cool | https://github.com/booniepepper
