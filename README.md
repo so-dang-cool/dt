@@ -126,9 +126,11 @@ family. That means it's a functional programming language (functions are
 first-class, values have immutable semantics) with a concatenative
 style rather than the traditional applicative style.
 
-The language has an imperative _feel_ in the sense that all "functions" are
-linguistically imperative "commands." There is no distinguishing from pure and
-impure logic; side-effects are allowed and not managed or separated.
+See also Jon Purdy's [_Why Concatanative Programming Matters_](https://evincarofautumn.blogspot.com/2012/02/why-concatenative-programming-matters.html)
+
+The `dt` language has an imperative _feel_ in the sense that all "functions"
+are linguistically imperative "commands." There is no distinguishing from pure
+and impure logic; side-effects are allowed and not managed.
 
 _For the adept: The language is point-free with opt-in bindings. Everything
 is evaluated in strict left-to-right sequence, and all operations can have
@@ -140,7 +142,7 @@ Perl. `dt` does not intended to be better or replace any of these, they're all
 fantastic and have their place! It's simply meant to be a best tool for
 different kinds of jobs.
 
-Linguistically, `dt` command definitions follows a convention of using
+Linguistically, `dt` command definitions follow a convention of using
 [subject-object-verb (SOV)](https://en.wikipedia.org/wiki/Subject%E2%80%93object%E2%80%93verb_word_order)
 grammatical order similar to Japanese, Korean, or Latin. _(But with much more
 context elision, even more than Japanese!)_
