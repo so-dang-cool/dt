@@ -328,6 +328,9 @@ pub fn defs(dt: *DtMachine) !void {
         try quote.append(.{ .string = cmdName });
     }
 
+    const items = quote.items;
+    std.mem.sort(DtVal, items, dt, DtVal.isLessThan);
+
     try dt.push(.{ .quote = quote });
 }
 
