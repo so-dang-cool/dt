@@ -83,10 +83,10 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("rand", "( -- <a> ) Produces a random integer.", .{ .builtin = rand });
 
     try machine.define("eq?", "( <a> <b> -- <bool> ) Determine if two values are equal. Works for most types with coersion.", .{ .builtin = @"eq?" });
-    try machine.define("gt?", "( <a> <b> -- <bool> ) Determine if a number is greater than another. In standard notation: a > b", .{ .builtin = @"gt?" });
-    try machine.define("gte?", "( <a> <b> -- <bool> ) Determine if a number is greater-than/equal-to another. In standard notation: a ≧ b", .{ .builtin = @"gte?" });
-    try machine.define("lt?", "( <a> <b> -- <bool> ) Determine if a number is less than another. In standard notation: a < b", .{ .builtin = @"lt?" });
-    try machine.define("lte?", "( <a> <b> -- <bool> ) Determine if a number is less-than/equal-to another. In standard notation: a ≦ b", .{ .builtin = @"lte?" });
+    try machine.define("gt?", "( <a> <b> -- <bool> ) Determine if a value is greater than another. In standard notation: a > b", .{ .builtin = @"gt?" });
+    try machine.define("gte?", "( <a> <b> -- <bool> ) Determine if a value is greater-than/equal-to another. In standard notation: a ≧ b", .{ .builtin = @"gte?" });
+    try machine.define("lt?", "( <a> <b> -- <bool> ) Determine if a value is less than another. In standard notation: a < b", .{ .builtin = @"lt?" });
+    try machine.define("lte?", "( <a> <b> -- <bool> ) Determine if a value is less-than/equal-to another. In standard notation: a ≦ b", .{ .builtin = @"lte?" });
 
     try machine.define("and", "( <a> <b> -- <bool> ) Determine if two values are both truthy.", .{ .builtin = boolAnd });
     try machine.define("or", "( <a> <b> -- <bool> ) Determine if either of two values are truthy.", .{ .builtin = boolOr });
@@ -107,6 +107,7 @@ pub fn defineAll(machine: *DtMachine) !void {
 
     try machine.define("...", "( <original> -- ? ) Unpack a quote.", .{ .builtin = ellipsis });
     try machine.define("rev", "( <original> -- <reversed> ) Reverse a quote or string. Other types are unmodified.", .{ .builtin = rev });
+    try machine.define("sort", "( [<a>] -- [<b>] ) Sort a list of values. When values are of different type, they are sorted in the following order: bool, int, float, string, command, deferred command, quote.", .{ .builtin = sort });
     try machine.define("quote", "( <a> -- [<a>] ) Quote a value.", .{ .builtin = quoteVal });
     try machine.define("quote-all", "( ? -- [<?>] ) Quote all current context.", .{ .builtin = quoteAll });
     try machine.define("anything?", "( -- <bool> ) True if any value is present.", .{ .builtin = @"anything?" });
@@ -680,146 +681,32 @@ pub fn rand(dt: *DtMachine) !void {
 
 pub fn @"eq?"(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
-
-    if (vals[0].isInt() and vals[1].isInt()) {
-        const a = try vals[0].intoInt();
-        const b = try vals[1].intoInt();
-
-        try dt.push(.{ .bool = a == b });
-        return;
-    }
-
-    if ((vals[0].isInt() or vals[0].isFloat()) and (vals[1].isInt() or vals[1].isFloat())) {
-        const a = try vals[0].intoFloat();
-        const b = try vals[1].intoFloat();
-
-        try dt.push(.{ .bool = a == b });
-        return;
-    }
-
-    if (vals[0].isBool() and vals[1].isBool()) {
-        const a = vals[0].intoBool(dt);
-        const b = vals[1].intoBool(dt);
-
-        try dt.push(.{ .bool = a == b });
-        return;
-    }
-
-    if (vals[0].isQuote() and vals[1].isQuote()) {
-        const a = try vals[0].intoQuote(dt);
-        const b = try vals[1].intoQuote(dt);
-
-        const as: []DtVal = a.items;
-        const bs: []DtVal = b.items;
-
-        if (as.len != bs.len) {
-            try dt.push(.{ .bool = false });
-            return;
-        }
-
-        var child = try dt.child();
-
-        for (as, 0..) |val, i| {
-            try child.push(val);
-            try child.push(bs[i]);
-            try @"eq?"(&child);
-            const bv = try child.pop();
-            const res = bv.intoBool(dt);
-            if (!res) {
-                try dt.push(.{ .bool = false });
-                return;
-            }
-        }
-
-        try dt.push(.{ .bool = true });
-        return;
-    }
-
-    if (!vals[0].isQuote() and !vals[1].isQuote()) {
-        const a = try vals[0].intoString(dt);
-        const b = try vals[1].intoString(dt);
-
-        try dt.push(.{ .bool = std.mem.eql(u8, a, b) });
-        return;
-    }
-
-    try dt.push(.{ .bool = false });
+    const eq = DtVal.isEqualTo(dt, vals[0], vals[1]);
+    try dt.push(.{ .bool = eq });
 }
 
 pub fn @"gt?"(dt: *DtMachine) !void {
-    const log = std.log.scoped(.@"gt?");
-
     const vals = try dt.popN(2);
-
-    if (vals[0].isInt() and vals[1].isInt()) {
-        const a = try vals[0].intoInt();
-        const b = try vals[1].intoInt();
-
-        try dt.push(.{ .bool = a > b });
-        return;
-    }
-
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
-
-    try dt.push(.{ .bool = a > b });
+    const gt = DtVal.isLessThan(dt, vals[1], vals[0]);
+    try dt.push(.{ .bool = gt });
 }
 
 pub fn @"gte?"(dt: *DtMachine) !void {
-    const log = std.log.scoped(.@"gte?");
-
     const vals = try dt.popN(2);
-
-    if (vals[0].isInt() and vals[1].isInt()) {
-        const a = try vals[0].intoInt();
-        const b = try vals[1].intoInt();
-
-        try dt.push(.{ .bool = a >= b });
-        return;
-    }
-
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
-
-    try dt.push(.{ .bool = a >= b });
+    const gte = !DtVal.isLessThan(dt, vals[0], vals[1]);
+    try dt.push(.{ .bool = gte });
 }
 
 pub fn @"lt?"(dt: *DtMachine) !void {
-    const log = std.log.scoped(.@"lt?");
-
     const vals = try dt.popN(2);
-
-    if (vals[0].isInt() and vals[1].isInt()) {
-        const a = try vals[0].intoInt();
-        const b = try vals[1].intoInt();
-
-        try dt.push(.{ .bool = a < b });
-        return;
-    }
-
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
-
-    try dt.push(.{ .bool = a < b });
+    const lt = DtVal.isLessThan(dt, vals[0], vals[1]);
+    try dt.push(.{ .bool = lt });
 }
 
 pub fn @"lte?"(dt: *DtMachine) !void {
-    const log = std.log.scoped(.@"lte?");
-
     const vals = try dt.popN(2);
-
-    if (vals[0].isInt() and vals[1].isInt()) {
-        const a = try vals[0].intoInt();
-        const b = try vals[1].intoInt();
-
-        try dt.push(.{ .bool = a <= b });
-        return;
-    }
-
-    const a = vals[0].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
-    const b = vals[1].intoFloat() catch |e| return dt.rewindN(2, log, vals, e);
-
-    try dt.push(.{ .bool = a <= b });
+    const lte = !DtVal.isLessThan(dt, vals[1], vals[0]);
+    try dt.push(.{ .bool = lte });
 }
 
 pub fn boolAnd(dt: *DtMachine) !void {
@@ -1260,6 +1147,19 @@ pub fn rev(dt: *DtMachine) !void {
 
     // Some scalar value.
     try dt.push(val);
+}
+
+pub fn sort(dt: *DtMachine) !void {
+    const val = try dt.pop();
+
+    // Scalar value
+    if (!val.isQuote()) return try dt.push(val);
+
+    const quote = try val.intoQuote(dt);
+    const items = quote.items;
+    std.mem.sort(DtVal, items, dt, DtVal.isLessThan);
+
+    try dt.push(.{ .quote = quote });
 }
 
 pub fn quoteVal(dt: *DtMachine) !void {

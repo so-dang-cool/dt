@@ -8,6 +8,8 @@ const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 const Color = std.io.tty.Color;
 
+const builtins = @import("builtins.zig");
+
 const tokens = @import("tokens.zig");
 const Token = tokens.Token;
 
@@ -249,10 +251,10 @@ pub const DtVal = union(enum) {
     bool: bool,
     int: i64, // TODO: BigInteger?
     float: f64, // TODO: BigDecimal? Or floating point forever? Maybe decimal is more useful?
+    string: String,
     command: String,
     deferred_command: String,
     quote: Quote,
-    string: String,
 
     pub fn isBool(self: DtVal) bool {
         return switch (self) {
@@ -365,6 +367,134 @@ pub const DtVal = union(enum) {
                 return q;
             },
         };
+    }
+
+    pub fn isEqualTo(dt: *DtMachine, lhs: DtVal, rhs: DtVal) bool {
+        if (lhs.isBool() and rhs.isBool()) {
+            const a = lhs.intoBool(dt);
+            const b = rhs.intoBool(dt);
+
+            return a == b;
+        }
+
+        if (lhs.isInt() and rhs.isInt()) {
+            const a = lhs.intoInt() catch unreachable;
+            const b = rhs.intoInt() catch unreachable;
+
+            return a == b;
+        }
+
+        if ((lhs.isInt() or lhs.isFloat()) and (rhs.isInt() or rhs.isFloat())) {
+            const a = lhs.intoFloat() catch unreachable;
+            const b = rhs.intoFloat() catch unreachable;
+
+            return a == b;
+        }
+
+        if (lhs.isString() and rhs.isString()) {
+            const a = lhs.intoString(dt) catch unreachable;
+            const b = rhs.intoString(dt) catch unreachable;
+
+            return std.mem.eql(u8, a, b);
+        }
+
+        if (lhs.isCommand() and rhs.isCommand()) {
+            const a = lhs.intoString(dt) catch unreachable;
+            const b = rhs.intoString(dt) catch unreachable;
+
+            return std.mem.eql(u8, a, b);
+        }
+
+        if (lhs.isDeferredCommand() and rhs.isDeferredCommand()) {
+            const a = lhs.intoString(dt) catch unreachable;
+            const b = rhs.intoString(dt) catch unreachable;
+
+            return std.mem.eql(u8, a, b);
+        }
+
+        if (lhs.isQuote() and rhs.isQuote()) {
+            const quoteA = lhs.intoQuote(dt) catch unreachable;
+            const quoteB = rhs.intoQuote(dt) catch unreachable;
+
+            const as: []DtVal = quoteA.items;
+            const bs: []DtVal = quoteB.items;
+
+            if (as.len != bs.len) return false;
+
+            for (as, bs) |a, b| {
+                if (!DtVal.isEqualTo(dt, a, b)) return false;
+            }
+
+            // Length is equal and all values were equal
+            return true;
+        }
+
+        return false;
+    }
+
+    /// This provides the following "natural" ordering when vals are different types:
+    /// bool, int/float, string, command, deferred command, quote
+    ///
+    /// Strings are compared character-by-character (lexicographically), where
+    /// capital letters are "less than" lowercase letters. When one string is a
+    /// prefix of another, the shorter string is "less than" the other.
+    ///
+    /// (The same string rules apply to command and deferred command names.)
+    ///
+    /// Quotes are compared value-by-value. When one quote is a prefix of
+    /// another, the shorter quote is "less than" the other.
+    pub fn isLessThan(dt: *DtMachine, lhs: DtVal, rhs: DtVal) bool {
+
+        // We'll consider a bool comparison "less than" when lhs = false and rhs = true
+        if (lhs.isBool() and rhs.isBool()) return !lhs.intoBool(dt) and rhs.intoBool(dt);
+        if (lhs.isBool()) return true;
+
+        if (lhs.isInt() and rhs.isInt()) {
+            const a = lhs.intoInt() catch unreachable;
+            const b = rhs.intoInt() catch unreachable;
+            return a < b;
+        }
+        if ((lhs.isInt() or lhs.isFloat()) and (rhs.isInt() or rhs.isFloat())) {
+            const a = lhs.intoFloat() catch unreachable;
+            const b = rhs.intoFloat() catch unreachable;
+            return a < b;
+        }
+        if (lhs.isInt()) return true;
+        if (lhs.isFloat()) return true;
+
+        if (lhs.isString() and rhs.isString()) {
+            const a = lhs.intoString(dt) catch unreachable;
+            const b = rhs.intoString(dt) catch unreachable;
+            return std.mem.lessThan(u8, a, b);
+        }
+        if (lhs.isString()) return true;
+
+        if (lhs.isCommand() and rhs.isCommand()) {
+            const a = lhs.intoString(dt) catch unreachable;
+            const b = rhs.intoString(dt) catch unreachable;
+            return std.mem.lessThan(u8, a, b);
+        }
+        if (lhs.isCommand()) return true;
+
+        if (lhs.isDeferredCommand() and rhs.isDeferredCommand()) {
+            const a = lhs.intoString(dt) catch unreachable;
+            const b = rhs.intoString(dt) catch unreachable;
+            return std.mem.lessThan(u8, a, b);
+        }
+        if (lhs.isDeferredCommand()) return true;
+
+        if (lhs.isQuote() and rhs.isQuote()) {
+            const as = lhs.intoQuote(dt) catch unreachable;
+            const bs = rhs.intoQuote(dt) catch unreachable;
+
+            for (as.items, bs.items) |a, b| {
+                if (DtVal.isLessThan(dt, a, b)) return true;
+            }
+
+            if (as.items.len < bs.items.len) return true;
+        }
+
+        return false;
     }
 
     pub fn print(self: DtVal, writer: std.fs.File.Writer) !void {
