@@ -25,10 +25,14 @@ defs \FROZEN_DEFS :
       "<table id='stdlib'>"
 ] eval
 
+[ "<" split "&lt;" join
+  ">" split "&gt;" join
+] \html-escape def
+
 [[cmd]:
   "<tr>"
     "<td class='lighter'>" cmd "</td>"
-    "<td>" cmd usage "</td>"
+    "<td>" cmd usage html-escape "</td>"
   "</tr>"
 ] \cmd-row def
 
