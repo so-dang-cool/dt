@@ -138,6 +138,12 @@
 \while define
 
 
+### Unixy things ###
+
+[ args deq swap drop ] \shebang-args def!
+[ "» " p   read-line eval   repl ] \repl def!
+
+
 ### Parsing ###
 
 [ lines [ "," split ] map ]

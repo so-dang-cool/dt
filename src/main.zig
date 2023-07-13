@@ -48,18 +48,18 @@ pub fn main() !void {
 }
 
 fn handlePipedStdin(dt: *DtMachine) !void {
-    dt.handleCmd("pipe-thru-args") catch |e| return doneOrDie(dt, e);
+    dt.handleCmd("dt/pipe-thru-args") catch |e| return doneOrDie(dt, e);
 }
 
 fn handlePipedStdoutOnly(dt: *DtMachine) !void {
-    dt.handleCmd("run-args") catch |e| return doneOrDie(dt, e);
+    dt.handleCmd("dt/run-args") catch |e| return doneOrDie(dt, e);
 }
 
 fn readEvalPrintLoop(dt: *DtMachine) !void {
-    dt.handleCmd("run-args") catch |e| return doneOrDie(dt, e);
+    dt.handleCmd("dt/run-args") catch |e| return doneOrDie(dt, e);
 
     // TODO: Can this catch be done in the stdlib? Other people need to catch errors too!
-    while (true) dt.handleCmd("main-repl") catch |e| switch (e) {
+    while (true) dt.handleCmd("dt/main-repl") catch |e| switch (e) {
         error.EndOfStream => {
             try stderr.print("\n", .{});
             return;
