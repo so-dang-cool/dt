@@ -19,7 +19,6 @@
     ""
     "More info at https://dt.plumbing"
   ] pls
-  0 exit
 ] \print-help def
 
 [ [ print-help 0 exit ]   "--help" handle-flag ] \--help def
