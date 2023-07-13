@@ -3,13 +3,11 @@
 [ [ action flag ]:
   args [ flag eq? ] any?
   action swap do?
-] \handle-flag def
+] \dt/handle-flag def
 
-[ "dt " p version pl ] \print-version def
+[ "dt " p version pl ] \dt/print-version def
 
-[ [ print-version 0 exit ]   "--version" handle-flag ] \--version def
-
-[ print-version
+[ dt/print-version
   [ "USAGE: dt FLAGS CODE..."
     "dt is \"duct tape\" for your unix pipes."
     ""
@@ -17,36 +15,30 @@
     "operations. It can also excel in short shebang scripts, or be explored as"
     "an interactive REPL (read-eval-print loop)."
     ""
-    "More info at https://dt.plumbing"
+    "More info at https:::dt.plumbing"
   ] pls
-] \print-help def
+] \dt/print-help def
 
-[ [ print-help 0 exit ]   "--help" handle-flag ] \--help def
+[ [ dt/print-help 0 exit ]   "--help" dt/handle-flag
+  [ dt/print-version 0 exit ]   "--version" dt/handle-flag
+] \dt/handle-flags def
 
-[ --help --version ] \handle-flags def
-
-[ handle-flags   args unwords eval ] \run-args def!
+[ dt/handle-flags   args unwords eval ] \dt/run-args def!
 
 
 ### PIPE things ###
 
-[ read-lines   run-args ] \pipe-thru-args def!
-
-
-### Shebang things ###
-
-[ args deq swap drop ] \shebang-args def!
+[ read-lines   dt/run-args ] \dt/pipe-thru-args def!
 
 
 ### REPL things ###
 
-[ red "dt " ep version epl   norm inspire epl ] \repl-greet def
+[ red "dt " ep version epl   norm inspire epl ] \dt/repl-greet def
 
+# Definitions only used in the dt REPL
 [ \quit \.q def
   \quit \exit def
   # TODO: define a help command
-] \repl-prelude def
+] \dt/repl-prelude def
 
-[ handle-flags   repl-greet   repl-prelude   repl ] \main-repl def!
-
-[ "» " p   read-line eval   repl ] \repl def!
+[ dt/handle-flags   dt/repl-greet   dt/repl-prelude   repl ] \dt/main-repl def!
