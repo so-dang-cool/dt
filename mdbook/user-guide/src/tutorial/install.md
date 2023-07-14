@@ -1,5 +1,6 @@
 # Installation
 
+
 ## Install from a package manager
 
 Installing dt from a package manager for your operating system **will be the
@@ -10,6 +11,25 @@ Currently this is waiting on:
 1. The release of Zig 0.11.+
 2. Adoption of Zig 0.11.+ by package managers
 3. Package maintainers adding support
+
+
+## Getting updates
+
+If you are not installing from a package manager (As of 2023-07, no one is!)
+you won't get updates. The project intends for installations from package
+managers to be the primary method of vending dt, and no independent update tool
+or script is planned.
+
+If you already have an account at GitHub, it's recommended to subscribe only to
+release notifications for the GitHub project.
+
+1. Navigate to the project at [https://github.com/booniepepper/dt](https://github.com/booniepepper/dt)
+2. Find and click the "Watch" button
+3. Choose "Custom" and then check only the "Releases" checkbox
+
+It's not critical to follow every update, but the notifications can be useful
+as an occasional reminder until your package manager is supported.
+
 
 ## Download binaries
 
@@ -27,9 +47,6 @@ The binares are produced in the context of github CI/CD workflows, and not
 produced on random laptops. They are "deployed" as attachments to releases
 automatically.
 
-Please set yourself a reminder to check for updates in a month or so! dt is
-being actively developed, but is not available from package managers yet, so
-you don't get automated updates.
 
 ## Building from source
 
