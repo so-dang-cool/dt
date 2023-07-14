@@ -65,6 +65,7 @@ cross-release() {
     local triples=(
         aarch64-linux-gnu
         aarch64-linux-musleabi
+        aarch64-macos-none
         arm-linux-musleabi
         arm-linux-musleabihf
         x86-linux-gnu
@@ -86,6 +87,7 @@ cross-release() {
         wasm32-wasi-musl
         x86_64-linux-gnu
         x86_64-linux-musl
+        x86_64-macos-none
     )
 
     for triple in "${triples[@]}"; do
