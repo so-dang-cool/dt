@@ -80,12 +80,12 @@ Hello Harold!
 ```
 
 We've used `:` to bind a single value to `name`, and used `def` to bind (and
-re-bind!) the execution of a quote of values (including commands!) to `greet`.
-Coming from other languages, `:` will fill the role of binding "variables" and
-`def` will fill the role of defining "functions" or "procedures." In dt terms,
-we'll call these both definitions of commands.
+re-bind!) the execution of a quote of values (including the `name` command!) to
+`greet`. Coming from other languages, `:` will fill the role of binding
+"variables" and `def` will fill the role of defining "functions." In dt terms,
+we'll call both of these definitions commands.
 
-Let's change the name:
+Let's redefine `name` and `greet` again:
 
 ```
 » "Bernice" \name:
@@ -96,6 +96,16 @@ Hello Bernice!
 Here we can see that the `name` we referenced in our `greet` definition is a
 lazily-evaluated lookup, and the second definition of `name` shadows the previous
 definition going forward.
+
+> Pro tip: You can shadow definitions inside quotes and command definitions, or
+even reference commands that haven't been defined yet. Use this with extreme
+prejudice though. It makes the language extremely hackable: you can redefine
+printing or newlines and have a global effect! But, relying on this too much
+leads to extreme wackiness and inability to understand the program state.
+>
+> This redefining behavior departs from similar languages like Forth where you
+can redefine what 3 means (in dt, you can't) but you can't redefine what a past
+reference was (in dt, you can).
 
 The re-definition gives a feel of mutation to the definition, but the
 underlying value cannot be altered, only re-bound. Let's try it out with
