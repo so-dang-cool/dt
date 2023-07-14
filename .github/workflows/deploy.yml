@@ -26,6 +26,15 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v1
+        with:
+          mdbook-version: 'latest'
+
+      - name: Run mdBook (user-guide)
+        working-directory: './mdbook/user-guide/'
+        run: mdbook build
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
