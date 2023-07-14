@@ -6,8 +6,7 @@
 # The Basics
 
 - [Installation](./tutorial/install.md)
-- [Running a REPL](./tutorial/repl.md)
-- [Language basics](./tutorial/language.md)
+- [Exploring the REPL](./tutorial/repl.md)
 - [Pipes and Shebangs](./tutorial/pipes-and-shebangs.md)
 
 

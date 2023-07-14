@@ -1,4 +1,0 @@
-# Language basics
-
-Coming soon.
-
