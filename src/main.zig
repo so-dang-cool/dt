@@ -18,7 +18,7 @@ const DtMachine = interpret.DtMachine;
 const builtins = @import("builtins.zig");
 
 // TODO: Change to @import when it's supported for zon
-pub const version = "1.1.0"; // Update in build.zig.zon as well.
+pub const version = "1.1.1"; // Update in build.zig.zon as well.
 
 const stdlib = @embedFile("stdlib.dt");
 const dtlib = @embedFile("dt.dt");
