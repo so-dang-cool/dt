@@ -159,6 +159,6 @@
 
 ### REPL Helpers ###
 
-[ defs [ [ def ]: green def p   norm "\t" p   def usage pl ] each ]
+[ defs [ [ def-name ]: green def-name p norm "\t" p def-name usage pl ] each ]
 "( -- ) Print commands and their usage"
 \help define
