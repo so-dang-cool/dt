@@ -159,6 +159,6 @@
 
 ### REPL Helpers ###
 
-[ defs [ dup usage swap green p norm "\t" p pl ] each ]
+[ defs [ [ def ]: green def p   norm "\t" p   def usage pl ] each ]
 "( -- ) Print commands and their usage"
 \help define
