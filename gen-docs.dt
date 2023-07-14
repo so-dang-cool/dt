@@ -37,6 +37,7 @@ defs \FROZEN_DEFS :
 ] \cmd-row def
 
 FROZEN_DEFS
+  ["dt/" starts-with? not] filter
   [\cmd-row doin   "" join] map
   "\n  " join
   push
