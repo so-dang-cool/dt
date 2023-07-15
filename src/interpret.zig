@@ -1,25 +1,22 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
+const Color = std.io.tty.Color;
 const ArrayList = std.ArrayList;
 const Stack = std.SinglyLinkedList;
+const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
-const Color = std.io.tty.Color;
-
-const builtins = @import("builtins.zig");
-
-const tokens = @import("tokens.zig");
-const Token = tokens.Token;
 
 const string = @import("string.zig");
 const String = string.String;
 
+const Token = @import("tokens.zig").Token;
+
 const inspiration = @embedFile("inspiration");
 
-pub const Dictionary = StringHashMap(Command);
 pub const Quote = ArrayList(DtVal);
+pub const Dictionary = StringHashMap(Command);
 
 pub const DtError = error{
     TooManyRightBrackets,
@@ -33,10 +30,10 @@ pub const DtError = error{
     IntegerOverflow,
     IntegerUnderflow,
 
-    NoCoersionToInteger,
-    NoCoersionToFloat,
-    NoCoersionToString,
-    NoCoersionToCommand,
+    NoCoercionToInteger,
+    NoCoercionToFloat,
+    NoCoercionToString,
+    NoCoercionToCommand,
 
     ProcessNameUnknown,
 };
@@ -291,7 +288,7 @@ pub const DtVal = union(enum) {
             .bool => |b| if (b) 1 else 0,
             .float => |f| @as(i64, @intFromFloat(f)),
             .string => |s| std.fmt.parseInt(i64, s, 10),
-            else => DtError.NoCoersionToInteger,
+            else => DtError.NoCoercionToInteger,
         };
     }
 
@@ -309,7 +306,7 @@ pub const DtVal = union(enum) {
             .bool => |b| if (b) 1 else 0,
             .int => |i| @as(f64, @floatFromInt(i)),
             .string => |s| std.fmt.parseFloat(f64, s),
-            else => DtError.NoCoersionToInteger,
+            else => DtError.NoCoercionToInteger,
         };
     }
 
@@ -346,7 +343,7 @@ pub const DtVal = union(enum) {
             .quote => |q| switch (q.items.len) {
                 0 => "",
                 1 => q.items[0].intoString(state),
-                else => DtError.NoCoersionToString,
+                else => DtError.NoCoercionToString,
             },
         };
     }

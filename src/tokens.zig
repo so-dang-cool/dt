@@ -1,9 +1,6 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
-
-const string = @import("string.zig");
-
+const Allocator = std.mem.Allocator;
 const stderr = std.io.getStdErr().writer(); // TODO: Remove
 
 const specialChars = .{
