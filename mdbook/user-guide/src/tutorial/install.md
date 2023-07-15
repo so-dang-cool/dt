@@ -54,15 +54,13 @@ Prerequisites:
 
 1. [Install Zig 0.11.+](https://ziglang.org/download/)
    _(As of 2023-07, this requires the "master" release of Zig)_
-2. If you also want to run tests, you'll need to install
-   [a Rust toolchain](https://rustup.rs/).
 
 Clone and build:
 
 ```
 git clone https://github.com/booniepepper/dt.git
 cd ./dt
-./build release
+zig build dt -Doptimize=ReleaseSmall
 ```
 
 The resulting binary will be available in `./zig-out/bin/dt`.
