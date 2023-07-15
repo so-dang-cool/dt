@@ -148,7 +148,7 @@ test "parse hello.dt" {
     try expected.append(Token{ .deferred_term = "greet" });
     try expected.append(Token{ .term = "def" });
 
-    const helloFile = @embedFile("test/hello.dt");
+    const helloFile = @embedFile("tests/hello.dt");
     var tokens = Token.parse(std.testing.allocator, helloFile);
 
     var i: u8 = 0;

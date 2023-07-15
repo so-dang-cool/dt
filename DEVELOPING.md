@@ -9,6 +9,3 @@ and do cross-compilation as well.
 ## Requirements
 
 Zig 0.11.*
-
-Rust toolchain that's recent-ish
-

@@ -103,4 +103,10 @@ fn readShebangFile(allocator: Allocator) !?[]const u8 {
 
 test {
     std.testing.refAllDecls(@This());
+    _ = @import("tests/bool_tests.zig");
+    _ = @import("tests/dt_args_basic.zig");
+    _ = @import("tests/dtsh_run_basic.zig");
+    _ = @import("tests/def_scope_tests.zig");
+    _ = @import("tests/project_euler_tests.zig");
+    _ = @import("tests/dtsh_interactive_basic.zig");
 }

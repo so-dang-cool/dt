@@ -10,7 +10,7 @@ required_zig_version='0.11.0'
 help() {
     >&2 echo "USAGE: $(basename "$0") [clean|compile|release|test|cross-clean|cross-release|cross-tar]..."
     >&2 echo "A simple build will be './build release'"
-    >&2 echo "Compiling requires Zig ${required_zig_version}, and tests require a recent Rust toolchain installation."
+    >&2 echo "Compiling requires Zig ${required_zig_version}."
 }
 
 require-zig() {
@@ -31,8 +31,6 @@ require-zig() {
 
 clean() {
     rm -rf ./zig-cache ./zig-out
-    cd "$project_root"/old-rust-tests || exit 1
-    cargo clean
 }
 
 compile() {
@@ -45,8 +43,6 @@ test() {
     require-zig
 
     zig build test
-    cd "$project_root"/old-rust-tests || exit 1
-    cargo test
 }
 
 release() {
