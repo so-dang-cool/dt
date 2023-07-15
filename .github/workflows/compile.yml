@@ -2,25 +2,25 @@ name: compile
 
 on:
   push:
-    branches:
-      - core
+    branches: [main]
+    paths: ["**.zig"]
+
   pull_request:
-    branches:
-      - core
+    branches: [main]
+    paths: ["**.zig"]
 
 jobs:
   compile:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup Zig
+      - name: Set up Zig
         uses: goto-bus-stop/setup-zig@v2.1.0
 
-      - name: Checkout project
+      - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Build and Test
-        run: ./build compile test release
-
-      - name: Cross Compile
-        run: ./build cross-release
+      - name: Run tests and cross-compile dt
+        run: |
+          zig env
+          zig build -Doptimize=ReleaseSmall

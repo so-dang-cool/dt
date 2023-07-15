@@ -2,28 +2,25 @@ on:
   release:
     types: [created]
 
-name: Add artifacts to release
-
 jobs:
-  generate:
-    name: Create release artifacts
+  release:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Setup Zig
+      - name: Set up Zig
         uses: goto-bus-stop/setup-zig@v2.1.0
 
-      - name: Checkout project
+      - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Build and Test
-        run: ./build compile test release
+      - name: Run tests and cross-compile dt
+        run: |
+          zig env
+          zig build -Doptimize=ReleaseSmall
 
-      - name: Cross Compile
-        run: ./build cross-release cross-tar
-
-      - name: Upload the artifacts
+      - name: Upload artifacts
         uses: skx/github-action-publish-binaries@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: 'target/*.tgz'
+          args: "zig-out/bin/*.tgz"
