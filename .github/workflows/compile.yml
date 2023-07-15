@@ -3,11 +3,11 @@ name: compile
 on:
   push:
     branches: [main]
-    paths: ["**.zig"]
+    paths: ["**.zig", "**.dt"]
 
   pull_request:
     branches: [main]
-    paths: ["**.zig"]
+    paths: ["**.zig", "**.dt"]
 
 jobs:
   compile:
