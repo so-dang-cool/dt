@@ -3,11 +3,15 @@
 # `dt`
 
 It's duct tape for your unix pipes. A programming language for doing small
-stuff fast and easy.
+stuff fast, easy, and readable.
 
 In the words of [Red Green](https://www.redgreen.com):
 
 > Remember, it's only temporary... unless it works!
+
+Note: [The dt User Guide](https://dt.plumbing/user-guide/) exists but is still
+in progress. Basic usage is shown in the instructions below.
+
 
 ## Use in pipes
 
@@ -102,18 +106,11 @@ Now, this is only temporary... unless it works.
 The above example assumes a bash-like shell. Details on the syntax and
 configuration files to set an alias that persists will vary by your shell.
 
-## Downloads
 
-Download assets from [releases](https://github.com/booniepepper/dt/releases/) and
-put them somewhere on your PATH.
+## Installing
 
-An installation script may come soon.
+* https://dt.plumbing/user-guide/tutorial/install.html
 
-## Building from source
-
-To build from source, clone the repo and run `./build help` for instructions.
-The project currently builds with Zig 0.11.+.
-The resulting binary for your machine will be produced as `./zig-out/bin/dt`.
 
 ## The nerdy stuff
 
