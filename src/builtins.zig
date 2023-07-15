@@ -1,24 +1,20 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
-const Stack = std.SinglyLinkedList;
-
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
-const builtin = @import("builtin");
-
-const Token = @import("tokens.zig").Token;
-
-const main = @import("main.zig");
-const string = @import("string.zig");
-
 const interpret = @import("interpret.zig");
+const DtVal = interpret.DtVal;
 const Quote = interpret.Quote;
 const Error = interpret.DtError;
-const DtVal = interpret.DtVal;
 const DtMachine = interpret.DtMachine;
+
+const builtin = @import("builtin");
+
+const main = @import("main.zig");
+
+const Token = @import("tokens.zig").Token;
 
 const bangDescription = "If nested, any commands or variables defined will be available in the calling scope.";
 
@@ -68,7 +64,7 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define(".s", "( -- ) Print the state of the process: all available values.", .{ .builtin = @".s" });
 
     try machine.define("read-line", "( -- <line> ) Read a string from standard input until newline.", .{ .builtin = @"read-line" });
-    try machine.define("read-lines", "( -- [<line>] ) Read strings, separated by newlines, from standard input until EOF. (For example: until ctrl+d in a unixy system, or until a pipe is closed.)", .{ .builtin = @"read-lines" });
+    try machine.define("read-lines", "( -- [<line>] ) Read strings, separated by newlines, from standard input until EOF. (For example: until ctrl+d in a Unix-like system, or until a pipe is closed.)", .{ .builtin = @"read-lines" });
     try machine.define("procname", "( -- <name> ) Produce the name of the current process. This can be used, for example, to get the name of a shebang script.", .{ .builtin = procname });
     try machine.define("args", "( -- [<arg>] ) Produce the arguments provided to the process when it was launched.", .{ .builtin = args });
     try machine.define("eval", "( <code> -- ? ) Evaluate a string as dt commands and execute them.", .{ .builtin = eval });
@@ -82,7 +78,7 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("abs", "( <a> -- <b> ) Determine the absolute value of a number.", .{ .builtin = abs });
     try machine.define("rand", "( -- <a> ) Produces a random integer.", .{ .builtin = rand });
 
-    try machine.define("eq?", "( <a> <b> -- <bool> ) Determine if two values are equal. Works for most types with coersion.", .{ .builtin = @"eq?" });
+    try machine.define("eq?", "( <a> <b> -- <bool> ) Determine if two values are equal. Works for most types with coercion.", .{ .builtin = @"eq?" });
     try machine.define("gt?", "( <a> <b> -- <bool> ) Determine if a value is greater than another. In standard notation: a > b", .{ .builtin = @"gt?" });
     try machine.define("gte?", "( <a> <b> -- <bool> ) Determine if a value is greater-than/equal-to another. In standard notation: a ≧ b", .{ .builtin = @"gte?" });
     try machine.define("lt?", "( <a> <b> -- <bool> ) Determine if a value is less than another. In standard notation: a < b", .{ .builtin = @"lt?" });

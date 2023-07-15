@@ -1,21 +1,13 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
 const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
-const File = std.fs.File;
-
-const Token = @import("tokens.zig").Token;
-
-const interpret = @import("interpret.zig");
-const DtError = interpret.DtError;
-const DtDictionary = interpret.Dictionary;
-const DtCommand = interpret.Command;
-const DtAction = interpret.Action;
-const DtMachine = interpret.DtMachine;
 
 const builtins = @import("builtins.zig");
+
+const interpret = @import("interpret.zig");
+const DtMachine = interpret.DtMachine;
 
 // TODO: Change to @import when it's supported for zon
 pub const version = "1.1.1"; // Update in build.zig.zon as well.
@@ -111,4 +103,10 @@ fn readShebangFile(allocator: Allocator) !?[]const u8 {
 
 test {
     std.testing.refAllDecls(@This());
+    _ = @import("tests/bool_tests.zig");
+    _ = @import("tests/dt_args_basic.zig");
+    _ = @import("tests/dtsh_run_basic.zig");
+    _ = @import("tests/def_scope_tests.zig");
+    _ = @import("tests/project_euler_tests.zig");
+    _ = @import("tests/dtsh_interactive_basic.zig");
 }

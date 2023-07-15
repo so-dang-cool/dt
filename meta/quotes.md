@@ -10,11 +10,11 @@
 
 > But I have to tell you that I don't evaluate the success of Perl in terms of how many people like me. When I integrate these curves, I count the number of people I've helped get their job done.
 
-# [The humble programmer](https://www.cs.utexas.edu/users/EWD/ewd03xx/EWD340.PDF), Edsger W. Djikstra
+# [The humble programmer](https://www.cs.utexas.edu/users/EWD/ewd03xx/EWD340.PDF), Edsger W. Dijkstra
 
 > As an aside I would like to insert a warning to those who identify the difficulty of the programming task with the struggle against the inadequacies of our current tools, because they might conclude that, once our tools will be much more adequate, programming will no longer be a problem. Programming will remain very difficult, because once we have freed ourselves from the circumstantial cumbersomeness, we will find ourselves free to tackle the problems that are now well beyond our programming capacity.
 
-# [How do we tell truths that might hurt?](https://www.cs.utexas.edu/users/EWD/ewd04xx/EWD498.PDF), Edsger W. Djikstra
+# [How do we tell truths that might hurt?](https://www.cs.utexas.edu/users/EWD/ewd04xx/EWD498.PDF), Edsger W. Dijkstra
 
 > The tools we use have a profound (and devious!) influence on our thinking habits, and, therefore, our thinking abilities.
 
@@ -24,6 +24,6 @@
 
 _Note: [My](https://github.com/booniepepper) first language was BASIC._
 
-# [The end of Computing Science?](https://www.cs.utexas.edu/users/EWD/ewd13xx/EWD1304.PDF), Edsger W. Djikstra
+# [The end of Computing Science?](https://www.cs.utexas.edu/users/EWD/ewd13xx/EWD1304.PDF), Edsger W. Dijkstra
 
 > I would therefore like to posit that computing's central challenge, viz. "How not to make a mess of it", has <u>not</u> been met. On the contrary, most of our systems are much more complicated than can be considered healthy, and are too messy and chaotic to be used in comfort and confidence. The average customer of the computing industry has been served so poorly that he expects his system to crash all the time, and we witness a massive world-wide distribution of bug-ridden software for which we should be deeply ashamed.

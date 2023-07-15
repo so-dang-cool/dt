@@ -62,29 +62,29 @@ $ dt
 dt 1.x.x
 Now, this is only temporary... unless it works.
 » # Comments start with #
-» 
+»
 » 1 1 + println
 2
-» 
+»
 » # Printing is common, so there are a bunch of printing shorthands.
 » # "p" is print, "pl" is print line, "pls" is print lines (i.e. of a list of values)
 » # Let's define a command that consumes a value, prints it, then returns its double.
-» 
+»
 » [ \n :   n p " " p   n 2 *] \print-and-double def
-» 
-» 
+»
+»
 » # And let's do it... 7 times!
-» 
+»
 » 1 \print-and-double 7 times   drop
 1 2 4 8 16 32 64
-» 
-» 
+»
+»
 » # You can conditionally execute code
-» 
+»
 » ["hi" pl] false do?
 » ["bye" pl] true do?
 bye
-» 
+»
 » quit
 ```
 
@@ -96,7 +96,7 @@ $ alias dtsh='rlwrap dt'
 $ dtsh
 dt 1.x.x
 Now, this is only temporary... unless it works.
-» 
+»
 ```
 
 The above example assumes a bash-like shell. Details on the syntax and
@@ -112,8 +112,8 @@ An installation script may come soon.
 ## Building from source
 
 To build from source, clone the repo and run `./build help` for instructions.
-The project currently builds with Zig 0.11.+ and a recent Cargo toolchain. The
-resulting binary for your machine will be produced as `./zig-out/bin/dt`
+The project currently builds with Zig 0.11.+.
+The resulting binary for your machine will be produced as `./zig-out/bin/dt`.
 
 ## The nerdy stuff
 
@@ -129,7 +129,7 @@ family. That means it's a functional programming language (functions are
 first-class, values have immutable semantics) with a concatenative
 style rather than the traditional applicative style.
 
-See also Jon Purdy's [_Why Concatanative Programming Matters_](https://evincarofautumn.blogspot.com/2012/02/why-concatenative-programming-matters.html)
+See also Jon Purdy's [_Why Concatenative Programming Matters_](https://evincarofautumn.blogspot.com/2012/02/why-concatenative-programming-matters.html)
 
 The `dt` language has an imperative _feel_ in the sense that all "functions"
 are linguistically imperative "commands." There is no distinguishing from pure

@@ -1,9 +1,6 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
-
-const string = @import("string.zig");
-
+const Allocator = std.mem.Allocator;
 const stderr = std.io.getStdErr().writer(); // TODO: Remove
 
 const specialChars = .{
@@ -151,7 +148,7 @@ test "parse hello.dt" {
     try expected.append(Token{ .deferred_term = "greet" });
     try expected.append(Token{ .term = "def" });
 
-    const helloFile = @embedFile("test/hello.dt");
+    const helloFile = @embedFile("tests/hello.dt");
     var tokens = Token.parse(std.testing.allocator, helloFile);
 
     var i: u8 = 0;
