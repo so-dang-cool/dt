@@ -13,7 +13,7 @@ shebang-args pop to-int \n:
   \usage-fail n not do?
 
 n 1 - \n:
-  \usage-fail 0 n lt? do?
+  \usage-fail n 0 lt? do?
 
 0 pl
 
