@@ -157,8 +157,9 @@
 "( <cond> <message> -- ) Naive assertion that requires a condition to be truthy. If falsy, it will print a message to standard error and fail with an exit code of 1."
 \assert-true define
 
+
 ### REPL Helpers ###
 
-[ defs [ [ def-name ]: green def-name p norm "\t" p def-name usage pl ] each ]
+[ defs [ [ name ]: green name p norm "\t" p name usage pl ] each ]
 "( -- ) Print commands and their usage"
 \help define
