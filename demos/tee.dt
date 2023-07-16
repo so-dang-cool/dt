@@ -1,6 +1,6 @@
 #!/usr/bin/env dt
 
-read-lines unlines   \stdin :
+readlns unlines   \stdin :
 args pop   \file :
 
 stdin pl

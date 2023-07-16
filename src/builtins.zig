@@ -63,8 +63,8 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("norm", "( -- ) Print a control character to reset any styling to standard output and standard error.", .{ .builtin = norm });
     try machine.define(".s", "( -- ) Print the state of the process: all available values.", .{ .builtin = @".s" });
 
-    try machine.define("read-line", "( -- <line> ) Read a string from standard input until newline.", .{ .builtin = @"read-line" });
-    try machine.define("read-lines", "( -- [<line>] ) Read strings, separated by newlines, from standard input until EOF. (For example: until ctrl+d in a Unix-like system, or until a pipe is closed.)", .{ .builtin = @"read-lines" });
+    try machine.define("rl", "( -- <line> ) Read a string from standard input until newline.", .{ .builtin = rl });
+    try machine.define("rls", "( -- [<line>] ) Read strings, separated by newlines, from standard input until EOF. (For example: until ctrl+d in a Unix-like system, or until a pipe is closed.)", .{ .builtin = rls });
     try machine.define("procname", "( -- <name> ) Produce the name of the current process. This can be used, for example, to get the name of a shebang script.", .{ .builtin = procname });
     try machine.define("args", "( -- [<arg>] ) Produce the arguments provided to the process when it was launched.", .{ .builtin = args });
     try machine.define("eval", "( <code> -- ? ) Evaluate a string as dt commands and execute them.", .{ .builtin = eval });
@@ -486,18 +486,18 @@ pub fn @".s"(dt: *DtMachine) !void {
     try stderr.print("]\n", .{});
 }
 
-pub fn @"read-line"(dt: *DtMachine) !void {
+pub fn rl(dt: *DtMachine) !void {
     var line = ArrayList(u8).init(dt.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
 
     try dt.push(.{ .string = line.items });
 }
 
-pub fn @"read-lines"(dt: *DtMachine) !void {
+pub fn rls(dt: *DtMachine) !void {
     var lines = Quote.init(dt.alloc);
 
     while (true) {
-        @"read-line"(dt) catch |err| switch (err) {
+        rl(dt) catch |err| switch (err) {
             error.EndOfStream => break,
             else => return err,
         };
