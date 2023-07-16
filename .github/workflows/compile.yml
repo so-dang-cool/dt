@@ -2,12 +2,12 @@ name: compile
 
 on:
   push:
-    branches: [main]
-    paths: ["**.zig", "**.dt"]
+    branches: [core]
+    paths: ["**.zig", "**.dt", "src/inspiration", ".github/workflows/*.yml"]
 
   pull_request:
-    branches: [main]
-    paths: ["**.zig", "**.dt"]
+    branches: [core]
+    paths: ["**.zig", "**.dt", "src/inspiration", ".github/workflows/*.yml"]
 
 jobs:
   compile:
