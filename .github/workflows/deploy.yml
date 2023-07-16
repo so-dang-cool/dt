@@ -26,6 +26,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
+      - name: Move favicons
+        run: 'cp favicon/* .'
+
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
         with:
