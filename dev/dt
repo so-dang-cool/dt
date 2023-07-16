@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -eu
+
+DT_ROOT="$(dirname "$0")/.."
+DT="$DT_ROOT/zig-out/bin/dt"
+
+# Running this outside the project root is likely an error:
+if [[ $DT_ROOT != dev/.. ]]; then
+  >&2 echo "ERROR: $0 is intended to be run when developing dt."
+  >&2 echo "If you're just trying to run a dt built from source:"
+  >&2 echo "- Navigate to $DT_ROOT"
+  >&2 echo "- Run './build release' to compile a release executable (Requires Zig 0.11.*)"
+  >&2 echo "- Use the result at: $DT"
+  exit 1
+fi
+
+zig build dt \
+  && >&2 echo 'INFO: dt compiled (zig build exited successfully)' \
+  && exec rlwrap "$DT" "$@"
