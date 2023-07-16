@@ -519,7 +519,7 @@ pub const Command = struct {
     description: String,
     action: Action,
 
-    fn run(self: Command, state: *DtMachine) anyerror!void {
+    pub fn run(self: Command, state: *DtMachine) anyerror!void {
         switch (self.action) {
             .builtin => |b| return try b(state),
             .quote => |quote| {

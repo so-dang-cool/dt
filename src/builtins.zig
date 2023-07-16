@@ -6,6 +6,7 @@ const stderr = std.io.getStdErr().writer();
 
 const interpret = @import("interpret.zig");
 const DtVal = interpret.DtVal;
+const Command = interpret.Command;
 const Quote = interpret.Quote;
 const Error = interpret.DtError;
 const DtMachine = interpret.DtMachine;
@@ -48,6 +49,7 @@ pub fn defineAll(machine: *DtMachine) !void {
     try machine.define("doin", "( <context> <action> -- ) Execute an action in a context.", .{ .builtin = doin });
     try machine.define("do!?", "( <action> <condition> -- ? ) Conditionally execute an action. " ++ bangDescription, .{ .builtin = @"do!?" });
     try machine.define("do?", "( <action> <condition> -- ? ) Conditionally execute an action.", .{ .builtin = @"do?" });
+    try machine.define("loop", "( <action> -- ? ) Execute an action forever until it fails.", .{ .builtin = loop });
 
     try machine.define("dup", "( <a> -- <a> <a> ) Duplicate the most recent value.", .{ .builtin = dup });
     try machine.define("drop", "( <a> -- ) Drop the most recent value.", .{ .builtin = drop });
@@ -405,6 +407,20 @@ pub fn @":"(dt: *DtMachine) !void {
         try quote.append(val);
         try dt.define(term, term, .{ .quote = quote });
     }
+}
+
+pub fn loop(dt: *DtMachine) !void {
+    const val = try dt.pop();
+    switch (val) {
+        .command => |cmd| return while (true) try dt.handleCmd(cmd),
+        .deferred_command => |cmd| return while (true) try dt.handleCmd(cmd),
+        else => {},
+    }
+
+    const quote = try val.intoQuote(dt);
+    const cmd = Command{ .name = "anonymous loop", .description = "", .action = .{ .quote = quote } };
+
+    while (true) try cmd.run(dt);
 }
 
 pub fn dup(dt: *DtMachine) !void {
