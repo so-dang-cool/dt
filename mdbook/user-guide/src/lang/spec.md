@@ -1,4 +1,1 @@
-# Language specification
-
-Coming soon.
-
+../../../not-yet.md

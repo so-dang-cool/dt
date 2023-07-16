@@ -1,4 +1,1 @@
-# Writing effectively
-
-Coming soon.
-
+../../../not-yet.md
