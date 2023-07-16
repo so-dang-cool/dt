@@ -100,8 +100,12 @@ definition going forward.
 > Pro tip: You can shadow definitions inside quotes and command definitions, or
 even reference commands that haven't been defined yet. Use this with extreme
 prejudice though. It makes the language extremely hackable: you can redefine
-printing or newlines and have a global effect! But, relying on this too much
-leads to extreme wackiness and inability to understand the program state.
+printing or reading and have a global effect!
+>
+> Relying on this too much will lead to extreme wackiness and a general
+inability to understand the program state. This intentionally prevents dt from
+becoming some big mainstream language with a huge ecosystem of libraries. It's
+really just for pipes and small scripts.
 >
 > This redefining behavior departs from similar languages like Forth where you
 can redefine what 3 means (in dt, you can't) but you can't redefine what a past
