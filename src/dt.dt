@@ -12,10 +12,16 @@
     "dt is \"duct tape\" for your unix pipes."
     ""
     "dt can be used in pipes to transform data with general purpose programming"
-    "operations. It can also excel in short shebang scripts, or be explored as"
-    "an interactive REPL (read-eval-print loop)."
+    "operations. It can also excel in short shebang scripts, or be explored as an"
+    "interactive REPL (read-eval-print loop)."
     ""
-    "More info at https:::dt.plumbing"
+    "The default behavior of dt when standard input comes from a pipe is to read all"
+    "lines as a quote of strings. If you need to do something more manual, use stream"
+    "as the first argument."
+    ""
+
+    ""
+    "More info at https://dt.plumbing"
   ] pls
 ] \dt/print-help def
 
@@ -23,12 +29,21 @@
   [ dt/print-version 0 exit ]   "--version" dt/handle-flag
 ] \dt/handle-flags def
 
-[ dt/handle-flags   args unwords eval ] \dt/run-args def!
+[ args unwords words
+  dup len 0 neq?   \has-args:
+  # Drop the first arg if it's 'stream'
+  [ deq swap   \first-arg:
+    first-arg "stream" neq?   \keep:
+    [ first-arg swap enq ] keep do?
+  ] has-args do?
+] \dt/args def
+
+[ dt/handle-flags   dt/args unwords eval ] \dt/run-args def!
 
 
 ### PIPE things ###
 
-[ read-lines   dt/run-args ] \dt/pipe-thru-args def!
+[ readlns   dt/run-args ] \dt/pipe-thru-args def!
 
 
 ### REPL things ###

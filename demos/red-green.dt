@@ -1,0 +1,9 @@
+#!/usr/bin/env dt
+
+# An example of mutual recursion. Pipe text (or direct a file into) this
+# script. Kinda like `cat` or `lolcat`.
+
+[ rl  red pl  green-line ] \red-line def
+[ rl  green pl  red-line ] \green-line def
+
+red-line

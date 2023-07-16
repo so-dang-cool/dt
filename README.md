@@ -43,7 +43,7 @@ A naive tee implementation:
 ```
 #!/usr/bin/env dt
 
-read-lines unlines   \stdin :
+readln unlines   \stdin :
 args pop   \file :
 
 stdin pl

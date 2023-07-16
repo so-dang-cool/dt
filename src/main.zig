@@ -28,15 +28,29 @@ pub fn main() !void {
     const stdinPiped = !std.io.getStdIn().isTty();
     const stdoutPiped = !std.io.getStdOut().isTty();
 
-    if (try readShebangFile(arena.allocator())) |fileContents| {
-        return machine.loadFile(fileContents) catch |e| return doneOrDie(&machine, e);
-    } else if (stdinPiped) {
+    const firstArgMaybe = try readFirstArg(arena.allocator());
+
+    if (firstArgMaybe) |firstArg| {
+        if (try readShebangFile(arena.allocator(), firstArg)) |fileContents| {
+            return machine.loadFile(fileContents) catch |e| return doneOrDie(&machine, e);
+        } else if ((std.mem.eql(u8, firstArg, "stream") or std.mem.startsWith(u8, firstArg, "stream ")) and (stdinPiped or stdoutPiped)) {
+            return handlePipedStdoutOnly(&machine);
+        }
+    }
+
+    if (stdinPiped) {
         return handlePipedStdin(&machine);
     } else if (stdoutPiped) {
         return handlePipedStdoutOnly(&machine);
     }
 
     return readEvalPrintLoop(&machine);
+}
+
+fn readFirstArg(allocator: Allocator) !?[]const u8 {
+    var args = try std.process.argsWithAllocator(allocator);
+    _ = args.skip(); // Discard process name
+    return if (args.next()) |arg| try allocator.dupe(u8, arg) else null;
 }
 
 fn handlePipedStdin(dt: *DtMachine) !void {
@@ -79,23 +93,18 @@ fn doneOrDie(dt: *DtMachine, reason: anyerror) !void {
     }
 }
 
-fn readShebangFile(allocator: Allocator) !?[]const u8 {
-    var args = try std.process.argsWithAllocator(allocator);
-    _ = args.skip(); // Discard process name
+fn readShebangFile(allocator: Allocator, maybeFilepath: []const u8) !?[]const u8 {
+    // We get a Dir from CWD so we can resolve relative paths
+    const theCwdPath = try std.process.getCwdAlloc(allocator);
+    var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
-    if (args.next()) |maybeFilepath| {
-        // We get a Dir from CWD so we can resolve relative paths
-        const theCwdPath = try std.process.getCwdAlloc(allocator);
-        var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
+    const file = theCwd.openFile(maybeFilepath, .{}) catch return null;
+    defer file.close();
 
-        const file = theCwd.openFile(maybeFilepath, .{}) catch return null;
-        defer file.close();
+    const contents = try file.readToEndAlloc(allocator, std.math.pow(usize, 2, 16));
 
-        const contents = try file.readToEndAlloc(allocator, std.math.pow(usize, 2, 16));
-
-        if (std.mem.startsWith(u8, contents, "#!")) {
-            return contents;
-        }
+    if (std.mem.startsWith(u8, contents, "#!")) {
+        return contents;
     }
 
     return null;

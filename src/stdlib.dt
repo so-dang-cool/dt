@@ -51,6 +51,14 @@
 \.s \status alias
 
 
+### Reading ###
+
+\rl \read-line alias # Drop in 2.0
+\rl \readln alias
+\rls \read-lines alias # Drop in 2.0
+\rls \readlns alias
+
+
 ### Filesystem and process things ###
 
 [ cwd pl ]
@@ -141,7 +149,7 @@
 ### Unixy things ###
 
 [ args deq swap drop ] \shebang-args def!
-[ "» " p   read-line eval   repl ] \repl def!
+[ "» " p   readln eval   repl ] \repl def!
 
 
 ### Parsing ###
@@ -160,6 +168,6 @@
 
 ### REPL Helpers ###
 
-[ defs [ [ name ]: green name p norm "\t" p name usage pl ] each ]
+[ defs [ [ name ]: green name p   norm "\t" p   name usage pl ] each ]
 "( -- ) Print commands and their usage"
 \help define
