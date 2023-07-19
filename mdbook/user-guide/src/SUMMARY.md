@@ -6,8 +6,10 @@
 # The Basics
 
 - [Installation](./tutorial/install.md)
+- [What to Expect](./tutorial/expectations.md)
+- [Pipes](./tutorial/pipes.md)
 - [Exploring the REPL](./tutorial/repl.md)
-- [Pipes and Shebangs](./tutorial/pipes-and-shebangs.md)
+- [Shebangs](./tutorial/shebangs.md)
 
 
 # The Language
@@ -24,6 +26,7 @@
 
 # More
 
+- [Duct Tape](./misc/duct-tape.md)
 - [Helping out](./misc/help.md)
 - [VS Code extension](./misc/vs-code.md)
 
