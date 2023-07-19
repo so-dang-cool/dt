@@ -1,0 +1,5 @@
+#!/usr/bin/env dt
+
+shebang-args first to-int \n:
+
+[rl pl] n times

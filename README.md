@@ -23,12 +23,26 @@ $ seq 3 | dt rev pls
 3
 2
 1
+```
 
+Great for aliases:
+
+```
 $ alias scream-lines="dt [upcase words unlines] map pls"
 $ echo "hey you pikachu" | scream-lines
 HEY
 YOU
 PIKACHU
+```
+
+If you want to read lines manually, use `stream` as the first command:
+
+```
+$ alias head.dt="dt stream [rl pl] args last to-int times"
+$ seq 100 | head.dt 3
+1
+2
+3
 ```
 
 ## Use as a shebang
