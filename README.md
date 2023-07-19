@@ -19,10 +19,10 @@ When piping in/out, the REPL is skipped. If something is piping into `dt` then
 standard input is fed into `dt` as a list of lines.
 
 ```
-$ echo -e "3\n2\n1" | dt rev pls
-1
-2
+$ seq 3 | dt rev pls
 3
+2
+1
 
 $ alias scream-lines="dt [upcase words unlines] map pls"
 $ echo "hey you pikachu" | scream-lines

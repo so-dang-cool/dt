@@ -246,8 +246,8 @@ pub const DtMachine = struct {
 
 pub const DtVal = union(enum) {
     bool: bool,
-    int: i64, // TODO: BigInteger?
-    float: f64, // TODO: BigDecimal? Or floating point forever? Maybe decimal is more useful?
+    int: i64, // TODO: std.math.big.int.Mutable?
+    float: f64, // TODO: std.math.big.Rational?
     string: String,
     command: String,
     deferred_command: String,
