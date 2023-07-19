@@ -1047,6 +1047,8 @@ fn _any(dt: *DtMachine, as: Quote, f: DtVal) !void {
 }
 
 pub fn pop(dt: *DtMachine) !void {
+    const log = std.log.scoped(.pop);
+
     const val = try dt.pop();
 
     var quote = try val.intoQuote(dt);
@@ -1058,7 +1060,7 @@ pub fn pop(dt: *DtMachine) !void {
         return;
     }
 
-    try dt.push(val);
+    try dt.rewind(log, val, Error.StackUnderflow);
 }
 
 pub fn push(dt: *DtMachine) !void {
@@ -1085,13 +1087,14 @@ pub fn enq(dt: *DtMachine) !void {
 }
 
 pub fn deq(dt: *DtMachine) !void {
+    const log = std.log.scoped(.deq);
+
     const val = try dt.pop();
 
     var quote = try val.intoQuote(dt);
 
     if (quote.items.len == 0) {
-        try dt.push(val);
-        return;
+        return dt.rewind(log, val, Error.StackUnderflow);
     }
 
     const firstVal = quote.orderedRemove(0);
