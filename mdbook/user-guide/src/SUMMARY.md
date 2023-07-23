@@ -24,7 +24,7 @@
 - [Using the CLI](./utility/using-cli.md)
 
 
-# More
+# Miscellany
 
 - [Duct Tape](./misc/duct-tape.md)
 - [Comparisons with Other Languages](./misc/comparisons.md)
