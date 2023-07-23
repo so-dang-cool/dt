@@ -32,7 +32,7 @@ pub fn build(b: *std.Build) !void {
 
         const cross_install = b.addInstallArtifact(cross);
 
-        const cross_tar = b.addSystemCommand(&.{ "tar", "-czvf", TRIPLE ++ ".tgz", switch (cross.target.cpu_arch.?) {
+        const cross_tar = b.addSystemCommand(&.{ "tar", "--transform", "s|" ++ TRIPLE ++ "|dt|", "-czvf", TRIPLE ++ ".tgz", switch (cross.target.cpu_arch.?) {
             .wasm32 => TRIPLE ++ ".wasm",
             else => TRIPLE,
         } });
