@@ -67,6 +67,8 @@ with a duct tape theme, and not nearly the first. Here are some others:
 * [Duktape](https://duktape.org): An embeddable Javascript engine.
 * [Ducttape](https://github.com/jhclark/ducttape): A workflow management system
   for researchers who love Unix.
+* [DuctTape](https://ducttape.sourceforge.net/): A build system for Half Life 2
+  modders.
 * [Duct Tape Simulator](https://store.steampowered.com/app/2122680/Duct_Tape_Simulator/):
   A game where you _are_ duct tape and go fix things. Games are software! I'll
   have to give it a try.
