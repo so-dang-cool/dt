@@ -12,16 +12,10 @@
 - [Shebangs](./tutorial/shebangs.md)
 
 
-# The Language
+# The More
 
-- [Writing effectively](./lang/writing-effectively.md)
-- [Sharing code](./lang/sharing-code.md)
-- [Language specification](./lang/spec.md)
-
-
-# The Utility
-
-- [Using the CLI](./utility/using-cli.md)
+- [Standard library](./lang/stdlib.md)
+- [Coming soon...](coming-soon.md)
 
 
 # Miscellany
