@@ -27,11 +27,11 @@ a:hover {
 }
 
 #strip {
-  width: 48ch;
+  width: 80ch;
 }
 
 #wide-strip {
-  width: 96ch;
+  width: 120ch;
 }
 
 #stdlib * {
