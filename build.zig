@@ -42,8 +42,6 @@ pub fn build(b: *std.Build) !void {
         cross_step.dependOn(&cross_tar.step);
     }
 
-    b.default_step.dependOn(cross_step);
-
     // Tests
     const test_step = b.step("test", "Run tests");
 
