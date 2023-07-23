@@ -15,7 +15,7 @@ defs \FROZEN_DEFS :
   "</head>"
   "<body>"
     "<div id='wide-strip'>"
-    "<header><center><a href='index.html'>"
+    "<header><center><a href='/'>"
       "<h1 id='logo'>dt</h1>"
       "<h2><pre>duct tape for your unix pipes</pre></h2>"
     "</a></center></header>"
