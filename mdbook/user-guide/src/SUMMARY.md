@@ -27,7 +27,7 @@
 # Miscellany
 
 - [Duct Tape](./misc/duct-tape.md)
-- [Comparisons to AWK, Forth, and others](./misc/comparisons.md)
+- [Comparisons to AWK, Forth, etc.](./misc/comparisons.md)
 - [Helping out](./misc/help.md)
 - [VS Code extension](./misc/vs-code.md)
 
