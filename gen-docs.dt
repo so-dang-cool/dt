@@ -31,7 +31,7 @@ defs \FROZEN_DEFS :
 
 [[cmd]:
   "<tr>"
-    "<td class='lighter'>" cmd "</td>"
+    "<td class='green'>" cmd "</td>"
     "<td>" cmd usage html-escape "</td>"
   "</tr>"
 ] \cmd-row def

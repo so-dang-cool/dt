@@ -64,6 +64,10 @@ header h1 {
   color: #999;
 }
 
+.green {
+  color: #339;
+}
+
 #logo {
   font-size: 4ch;
 }
