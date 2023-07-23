@@ -6,7 +6,9 @@ The original name is "duck tape" and refers to the "duck cloth" under the
 adhesive.
 
 The far more common name these days is "duct tape" and most but not all of the
-references in dt documentation will use this term.
+references in dt documentation will use this term. As far as I can tell, the
+etymology here is a misspelling that caught on. The most popular tape for
+actual ducts uses aluminum.
 
 To confuse things even more there's also a product out there called "Duck
 Tape® Brand Duct Tape." This is not an advertisement or endorsement, but they
