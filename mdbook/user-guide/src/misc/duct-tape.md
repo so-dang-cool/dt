@@ -1,6 +1,16 @@
 # Duct Tape
 
-## Excuse me, is it "duct" or "duck" tape?
+> **Note:** This page will link to many people, projects, and products. These
+links are not affiliate links, and no mention is an advertisement or
+endorsement of the thing or its owners. Likewise, dt is not endorsed or
+supported by anything linked here. There is no relation to any of these people,
+projects, or products, aside from some common interest in "duct tape."
+>
+> The only exception is Red Green, who I (J.R.) will happily endorse as both
+the ultimate handyman, and a solid comedy series. Quotes from Red Green are
+included with permission from Sam Smith.
+
+# Excuse me, is it "duct" or "duck" tape?
 
 The original name is "duck tape" and refers to the "duck cloth" under the
 adhesive.
@@ -25,16 +35,47 @@ President Franklin D. Roosevelt and he _did_.
 
 Vesta's pragmatic initiative is an inspiration for what dt can be.
 
+Johnson and Johnson have [a great article on Mrs. Stoudt](https://www.jnj.com/our-heritage/vesta-stoudt-the-woman-who-invented-duct-tape)
+as part of their heritage articles.
+
 ## Red Green
 
 There are many references to [Red Green](https://www.redgreen.com) throughout
 the dt project, and his handyman wisdom has helped shape this project. Quotes
 are included in the project with permission from Sam Smith.
 
-Red Green is not the only connection to red and green, it also is a reference
+Red Green knows the handyman's secret weapon is duct tape. Watching
+[Handyman Corner](https://redgreen.fandom.com/wiki/Handyman_Corner) as a child,
+I (J.R.) saw duct tape used for everything from repairing pants and fixing
+spare tires up to jet packs and the creation of a "Hummer" by duct taping two
+partial vehicles to each other... Some of these projects even lasted longer
+than the segment! This has surely influenced the design of dt in ways I might
+not be able to articulate.
+
+> Red Green is not the only connection to red and green, it's also a reference
 to Chuck Moore's <span style="color: red;">color</span><span style="color: green; font-weight: bold;">Forth</span>
 programming language. Unlike <span style="color: red;">color</span><span style="color: green; font-weight: bold;">Forth</span>,
 dt does not have any syntactic or semantic meaning for the colors and only ever
 uses them as decoration when printing information. To support the colorblind,
 dt always treats green as bold.
+
+## Other duct-tape-related software
+
+Just like there's not just one brand of duct tape, dt is not the only software
+with a duct tape theme, and not nearly the first. Here are some others:
+
+* [Duktape](https://duktape.org): An embeddable Javascript engine.
+* [Ducttape](https://github.com/jhclark/ducttape): A workflow management system
+  for researchers who love Unix.
+* [Duct Tape Simulator](https://store.steampowered.com/app/2122680/Duct_Tape_Simulator/):
+  A game where you _are_ duct tape and go fix things. Games are software! I'll
+  have to give it a try.
+
+I'll have to give these a try some day. Should dt ever use these...? Maybe, it
+does sound like there might be some kindred spirits out there.
+
+> As a bonus, Joel Spolsky has written about
+[_The Duct Tape Programmer_](https://www.joelonsoftware.com/2009/09/23/the-duct-tape-programmer/)
+and I think it captures some of the ethos for why I wanted dt to exist and what
+I wanted it to encourage.
 
