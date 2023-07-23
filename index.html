@@ -49,13 +49,14 @@
 
 <!-- toc -->
 
-        <h2><a id="toc"></a>Table of Contents</h2>
+        <h2><a id="toc"></a>Quick Links</h2>
         <ol>
           <li><a href="#intro">What's dt?</a></li>
-          <li><a href="#install">Installing</a></li>
-          <li><a href="#user-guide">User Guide</a></li>
-          <li><a href="#quick-start">Quick start</a></li>
-          <li><a href="#stdlib">Standard Library</a></li>
+          <li><a href="/user-guide/tutorial/install.html">
+            Installing
+          </a></li>
+          <li><a href="/user-guide">User Guide</a></li>
+          <li><a href="/user-guide/lang/stdlib.html">Standard Library</a></li>
         </ol>
 
         <hr>
@@ -91,166 +92,6 @@
           the BSD 3-Clause license</a>.
         </p>
 
-
-        <hr>
-
-<!-- install -->
-
-        <h2 id="install">Installing <a href="#install">⌾</a></h2>
-        <p>
-          See:
-          <a href="/user-guide/tutorial/install.html">
-            Installation
-          </a> from the user guide.
-        </p>
-
-        <hr>
-
-<!-- user-guide -->
-
-        <h2 id="user-guide">User Guide <a href="#user-guide">⌾</a></h2>
-        <p><a href="/user-guide/">Show me the docs!</a></p>
-
-        <hr>
-
-<!-- quick-start -->
-
-        <h2 id="quick-start">Quick start <a href="#quick-start">⌾</a></h2>
-
-        <p>
-          Use <span class="lighter">status</span> to see the state of dt.
-          Here we see piped standard input is a list of strings.
-        </p>
-        <pre>
-        $ echo -e "one\ntwo\nthree!" | dt status
-        [ [ "one" "two" "three!" ] ]
-        </pre>
-
-        <p>
-          Print lines to stdout with <span class="lighter">pls</span> or
-          <span class="lighter">printlns</span>.
-        </p>
-        <pre>
-        $ echo -e "one\ntwo\nthree!" | dt pls
-        one
-        two
-        three!
-        </pre>
-        <p>
-          (See also: <span class='lighter'>p</span>,
-          <span class=lighter>print</span>, <span class='lighter'>pl</span>,
-          <span class=lighter>println</span>)
-        </p>
-
-        <p>
-          Explore definitions with <span class="lighter">defs</span> and
-          <span class='lighter'>usage</span>.
-        </p>
-        <pre style="overflow-x: scroll;">
-        $ dt defs pls | head -n 3
-        *
-        +
-        -
-
-        $ dt   \\pls usage pls   quit
-        ( [&lt;a&gt;] -- ) Print the values of the most recent quote, each followed by a newline, to standard output.
-        </pre>
-
-        <p>
-          In dt, everything is evaluated left-to-right. This means we don't
-          write "3 + 4" because the "+" wouldn't have enough information to add
-          yet. Instead we write <span class="lighter">3 4 +</span>.
-        </p>
-        <pre>
-        $ dt 3 4 + pl   quit
-        7
-        </pre>
-
-        <p>
-          All commands are evaluated left-to-right, including <span class="lighter">def</span>
-          which is a command that defines more commands. In dt, a command
-          is a binding to a value or a "quote" of values and commands. In other
-          words, a command is what other languages call functions, variables,
-          procedures, subroutines, bindings, etc. Some commands are built-in,
-          others are defined in dt source code. Anyway let's
-          <span class="lighter">def</span> some stuff to use it. (I'm going to
-          feed the code as a single string to avoid escapes, and assume a
-          shell that can interpret multiline strings.)
-        </p>
-        <pre>
-        $ dt '3 \three def
-              4 \four def
-              [+ pl] \add-and-print def
-              three four add-and-print
-              quit'
-        7
-        </pre>
-        <p>
-          Above you can see we bound <span class="lighter">3</span> to a new
-          command <span class="lighter">three</span> and did similar for
-          <span class="lighter">four</span>. These are like variables, but
-          can also be thought of as a command that produces a single value.
-        </p>
-        <p>
-          Above you can also see we bound <span class="lighter">+</span> and
-          <span class="lighter">pl</span> in sequence to a new command
-          <span class="lighter">add-and-print</span>. Calling this performed
-          its two commands.
-        </p>
-        <p>
-          Sometimes you just want to bind as values that would not execute the
-          code immediately (For example: to bind a quote as a list). for this
-          we can use <span class="lighter">:</span> to bind values.
-        </p>
-        <pre>
-        $ dt  3 4 [+ pl]   [three four add-and-print]: \
-              three four add-and-print \
-              status \
-              quit
-        [ 3 4 [ + pl ] ]
-        </pre>
-        <p>
-          This bound three values to three identifiers. It didn't execute the
-          last quotation though, it simply provided it again. Let's finish up
-          by executing with <span class="lighter">do</span>.
-        </p>
-        <pre>
-        $ dt  3 4 [+ pl]   [three four add-and-print]: \
-              three four add-and-print \
-              do \
-              quit
-        7
-        </pre>
-
-        <hr>
-
-<!-- stdlib -->
-
-        <h2 id="stdlib">Standard Library <a href="#stdlib">⌾</a></h2>
-        <p>Current</p>
-        <ul>
-          <li><a href="stdlib.html">1.2.0</a></li>
-        </ul>
-        <p>Past</p>
-        <ul>
-          <li><a href="archive/stdlib-1.2.0.html">1.2.0</a></li>
-          <li><a href="archive/stdlib-1.1.2.html">1.1.2</a></li>
-          <li><a href="archive/stdlib-1.1.1.html">1.1.1</a></li>
-          <li><a href="archive/stdlib-1.1.0.html">1.1.0</a></li>
-          <li><a href="archive/stdlib-1.0.0.html">1.0.0</a></li>
-          <li><a href="archive/stdlib-0.11.2.html">0.11.2</a></li>
-          <li><a href="archive/stdlib-0.11.1.html">0.11.1</a></li>
-          <li><a href="archive/stdlib-0.11.0.html">0.11.0</a></li>
-          <li><a href="archive/stdlib-0.10.0.html">0.10.0</a></li>
-          <li><a href="archive/stdlib-0.9.0.html">0.9.0</a></li>
-          <li><a href="archive/stdlib-0.8.0.html">0.8.0</a></li>
-          <li><a href="archive/stdlib-0.7.0.html">0.7.0</a></li>
-          <li><a href="archive/stdlib-0.6.0.html">0.6.0</a></li>
-          <li><a href="archive/stdlib-0.5.3.html">0.5.3</a></li>
-          <li><a href="archive/stdlib-0.5.2.html">0.5.2</a></li>
-          <li><a href="archive/stdlib-0.5.1.html">0.5.1</a></li>
-          <li><a href="archive/stdlib-0.5.0.html">0.5.0</a></li>
-        </ul>
 
         <hr>
 
