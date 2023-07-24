@@ -20,7 +20,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Run tests and cross-compile dt
+      - name: zig build
         run: |
           zig env
-          zig build -Doptimize=ReleaseSmall
+          zig build
+
+      - name: zig build test
+        run: |
+          zig env
+          zig build test
+
+      - name: zig build cross
+        run: |
+          zig env
+          zig build cross

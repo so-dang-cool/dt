@@ -13,10 +13,15 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Run tests and cross-compile dt
+      - name: zig build test
         run: |
           zig env
-          zig build -Doptimize=ReleaseSmall
+          zig build test
+
+      - name: zig build cross -Doptimize=ReleaseSmall
+        run: |
+          zig env
+          zig build cross -Doptimize=ReleaseSmall
 
       - name: Upload artifacts
         uses: skx/github-action-publish-binaries@master
