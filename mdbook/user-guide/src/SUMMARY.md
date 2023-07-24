@@ -15,6 +15,7 @@
 # The More
 
 - [Standard library](./lang/stdlib.md)
+- [Glossary](./lang/glossary.md)
 - [Coming soon...](coming-soon.md)
 
 
