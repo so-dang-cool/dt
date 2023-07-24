@@ -60,7 +60,7 @@ Clone and build:
 ```
 git clone https://github.com/booniepepper/dt.git
 cd ./dt
-zig build dt -Doptimize=ReleaseSmall
+zig build -Doptimize=ReleaseSmall
 ```
 
 The resulting binary will be available in `./zig-out/bin/dt`.
@@ -68,4 +68,15 @@ The resulting binary will be available in `./zig-out/bin/dt`.
 (Note: there is also a `./dt` in the root of the project. This can be used
 to run dt, but is intended for development reasons and is not a general
 entrypoint.)
+
+## Cross-compiling
+
+The project's `build.zig` is pre-configured to compile for all
+known-supported platforms.
+
+With the project cloned:
+
+```
+zig build cross
+```
 
