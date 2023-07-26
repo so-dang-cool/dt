@@ -131,7 +131,7 @@ configuration files to set an alias that persists will vary by your shell.
 The dt language is a functional programming language, and a
 [concatenative language](https://concatenative.org/wiki/view/Concatenative%20language),
 with a very imperative feel. For those interested, the user guide has a more
-in-depth discussion of [the language classification](https://dt.plumbing/user-guide/misc/classification.md).
+in-depth discussion of [the language classification](https://dt.plumbing/user-guide/misc/classification.html).
 
 `dt` is implemented in Zig with no plans to self-host or rewrite in Rust or Go.
 Please do suggest better strategies for memory management and optimizations! I
