@@ -115,7 +115,8 @@ pub const DtMachine = struct {
                     try self.norm();
                 };
             },
-            else => try self.push(val),
+            // TODO: Ensure that this is never necessary; Clone immediately before words that mutate for efficiency.
+            else => try self.push(try val.deepClone(self)),
         }
     }
 
@@ -364,6 +365,31 @@ pub const DtVal = union(enum) {
                 return q;
             },
         };
+    }
+
+    pub fn deepClone(self: DtVal, state: *DtMachine) !DtVal {
+        switch (self) {
+            .string => |s| {
+                var cloned = try state.alloc.dupe(u8, s);
+                return .{ .string = cloned };
+            },
+            .command => |cmd| {
+                var cloned = try state.alloc.dupe(u8, cmd);
+                return .{ .command = cloned };
+            },
+            .deferred_command => |cmd| {
+                var cloned = try state.alloc.dupe(u8, cmd);
+                return .{ .deferred_command = cloned };
+            },
+            .quote => |q| {
+                var cloned = try Quote.initCapacity(state.alloc, q.items.len);
+                for (q.items) |item| {
+                    try cloned.append(try item.deepClone(state));
+                }
+                return .{ .quote = cloned };
+            },
+            else => return self,
+        }
     }
 
     pub fn isEqualTo(dt: *DtMachine, lhs: DtVal, rhs: DtVal) bool {
