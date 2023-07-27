@@ -20,6 +20,10 @@
 
 # Display: stdout
 
+[ "\n" p ]
+"( -- ) Print a newline to standard output."
+\nl define
+
 [ p nl ]
 "( <a> -- ) Print the most recent value and a newline to standard output."
 \pl define
@@ -33,6 +37,10 @@
 \pls \printlns alias
 
 # Display: stderr
+
+[ "\n" ep ]
+"( -- ) Print a newline to standard error."
+\enl define
 
 [ ep enl ]
 "( <a> -- ) Print the most recent value and a newline to standard error."

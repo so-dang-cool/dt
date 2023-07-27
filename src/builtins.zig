@@ -58,8 +58,6 @@ pub fn defineAll(machine: *DtMachine) !void {
 
     try machine.define("p", "( <a> -- ) Print the most recent value to standard output.", .{ .builtin = p });
     try machine.define("ep", "( <a> -- ) Print the most recent value to standard error.", .{ .builtin = ep });
-    try machine.define("nl", "( -- ) Print a newline to standard output.", .{ .builtin = nl });
-    try machine.define("enl", "( -- ) Print a newline to standard error.", .{ .builtin = enl });
     try machine.define("red", "( -- ) Print a control character for red to standard output and standard error.", .{ .builtin = red });
     try machine.define("green", "( -- ) Print a control character for green and bold (for the colorblind) to standard output and standard error.", .{ .builtin = green });
     try machine.define("norm", "( -- ) Print a control character to reset any styling to standard output and standard error.", .{ .builtin = norm });
@@ -464,14 +462,6 @@ fn _p(val: DtVal, writer: std.fs.File.Writer) !void {
         .string => |s| try writer.print("{s}", .{s}),
         else => try val.print(writer),
     }
-}
-
-pub fn nl(_: *DtMachine) !void {
-    try stdout.print("\n", .{});
-}
-
-pub fn enl(_: *DtMachine) !void {
-    try stderr.print("\n", .{});
 }
 
 pub fn red(dt: *DtMachine) !void {
