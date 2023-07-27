@@ -358,7 +358,7 @@ pub const DtVal = union(enum) {
 
     pub fn intoQuote(self: DtVal, state: *DtMachine) !Quote {
         return switch (self) {
-            .quote => |q| q,
+            .quote => |q| _deepClone(q, state),
             else => {
                 var q = Quote.init(state.alloc);
                 try q.append(self);
@@ -367,7 +367,7 @@ pub const DtVal = union(enum) {
         };
     }
 
-    pub fn deepClone(self: DtVal, state: *DtMachine) !DtVal {
+    pub fn deepClone(self: DtVal, state: *DtMachine) anyerror!DtVal {
         switch (self) {
             .string => |s| {
                 var cloned = try state.alloc.dupe(u8, s);
@@ -381,15 +381,17 @@ pub const DtVal = union(enum) {
                 var cloned = try state.alloc.dupe(u8, cmd);
                 return .{ .deferred_command = cloned };
             },
-            .quote => |q| {
-                var cloned = try Quote.initCapacity(state.alloc, q.items.len);
-                for (q.items) |item| {
-                    try cloned.append(try item.deepClone(state));
-                }
-                return .{ .quote = cloned };
-            },
+            .quote => |q| return .{ .quote = try _deepClone(q, state) },
             else => return self,
         }
+    }
+
+    fn _deepClone(quote: Quote, state: *DtMachine) anyerror!Quote {
+        var cloned = try Quote.initCapacity(state.alloc, quote.items.len);
+        for (quote.items) |item| {
+            try cloned.append(try item.deepClone(state));
+        }
+        return cloned;
     }
 
     pub fn isEqualTo(dt: *DtMachine, lhs: DtVal, rhs: DtVal) bool {
