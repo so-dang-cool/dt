@@ -1,0 +1,15 @@
+#!/usr/bin/env dt
+
+[red "USAGE: beer.dt N" pl norm   1 exit] shebang-args not do?
+
+[ \n:
+  n p " bottles of beer on the wall" pl
+  n p " bottles of beeeer" pl
+  "take one down, pass it around" pl   n 1 - \m:
+  m p " bottles of beer on the wall" pl nl
+  [m bottles] m do? ] \bottles def
+
+shebang-args first \n:
+
+n bottles
+
