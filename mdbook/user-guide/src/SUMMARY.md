@@ -12,11 +12,22 @@
 - [Shebangs](./tutorial/shebangs.md)
 
 
-# The More
+# The Details
 
+- [Commands and Quotes](./lang/commands-and-quotes.md)
+- [Strings](./lang/strings.md)
+- [Types](./lang/types.md)
+- [IO, Files, and Processes](./lang/io-files-and-processes.md)
+- [Shuffling](./lang/shuffling.md)
+- [Math](./lang/math.md)
+- [Truthiness and Conditions](./lang/truthiness-and-conditions.md)
+
+
+# Reference
+
+- [Style Considerations](./lang/style.md)
 - [Standard library](./lang/stdlib.md)
 - [Glossary](./lang/glossary.md)
-- [Coming soon...](coming-soon.md)
 
 
 # Miscellany
