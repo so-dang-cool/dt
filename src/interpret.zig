@@ -49,7 +49,7 @@ pub const DtMachine = struct {
     stdoutConfig: std.io.tty.Config,
     stderrConfig: std.io.tty.Config,
 
-    inspiration: []String,
+    inspiration: ArrayList(String),
 
     pub fn init(alloc: Allocator) !DtMachine {
         var nest = Stack(Quote){};
@@ -70,8 +70,20 @@ pub const DtMachine = struct {
             .defs = Dictionary.init(alloc),
             .stdoutConfig = std.io.tty.detectConfig(std.io.getStdOut()),
             .stderrConfig = std.io.tty.detectConfig(std.io.getStdErr()),
-            .inspiration = inspirations.items,
+            .inspiration = inspirations,
         };
+    }
+
+    pub fn deinit(self: *DtMachine) void {
+        self.defs.deinit();
+        self.inspiration.deinit();
+
+        var node = self.nest.first;
+        while (node) |n| {
+            node = n.next;
+            n.data.deinit();
+            self.alloc.destroy(n);
+        }
     }
 
     pub fn interpret(self: *DtMachine, tok: Token) !void {
@@ -358,7 +370,7 @@ pub const DtVal = union(enum) {
 
     pub fn intoQuote(self: DtVal, state: *DtMachine) !Quote {
         return switch (self) {
-            .quote => |q| _deepClone(q, state),
+            .quote => |q| q,
             else => {
                 var q = Quote.init(state.alloc);
                 try q.append(self);

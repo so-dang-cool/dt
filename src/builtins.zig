@@ -142,6 +142,15 @@ pub fn quit(dt: *DtMachine) !void {
     std.os.exit(0);
 }
 
+test "drop quit" {
+    const dt = @import("tests/dt_test_utils.zig").dt;
+
+    var res = try dt(&.{ "drop", "quit" });
+    try std.testing.expectEqualStrings("", res.stdout);
+    try std.testing.expectEqualStrings("", res.stderr);
+    try std.testing.expectEqual(@as(u8, 0), res.term.Exited);
+}
+
 pub fn exit(dt: *DtMachine) !void {
     const log = std.log.scoped(.exit);
 
@@ -166,13 +175,43 @@ pub fn exit(dt: *DtMachine) !void {
     std.os.exit(code);
 }
 
+test "7 exit" {
+    const dt = @import("tests/dt_test_utils.zig").dt;
+
+    var res = try dt(&.{ "7", "exit" });
+    try std.testing.expectEqualStrings("", res.stdout);
+    try std.testing.expectEqualStrings("", res.stderr);
+    try std.testing.expectEqual(@as(u8, 7), res.term.Exited);
+}
+
 pub fn version(dt: *DtMachine) !void {
     try dt.push(.{ .string = main.version });
+}
+
+test "version" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try version(&dt);
+    var v = try dt.pop();
+
+    try std.testing.expect(v.isString());
 }
 
 pub fn cwd(dt: *DtMachine) !void {
     const theCwd = try std.process.getCwdAlloc(dt.alloc);
     try dt.push(.{ .string = theCwd });
+}
+
+test "cwd" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try cwd(&dt);
+    var dir = try dt.pop();
+    defer std.testing.allocator.free(dir.string);
+
+    try std.testing.expect(dir.isString());
 }
 
 pub fn cd(dt: *DtMachine) !void {
@@ -189,8 +228,18 @@ pub fn cd(dt: *DtMachine) !void {
     std.os.chdir(path) catch |e| return dt.rewind(log, val, e);
 }
 
+test "\".\" cd" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try dt.push(.{ .string = "." });
+    try cd(&dt);
+}
+
 pub fn ls(dt: *DtMachine) !void {
     const theCwd = try std.process.getCwdAlloc(dt.alloc);
+    defer dt.alloc.free(theCwd);
+
     var dir = try std.fs.openIterableDirAbsolute(theCwd, .{});
     var entries = dir.iterate();
 
@@ -205,6 +254,21 @@ pub fn ls(dt: *DtMachine) !void {
     dir.close();
 }
 
+test "ls" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try ls(&dt);
+    const filesVal = try dt.pop();
+    const files = try filesVal.intoQuote(&dt);
+    defer files.deinit();
+
+    for (files.items) |file| {
+        try std.testing.expect(file.isString());
+        std.testing.allocator.free(file.string);
+    }
+}
+
 pub fn readf(dt: *DtMachine) !void {
     const log = std.log.scoped(.readf);
 
@@ -213,6 +277,7 @@ pub fn readf(dt: *DtMachine) !void {
 
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
+    defer dt.alloc.free(theCwdPath);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
     var contents = _readf(dt, log, theCwd, filename) catch |e| {
@@ -237,6 +302,20 @@ fn _readf(dt: *DtMachine, log: anytype, dir: std.fs.Dir, filename: []const u8) !
     var file = try dir.openFile(filename, .{ .mode = .read_only });
     defer file.close();
     return try file.readToEndAlloc(dt.alloc, std.math.pow(usize, 2, 16));
+}
+
+test "\"src/inspiration\" readf" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try dt.push(.{ .string = "src/inspiration" });
+    try readf(&dt);
+    var contents = try dt.pop();
+
+    try std.testing.expect(contents.isString());
+    try std.testing.expect(contents.string.len > 0);
+
+    std.testing.allocator.free(contents.string);
 }
 
 pub fn writef(dt: *DtMachine) !void {
@@ -280,18 +359,19 @@ pub fn exec(dt: *DtMachine) !void {
     const childProcess = try val.intoString(dt);
     var childArgs = std.mem.splitAny(u8, childProcess, " \t");
     var argv = ArrayList([]const u8).init(dt.alloc);
+    defer argv.deinit();
 
     while (childArgs.next()) |arg| try argv.append(arg);
 
     var result = std.process.Child.exec(.{
         .allocator = dt.alloc,
-        .argv = try argv.toOwnedSlice(),
+        .argv = argv.items,
     }) catch |e| return dt.rewind(log, val, e);
 
     switch (result.term) {
         .Exited => |code| if (code == 0) {
-            const trimmed = std.mem.trimRight(u8, result.stdout, "\r\n");
-            try dt.push(.{ .string = trimmed });
+            dt.alloc.free(result.stderr);
+            try dt.push(.{ .string = result.stdout });
             return;
         },
         else => {
@@ -299,9 +379,25 @@ pub fn exec(dt: *DtMachine) !void {
             log.warn("{s}", .{result.stderr});
             try dt.norm();
 
+            dt.alloc.free(result.stdout);
+            dt.alloc.free(result.stderr);
+
             try dt.push(.{ .bool = false });
         },
     }
+}
+
+test "\"echo hi\" exec" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try dt.push(.{ .string = "echo hi" });
+    try exec(&dt);
+
+    const res = try dt.pop();
+    try std.testing.expect(res.isString());
+    try std.testing.expectEqualStrings("hi\n", res.string);
+    std.testing.allocator.free(res.string);
 }
 
 pub fn @"def!"(dt: *DtMachine) !void {
@@ -1250,6 +1346,6 @@ pub fn @"to-quote"(dt: *DtMachine) !void {
 }
 
 pub fn inspire(dt: *DtMachine) !void {
-    const i = std.crypto.random.uintLessThan(usize, dt.inspiration.len);
-    try dt.push(.{ .string = dt.inspiration[i] });
+    const i = std.crypto.random.uintLessThan(usize, dt.inspiration.items.len);
+    try dt.push(.{ .string = dt.inspiration.items[i] });
 }
