@@ -15,7 +15,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
     });
 
-    const dt_install = b.addInstallArtifact(dt);
+    const dt_install = b.addInstallArtifact(dt, .{});
     dt_step.dependOn(&dt_install.step);
     b.default_step.dependOn(dt_step);
 
@@ -30,7 +30,7 @@ pub fn build(b: *std.Build) !void {
             .target = try std.zig.CrossTarget.parse(.{ .arch_os_abi = TRIPLE }),
         });
 
-        const cross_install = b.addInstallArtifact(cross);
+        const cross_install = b.addInstallArtifact(cross, .{});
 
         const cross_tar = b.addSystemCommand(&.{ "tar", "--transform", "s|" ++ TRIPLE ++ "|dt|", "-czvf", TRIPLE ++ ".tgz", switch (cross.target.cpu_arch.?) {
             .wasm32 => TRIPLE ++ ".wasm",
