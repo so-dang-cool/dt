@@ -1,5 +1,5 @@
-# DT Docs
+# dt docs
 
-The site: https://booniepepper.github.io/dt/
-Project: https://github.com/booniepepper/dt
+The site: https://dt.plumbing
+Project: https://github.com/so-dang-cool/dt
 

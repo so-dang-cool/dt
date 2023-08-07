@@ -23,7 +23,7 @@ or script is planned.
 If you already have an account at GitHub, it's recommended to subscribe only to
 release notifications for the GitHub project.
 
-1. Navigate to the project at [https://github.com/booniepepper/dt](https://github.com/booniepepper/dt)
+1. Navigate to the project at [https://github.com/so-dang-cool/dt](https://github.com/so-dang-cool/dt)
 2. Find and click the "Watch" button
 3. Choose "Custom" and then check only the "Releases" checkbox
 
@@ -41,7 +41,7 @@ if you normally put this on your PATH.
 
 Binaries can be downloaded from the GitHub repository's releases page:
 
-* [https://github.com/booniepepper/dt/releases](https://github.com/booniepepper/dt/releases)
+* [https://github.com/so-dang-cool/dt/releases](https://github.com/so-dang-cool/dt/releases)
 
 The binares are produced in the context of github CI/CD workflows, and not
 produced on random laptops. They are "deployed" as attachments to releases
@@ -58,7 +58,7 @@ Prerequisites:
 Clone and build:
 
 ```
-git clone https://github.com/booniepepper/dt.git
+git clone https://github.com/so-dang-cool/dt.git
 cd ./dt
 zig build -Doptimize=ReleaseSmall
 ```

@@ -21,11 +21,11 @@ improvement in the project.
 dt's documentation can always be improved.
 
 Your feedback is valuable! Create documentation-related issues
-[on github](https://github.com/booniepepper/dt/issues) when explanations or
+[on github](https://github.com/so-dang-cool/dt/issues) when explanations or
 guidance can be improved.
 
 If you like technical writing, also consider contributing to
-[the website and user-guide sources](https://github.com/booniepepper/dt/tree/gh-pages).
+[the website and user-guide sources](https://github.com/so-dang-cool/dt/tree/gh-pages).
 
 ## Packaging
 
@@ -48,11 +48,11 @@ and easy to independently upgrade.
 ## Developing
 
 If you have skills in dt and/or Zig, you might consider contributing to
-[the project](https://github.com/booniepepper/dt) directly.
+[the project](https://github.com/so-dang-cool/dt) directly.
 
 The utility and the language are intentionally kept minimal. If you're
 interested in adding features to the language, please
-[open an issue](https://github.com/booniepepper/dt/issues) before digging in.
+[open an issue](https://github.com/so-dang-cool/dt/issues) before digging in.
 
 > J.R. the creator of dt here:
 >

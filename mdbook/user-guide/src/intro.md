@@ -25,8 +25,8 @@ dt's goals, in the context of Unix-like environments:
 | For... |   |
 |--------|---|
 | Website | [https://dt.plumbing](https://dt.plumbing) |
-| Repository | [https://github.com/booniepepper/dt](https://github.com/booniepepper/dt) |
-| Issues, feedback, and suggestions | [https://github.com/booniepepper/dt/issues](https://github.com/booniepepper/dt/issues) |
+| Repository | [https://github.com/so-dang-cool/dt](https://github.com/so-dang-cool/dt) |
+| Issues, feedback, and suggestions | [https://github.com/so-dang-cool/dt/issues](https://github.com/so-dang-cool/dt/issues) |
 
 
 ## License
