@@ -42,15 +42,16 @@
 
         <center>
           <h2><a id="toc"></a>Quick Links</h2>
-          <ol>
+          <ul class="nodecorate">
             <li><a href="#intro">What's dt?</a></li>
-            <li><a href="/user-guide/tutorial/install.html">
-              Installing
-            </a></li>
+            <li><a href="#pipes">Pipes</a></li>
+            <li><a href="#shebangs">Shebang Scripts</a></li>
+            <li><a href="#repl">Interactive Mode (REPL)</a></li>
+            <li><a href="/user-guide/tutorial/install.html">Install</a></li>
             <li><a href="/user-guide">User Guide</a></li>
             <li><a href="/user-guide/lang/stdlib.html">Standard Library</a></li>
             <li><a href="/user-guide/misc/duct-tape.html">Is it "duct tape" or "duck tape"?</a></li>
-          </ol>
+          </ul>
         </center>
 
         <hr>
@@ -88,6 +89,133 @@
 
 
         <hr>
+
+<!-- pipes -->
+
+        <h2 id="pipes">Use in Pipes <a href="#pipes">⌾</a></h2>
+
+        <p>
+          When piping in/out, the REPL is skipped. If dt has receives standard
+          input from a pipe, it's fed to `dt` as a list of lines.
+        </p>
+        <pre>
+          $ seq 3 | dt rev pls
+          3
+          2
+          1
+        </pre>
+        <p>Great for aliases:</p>
+        <pre>
+          $ alias scream-lines="dt [upcase words unlines] map pls"
+          $ echo "hey you pikachu" | scream-lines
+          HEY
+          YOU
+          PIKACHU
+        </pre>
+        <p>If you want to read lines manually, use `stream` as the first command:</p>
+        <pre>
+          $ alias head.dt="dt stream [rl pl] args last to-int times"
+          $ seq 100 | head.dt 3
+          1
+          2
+          3
+        </pre>
+
+        <hr>
+
+<!-- shebang -->
+
+        <h2 id="shebangs">Use in Shebang Scripts <a href="#shebangs">⌾</a></h2>
+
+        <p>
+          When the first argument to `dt` is a file starting with `#!` it will
+          interpret the file. In short: `dt` supports shebang scripting.
+        </p>
+        <p>
+          A naive tee implementation:
+        </p>
+        <pre>tee.dt</pre>
+        <pre>
+          #!/usr/bin/env dt
+
+          readln unlines   \stdin :
+          args pop   \file :
+
+          stdin pl
+          stdin file writef
+        </pre>
+        <p>Then use like:</p>
+        <pre>
+          cat wish-list | sed 's/red/green/g' | tee.dt new-wish-list
+        </pre>
+
+        <hr>
+
+<!-- repl -->
+
+        <h2 id="repl">Using Interactive Mode (REPL) <a href="#repl">⌾</a></h2>
+
+        <p>
+          Running `dt` by itself with no pipes in or out starts a
+          read-eval-print loop (REPL).
+        </p>
+        <pre>
+          $ dt
+          dt 1.x.x
+          Now, this is only temporary... unless it works.
+          » # Comments start with #
+          »
+          » 1 1 + println
+          2
+          »
+          » # Printing is common, so there are a bunch of printing shorthands.
+          » # "p" is print, "pl" is print line, "pls" is print lines (i.e. of a list of values)
+          » # Let's define a command that consumes a value, prints it, then returns its double.
+          »
+          » [ \n :   n p " " p   n 2 *] \print-and-double def
+          »
+          »
+          » # And let's do it... 7 times!
+          »
+          » 1 \print-and-double 7 times   drop
+          1 2 4 8 16 32 64
+          »
+          »
+          » # You can conditionally execute code
+          »
+          » ["hi" pl] false do?
+          » ["bye" pl] true do?
+          bye
+          »
+          » quit
+        </pre>
+        <p>
+            For a better experience, also install
+            <a href="https://github.com/hanslub42/rlwrap">rlwrap</a> and set a
+            shell alias like so:
+        </p>
+        <pre>
+          $ alias dtsh='rlwrap dt'
+          $ dtsh
+          dt 1.x.x
+          Now, this is only temporary... unless it works.
+          »
+        </pre>
+        <p>
+          The above example assumes a bash-like shell. Details on the syntax and
+          configuration files to set an alias that persists will vary by your shell.
+        </p>
+
+        <hr>
+
+<!-- more -->
+
+        <p>To continue learning about dt, consider one of these options:</p>
+        <ul>
+          <li><a href="/user-guide/tutorial/install.html">Install</a></li>
+          <li><a href="/user-guide">User Guide</a></li>
+          <li><a href="/user-guide/lang/stdlib.html">Standard Library</a></li>
+        </ul>
 
       </main>
 

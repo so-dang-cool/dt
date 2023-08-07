@@ -30,6 +30,10 @@ a:hover {
   width: 80ch;
 }
 
+.nodecorate {
+  list-style: none;
+}
+
 #wide-strip {
   width: 120ch;
 }
