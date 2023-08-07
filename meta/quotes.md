@@ -22,7 +22,7 @@
 
 > It is practically impossible to teach good programming to students that have had a prior exposure to BASIC: as potential programmers they are mentally mutilated beyond hope of regeneration.
 
-_Note: [My](https://github.com/booniepepper) first language was BASIC._
+_Note: [My](https://github.com/so-dang-cool) first language was BASIC._
 
 # [The end of Computing Science?](https://www.cs.utexas.edu/users/EWD/ewd13xx/EWD1304.PDF), Edsger W. Dijkstra
 

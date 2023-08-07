@@ -1,4 +1,4 @@
-![License](https://img.shields.io/github/license/booniepepper/dt)
+![License](https://img.shields.io/github/license/so-dang-cool/dt)
 
 # `dt`
 
