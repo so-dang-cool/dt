@@ -411,6 +411,30 @@ pub fn @"def!"(dt: *DtMachine) !void {
     try dt.define(name, name, .{ .quote = quote });
 }
 
+test "[\"hello\" upcase] \\greet def!" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    try dt.define("upcase", "upcase", .{ .builtin = upcase });
+    defer dt.deinit();
+
+    var quote = try Quote.initCapacity(std.testing.allocator, 2);
+    defer quote.deinit();
+
+    try quote.append(.{ .string = "hello" });
+    try quote.append(.{ .command = "upcase" });
+    try dt.push(.{ .quote = quote });
+
+    try dt.push(.{ .deferred_command = "greet" });
+
+    try @"def!"(&dt);
+
+    try dt.handleCmd("greet");
+    const res = try dt.pop();
+
+    try std.testing.expect(res.isString());
+    try std.testing.expectEqualStrings("HELLO", res.string);
+    std.testing.allocator.free(res.string);
+}
+
 pub fn defs(dt: *DtMachine) !void {
     var quote = Quote.init(dt.alloc);
     var defNames = dt.defs.keyIterator();
@@ -426,6 +450,25 @@ pub fn defs(dt: *DtMachine) !void {
     try dt.push(.{ .quote = quote });
 }
 
+test "defs" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    var nothing = Quote.init(std.testing.allocator);
+    defer nothing.deinit();
+
+    try dt.define("nothing", "nothing", .{ .quote = nothing });
+
+    try defs(&dt);
+
+    const theDefs = try dt.pop();
+    const theQuote = theDefs.quote;
+    try std.testing.expectEqual(@as(usize, 1), theQuote.items.len);
+    try std.testing.expectEqualStrings("nothing", theQuote.items[0].string);
+    std.testing.allocator.free(theQuote.items[0].string);
+    theQuote.deinit();
+}
+
 pub fn @"def?"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"def?");
 
@@ -433,6 +476,33 @@ pub fn @"def?"(dt: *DtMachine) !void {
     const name = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     try dt.push(.{ .bool = dt.defs.contains(name) });
+}
+
+test "\\undefined def?" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try dt.push(.{ .deferred_command = "undefined" });
+    try @"def?"(&dt);
+    const res = try dt.pop();
+
+    try std.testing.expect(!res.bool);
+}
+
+test "\\defined def?" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    var nothing = Quote.init(std.testing.allocator);
+    defer nothing.deinit();
+
+    try dt.define("defined", "nothing", .{ .quote = nothing });
+
+    try dt.push(.{ .deferred_command = "defined" });
+    try @"def?"(&dt);
+    const res = try dt.pop();
+
+    try std.testing.expect(res.bool);
 }
 
 pub fn usage(dt: *DtMachine) !void {

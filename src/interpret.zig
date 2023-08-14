@@ -127,8 +127,7 @@ pub const DtMachine = struct {
                     try self.norm();
                 };
             },
-            // TODO: Ensure that this is never necessary; Clone immediately before words that mutate for efficiency.
-            else => try self.push(try val.deepClone(self)),
+            else => try self.push(val),
         }
     }
 
