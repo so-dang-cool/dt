@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/hack-font@3/build/web/hack.css">
     <link rel="stylesheet" href="style.css">
 
-    <!-- favicons -->
+    <!-- Thanks to https://favicomatic.com -->
     <link rel="apple-touch-icon-precomposed" sizes="57x57" href="apple-touch-icon-57x57.png" />
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="apple-touch-icon-114x114.png" />
     <link rel="apple-touch-icon-precomposed" sizes="72x72" href="apple-touch-icon-72x72.png" />
@@ -19,6 +19,16 @@
     <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
     <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
     <link rel="icon" type="image/png" href="favicon-128.png" sizes="128x128" />
+
+    <!-- Social media stuff -->
+    <meta property="og:url content="https://dt.plumbing/" />
+    <meta property="og:title content="dt: duct tape for unix pipes" />
+    <meta property="og:description content=" dt is a functional programming riff on shell one-liners. It's useful for many situations, its simple syntax makes it easy to write and read, and dt is for solving problems with no pretense of elegance. It's meant to supplement (not replace!) other tools like awk, sed, xargs, and shell built-ins. A functional programming riff on Python/Ruby/Perl one-liners, with extremely minimal syntax that's easy to read and easy to reason about. " />
+    <meta property="og:image" content="https://dt.plumbing/img/preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="640">
+    <meta property="og:image:height" content="320">
+
     <meta name="application-name" content="&nbsp;"/>
     <meta name="msapplication-TileColor" content="#FFFFFF" />
     <meta name="msapplication-TileImage" content="mstile-144x144.png" />
@@ -63,20 +73,11 @@
 
         <h2 id="intro">What's dt? <a href="#intro">⌾</a></h2>
         <p>
-          dt is a utility and programming language. The utility is intended for
-          ergonomic in-the-shell execution. The language is straightforward
-          (in the most literal sense) with a minimal syntax that allows for
-          high-level, higher-order programming.
-        </p>
-        <p>
-          It's meant to supplement (<i>not replace!</i>) other tools like awk,
-          sed, xargs, and shell built-ins. Something like the Perl one-liners
-          popular yesteryear, but hopefully easier to read and reason through.
-        </p>
-        <p>
-          In particular dt is intended to be generally useful, with zero
-          pretense of elegance. The philosophy might be summed up with some
-          <a href="https://www.redgreen.com">Red Green</a> quotes:
+          <em>dt</em> is a functional programming riff on shell one-liners.
+          It's useful for many situations, its simple syntax makes it easy to
+          write and read, and dt is for solving problems with no pretense of
+          elegance. The philosophy can be summed up with quotes from the
+          ultimate handyman, <a href="https://www.redgreen.com">Red Green</a>:
         </p>
         <ul>
           <li>If it ain't broke, you're not trying.</li>
@@ -84,6 +85,12 @@
           <li>This is only temporary, unless it works.</li>
           <li>Spare the duct tape, spoil the job.</li>
         </ul>
+        <p>
+          It's meant to supplement (<i>not replace!</i>) other tools like awk,
+          sed, xargs, and shell built-ins. A functional programming riff on
+          Python/Ruby/Perl one-liners, with extremely minimal syntax that's
+          easy to read and easy to reason about.
+        </p>
         <p>
           dt is released as open source software, usable under the (permissive)
           terms of <a href="https://opensource.org/licenses/BSD-3-Clause">
