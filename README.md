@@ -1,4 +1,4 @@
-![License](https://img.shields.io/github/license/so-dang-cool/dt)
+![License](https://img.shields.io/github/license/so-dang-cool/dt) [![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
 
 # `dt`
 
