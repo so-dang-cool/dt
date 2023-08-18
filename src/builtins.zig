@@ -327,10 +327,15 @@ pub fn writef(dt: *DtMachine) !void {
 
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
+    defer dt.alloc.free(theCwdPath);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
     try theCwd.writeFile(filename, contents);
     theCwd.close();
+}
+
+test "writef" {
+    // TODO: Create temp dir for writing, and test writef
 }
 
 pub fn appendf(dt: *DtMachine) !void {
@@ -342,6 +347,7 @@ pub fn appendf(dt: *DtMachine) !void {
 
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
+    defer dt.alloc.free(theCwdPath);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
     defer theCwd.close();
 
@@ -350,6 +356,10 @@ pub fn appendf(dt: *DtMachine) !void {
 
     try file.seekFromEnd(0);
     try file.writeAll(contents);
+}
+
+test "appendf" {
+    // TODO: Create temp dir for writing, and test appendf
 }
 
 pub fn exec(dt: *DtMachine) !void {
@@ -518,6 +528,24 @@ pub fn usage(dt: *DtMachine) !void {
     try dt.push(.{ .string = description });
 }
 
+test "\\defined usage" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    var nothing = Quote.init(std.testing.allocator);
+    defer nothing.deinit();
+
+    try dt.define("defined", "You are pulchritudinous.", .{ .quote = nothing });
+
+    try dt.push(.{ .deferred_command = "defined" });
+    try usage(&dt);
+
+    const res = try dt.pop();
+    defer std.testing.allocator.free(res.string);
+
+    try std.testing.expectEqualStrings("You are pulchritudinous.", res.string);
+}
+
 pub fn @"def-usage"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"def-usage");
 
@@ -528,6 +556,24 @@ pub fn @"def-usage"(dt: *DtMachine) !void {
     const cmd = dt.defs.get(name) orelse return dt.rewindN(2, log, vals, Error.CommandUndefined);
 
     try dt.define(name, description, cmd.action);
+}
+
+test "\\defined \"cool description\" def-usage" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    var nothing = Quote.init(std.testing.allocator);
+    defer nothing.deinit();
+
+    try dt.define("defined", "You are pulchritudinous.", .{ .quote = nothing });
+
+    try dt.push(.{ .deferred_command = "defined" });
+    try dt.push(.{ .string = "cool description" });
+    try @"def-usage"(&dt);
+
+    const cmd: Command = dt.defs.get("defined").?;
+
+    try std.testing.expectEqualStrings("cool description", cmd.description);
 }
 
 // Variable binding
