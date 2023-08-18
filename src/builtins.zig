@@ -704,6 +704,7 @@ pub fn @".s"(dt: *DtMachine) !void {
     try stderr.print("]\n", .{});
 }
 
+// TODO: Actually, do I need something else that's aware of non-terminated pairs for REPL? (brackets or double quotes)
 pub fn rl(dt: *DtMachine) !void {
     var line = ArrayList(u8).init(dt.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
@@ -745,6 +746,7 @@ pub fn args(dt: *DtMachine) !void {
     try dt.push(.{ .quote = quote });
 }
 
+// TODO: Should this fail when there are unbalanced brackets or quotes? (Consider REPL)
 pub fn eval(dt: *DtMachine) !void {
     const log = std.log.scoped(.eval);
 
