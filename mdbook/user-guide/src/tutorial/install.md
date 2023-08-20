@@ -87,14 +87,30 @@ An experimental Docker container is available:
 
 * https://hub.docker.com/r/booniepepper/dt
 
-REPL:
+Pull:
 
 ```
 $ docker pull booniepepper/dt
+```
+
+REPL
+
+```
 $ docker run -it booniepepper/dt ''
 dt 1.2.3
 Learn from my mistakes - someone should.
 » 
+```
+
+Pipe
+
+```
+❯ seq 5 | docker run -i booniepepper/dt '[\n: ["*" print] n times nl] each'
+*
+**
+***
+****
+*****
 ```
 
 
