@@ -48,7 +48,7 @@ produced on random laptops. They are "deployed" as attachments to releases
 automatically.
 
 
-## Building from source
+## Build from source (Vanilla)
 
 Prerequisites:
 
@@ -68,6 +68,35 @@ The resulting binary will be available in `./zig-out/bin/dt`.
 (Note: there is also a `./dt` in the root of the project. This can be used
 to run dt, but is intended for development reasons and is not a general
 entrypoint.)
+
+
+## Build from source (rtx and crozbi)
+
+Prerequisites
+
+1. Install the [rtx](https://github.com/jdxcodes/rtx) version manager.
+2. Install the [crozbi](https://github.com/so-dang-cool/crozbi) Zig installer.
+
+```
+rtx x zig@0.11 -- crozbi so-dang-cool/dt
+```
+
+## Docker
+
+An experimental Docker container is available:
+
+* https://hub.docker.com/r/booniepepper/dt
+
+REPL:
+
+```
+$ docker pull booniepepper/dt
+$ docker run -it booniepepper/dt ''
+dt 1.2.3
+Learn from my mistakes - someone should.
+» 
+```
+
 
 ## Cross-compiling
 
