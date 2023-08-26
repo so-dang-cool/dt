@@ -619,6 +619,10 @@ pub fn @":"(dt: *DtMachine) !void {
     }
 }
 
+test ":" {
+    // TODO
+}
+
 pub fn loop(dt: *DtMachine) !void {
     const val = try dt.pop();
     switch (val) {
@@ -633,14 +637,48 @@ pub fn loop(dt: *DtMachine) !void {
     while (true) try cmd.run(dt);
 }
 
+test "loop" {
+    // TODO
+}
+
 pub fn dup(dt: *DtMachine) !void {
     const val = try dt.pop();
+    const clone = try val.deepClone(dt);
     try dt.push(val);
-    try dt.push(val);
+    try dt.push(clone);
+}
+
+test "\"hello\" dup" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try dt.push(.{ .string = "hello" });
+    try dup(&dt);
+
+    const first = try dt.pop();
+    const second = try dt.pop();
+
+    try std.testing.expectEqualStrings("hello", first.string);
+    try std.testing.expectEqualStrings("hello", second.string);
+
+    dt.alloc.free(first.string);
+    // TODO: There's some error in the dt.pop() implementation, caller should own the memory, but
+    // currently "it depends" which is no good.
+    // dt.alloc.free(second.string);
 }
 
 pub fn drop(dt: *DtMachine) !void {
     _ = try dt.pop();
+}
+
+test "\"hello\" drop" {
+    var dt = try DtMachine.init(std.testing.allocator);
+    defer dt.deinit();
+
+    try dt.push(.{ .string = "hello" });
+    try drop(&dt);
+
+    try std.testing.expectEqual(@as(usize, 0), dt.nest.first.?.data.items.len);
 }
 
 pub fn swap(dt: *DtMachine) !void {
