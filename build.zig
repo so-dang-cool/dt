@@ -23,8 +23,10 @@ pub fn build(b: *std.Build) !void {
     const cross_step = b.step("cross", "Install cross-compiled executables");
 
     inline for (TRIPLES) |TRIPLE| {
+        const exe = "dt-" ++ TRIPLE;
+
         const cross = b.addExecutable(.{
-            .name = TRIPLE,
+            .name = exe,
             .root_source_file = root_source_file,
             .optimize = optimize,
             .target = try std.zig.CrossTarget.parse(.{ .arch_os_abi = TRIPLE }),
@@ -32,9 +34,9 @@ pub fn build(b: *std.Build) !void {
 
         const cross_install = b.addInstallArtifact(cross, .{});
 
-        const cross_tar = b.addSystemCommand(&.{ "tar", "--transform", "s|" ++ TRIPLE ++ "|dt|", "-czvf", TRIPLE ++ ".tgz", switch (cross.target.cpu_arch.?) {
-            .wasm32 => TRIPLE ++ ".wasm",
-            else => TRIPLE,
+        const cross_tar = b.addSystemCommand(&.{ "tar", "--transform", "s|" ++ exe ++ "|dt|", "-czvf", exe ++ ".tgz", switch (cross.target.cpu_arch.?) {
+            .wasm32 => exe ++ ".wasm",
+            else => exe,
         } });
         cross_tar.cwd = "./zig-out/bin/";
 
