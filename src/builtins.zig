@@ -194,12 +194,14 @@ test "version" {
 
     try version(&dt);
     var v = try dt.pop();
+    defer v.deinit(&dt);
 
     try std.testing.expect(v.isString());
 }
 
 pub fn cwd(dt: *DtMachine) !void {
     const theCwd = try std.process.getCwdAlloc(dt.alloc);
+    defer dt.alloc.free(theCwd);
     try dt.push(.{ .string = theCwd });
 }
 
@@ -209,7 +211,7 @@ test "cwd" {
 
     try cwd(&dt);
     var dir = try dt.pop();
-    defer std.testing.allocator.free(dir.string);
+    defer dir.deinit(&dt);
 
     try std.testing.expect(dir.isString());
 }
@@ -311,11 +313,10 @@ test "\"src/inspiration\" readf" {
     try dt.push(.{ .string = "src/inspiration" });
     try readf(&dt);
     var contents = try dt.pop();
+    defer contents.deinit(&dt);
 
     try std.testing.expect(contents.isString());
     try std.testing.expect(contents.string.len > 0);
-
-    std.testing.allocator.free(contents.string);
 }
 
 pub fn writef(dt: *DtMachine) !void {
@@ -447,11 +448,12 @@ test "[\"hello\" upcase] \\greet def!" {
 
 pub fn defs(dt: *DtMachine) !void {
     var quote = Quote.init(dt.alloc);
+    defer quote.deinit();
+
     var defNames = dt.defs.keyIterator();
 
     while (defNames.next()) |defName| {
-        var cmdName = try dt.alloc.dupe(u8, defName.*);
-        try quote.append(.{ .string = cmdName });
+        try quote.append(.{ .string = defName.* });
     }
 
     const items = quote.items;
@@ -471,12 +473,13 @@ test "defs" {
 
     try defs(&dt);
 
-    const theDefs = try dt.pop();
-    const theQuote = theDefs.quote;
+    var theDefs = try dt.pop();
+    defer theDefs.deinit(&dt);
+    var theQuote = theDefs.quote;
+    defer theQuote.deinit();
+
     try std.testing.expectEqual(@as(usize, 1), theQuote.items.len);
     try std.testing.expectEqualStrings("nothing", theQuote.items[0].string);
-    std.testing.allocator.free(theQuote.items[0].string);
-    theQuote.deinit();
 }
 
 pub fn @"def?"(dt: *DtMachine) !void {
@@ -494,7 +497,8 @@ test "\\undefined def?" {
 
     try dt.push(.{ .deferred_command = "undefined" });
     try @"def?"(&dt);
-    const res = try dt.pop();
+    var res = try dt.pop();
+    defer res.deinit(&dt);
 
     try std.testing.expect(!res.bool);
 }
@@ -540,8 +544,8 @@ test "\\defined usage" {
     try dt.push(.{ .deferred_command = "defined" });
     try usage(&dt);
 
-    const res = try dt.pop();
-    defer std.testing.allocator.free(res.string);
+    var res = try dt.pop();
+    defer res.deinit(&dt);
 
     try std.testing.expectEqualStrings("You are pulchritudinous.", res.string);
 }
@@ -549,7 +553,7 @@ test "\\defined usage" {
 pub fn @"def-usage"(dt: *DtMachine) !void {
     const log = std.log.scoped(.@"def-usage");
 
-    const vals = try dt.popN(2);
+    var vals = try dt.popN(2);
     const name = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
     const description = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
@@ -642,10 +646,10 @@ test "loop" {
 }
 
 pub fn dup(dt: *DtMachine) !void {
-    const val = try dt.pop();
-    const clone = try val.deepClone(dt);
+    var val = try dt.pop();
+    defer val.deinit(dt); // TODO: If push always clones: push without pop
     try dt.push(val);
-    try dt.push(clone);
+    try dt.push(val);
 }
 
 test "\"hello\" dup" {
@@ -655,20 +659,18 @@ test "\"hello\" dup" {
     try dt.push(.{ .string = "hello" });
     try dup(&dt);
 
-    const first = try dt.pop();
-    const second = try dt.pop();
+    var first = try dt.pop();
+    defer first.deinit(&dt);
+    var second = try dt.pop();
+    defer second.deinit(&dt);
 
     try std.testing.expectEqualStrings("hello", first.string);
     try std.testing.expectEqualStrings("hello", second.string);
-
-    dt.alloc.free(first.string);
-    // TODO: There's some error in the dt.pop() implementation, caller should own the memory, but
-    // currently "it depends" which is no good.
-    // dt.alloc.free(second.string);
 }
 
 pub fn drop(dt: *DtMachine) !void {
-    _ = try dt.pop();
+    var dropped = try dt.pop();
+    dropped.deinit(dt);
 }
 
 test "\"hello\" drop" {

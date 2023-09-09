@@ -75,6 +75,12 @@ pub const DtMachine = struct {
     }
 
     pub fn deinit(self: *DtMachine) void {
+        var defItr = self.defs.iterator();
+        while (defItr.next()) |entry| {
+            self.alloc.free(entry.key_ptr);
+            entry.value_ptr.deinit(self);
+        }
+
         self.defs.deinit();
         self.inspiration.deinit();
 
@@ -183,7 +189,9 @@ pub const DtMachine = struct {
     }
 
     pub fn define(self: *DtMachine, name: String, description: String, action: Action) !void {
-        const cmd = Command{ .name = name, .description = description, .action = action };
+        const clonedName = try self.alloc.dupe(u8, name);
+        const clonedDescription = try self.alloc.dupe(u8, description);
+        const cmd = Command{ .name = clonedName, .description = clonedDescription, .action = action };
         try self.defs.put(name, cmd);
     }
 
@@ -201,12 +209,13 @@ pub const DtMachine = struct {
 
     pub fn push(self: *DtMachine, val: DtVal) !void {
         var top = self.nest.first orelse return DtError.ContextStackUnderflow;
-        try top.data.append(val);
+        try top.data.append(try val.deepClone(self));
+        // try top.data.append(val);
     }
 
     pub fn pushN(self: *DtMachine, comptime n: comptime_int, vals: [n]DtVal) !void {
-        // TODO: push as slice
-        for (vals) |val| try self.push(val);
+        var top = self.nest.first orelse return DtError.ContextStackUnderflow;
+        try top.data.appendSlice(vals);
     }
 
     pub fn pop(self: *DtMachine) !DtVal {
@@ -264,6 +273,21 @@ pub const DtVal = union(enum) {
     command: String,
     deferred_command: String,
     quote: Quote,
+
+    pub fn deinit(self: *DtVal, state: *DtMachine) void {
+        switch (self.*) {
+            .string => |s| state.alloc.free(s),
+            .command => |cmd| state.alloc.free(cmd),
+            .deferred_command => |cmd| state.alloc.free(cmd),
+            .quote => |q| {
+                for (q.items) |*i| {
+                    i.deinit(state);
+                }
+                q.deinit();
+            },
+            else => {},
+        }
+    }
 
     pub fn isBool(self: DtVal) bool {
         return switch (self) {
@@ -557,6 +581,18 @@ pub const Command = struct {
     name: String,
     description: String,
     action: Action,
+
+    pub fn deinit(self: Command, state: *DtMachine) void {
+        switch (self.action) {
+            .builtin => {},
+            .quote => |q| {
+                for (q.items) |*i| {
+                    i.deinit(state);
+                }
+                q.deinit();
+            },
+        }
+    }
 
     pub fn run(self: Command, state: *DtMachine) anyerror!void {
         switch (self.action) {
