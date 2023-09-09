@@ -1,4 +1,4 @@
 .{
     .name = "dt",
-    .version = "1.2.2", // Update in main.zig as well
+    .version = "1.2.4", // Update in main.zig as well
 }
