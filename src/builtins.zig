@@ -21,109 +21,109 @@ const Token = @import("tokens.zig").Token;
 
 const bangDescription = "If nested, any commands or variables defined will be available in the calling scope.";
 
-pub fn defineAll(machine: *DtMachine) !void {
-    try machine.define("quit", "( -- ) Quit. Prints a warning if there are any values left on stack.", .{ .builtin = quit });
-    try machine.define("exit", "( <exitcode> -- ) Exit with the specified exit code.", .{ .builtin = exit });
-    try machine.define("version", "( -- <version> ) Produce the version of dt in use.", .{ .builtin = version });
+pub fn defineAll(dt: *DtMachine) !void {
+    try dt.define("quit", "( -- ) Quit. Prints a warning if there are any values left on stack.", .{ .builtin = quit });
+    try dt.define("exit", "( <exitcode> -- ) Exit with the specified exit code.", .{ .builtin = exit });
+    try dt.define("version", "( -- <version> ) Produce the version of dt in use.", .{ .builtin = version });
 
-    try machine.define("cwd", "( -- <dirname> ) Produce the current working directory.", .{ .builtin = cwd });
+    try dt.define("cwd", "( -- <dirname> ) Produce the current working directory.", .{ .builtin = cwd });
     if (builtin.os.tag != .wasi) {
-        try machine.define("cd", "( <dirname> -- ) Change the process's working directory.", .{ .builtin = cd });
+        try dt.define("cd", "( <dirname> -- ) Change the process's working directory.", .{ .builtin = cd });
     }
-    try machine.define("ls", "( -- [<filename>] ) Produce a quote of files and directories in the process's working directory.", .{ .builtin = ls });
-    try machine.define("readf", "( <filename> -- <contents> ) Read a file's contents as a string.", .{ .builtin = readf });
-    try machine.define("writef", "( <contents> <filename> -- ) Write a string as a file. If a file previously existed, it will be overwritten.", .{ .builtin = writef });
-    try machine.define("appendf", "( <contents> <filename> -- ) Write a string to a file. If a file previously existed, the new content will be appended.", .{ .builtin = appendf });
+    try dt.define("ls", "( -- [<filename>] ) Produce a quote of files and directories in the process's working directory.", .{ .builtin = ls });
+    try dt.define("readf", "( <filename> -- <contents> ) Read a file's contents as a string.", .{ .builtin = readf });
+    try dt.define("writef", "( <contents> <filename> -- ) Write a string as a file. If a file previously existed, it will be overwritten.", .{ .builtin = writef });
+    try dt.define("appendf", "( <contents> <filename> -- ) Write a string to a file. If a file previously existed, the new content will be appended.", .{ .builtin = appendf });
     // TODO: pathsep/filesep, env get, env set
 
     if (builtin.os.tag != .wasi) {
-        try machine.define("exec", "( <process> -- ) Execute a child process (from a String). When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false.", .{ .builtin = exec });
+        try dt.define("exec", "( <process> -- ) Execute a child process (from a String). When successful, returns stdout as a string. When unsuccessful, prints the child's stderr to stderr, and returns boolean false.", .{ .builtin = exec });
     }
-    try machine.define("def!", "( <action> <name> -- ) Defines a new command. " ++ bangDescription, .{ .builtin = @"def!" });
-    try machine.define("defs", "( -- [<name>] ) Produce a quote of all defined commands.", .{ .builtin = defs });
-    try machine.define("def?", "( <name> -- <bool> ) Determine whether a command is defined.", .{ .builtin = @"def?" });
-    try machine.define("usage", "( <name> -- <description> ) Print the usage notes of a given command.", .{ .builtin = usage });
-    try machine.define("def-usage", "( <name> <description> -- ) Define the usage notes of a given command.", .{ .builtin = @"def-usage" });
-    try machine.define(":", "( ... [<name>] -- ) Bind variables to a quote of names.", .{ .builtin = @":" });
+    try dt.define("def!", "( <action> <name> -- ) Defines a new command. " ++ bangDescription, .{ .builtin = @"def!" });
+    try dt.define("defs", "( -- [<name>] ) Produce a quote of all defined commands.", .{ .builtin = defs });
+    try dt.define("def?", "( <name> -- <bool> ) Determine whether a command is defined.", .{ .builtin = @"def?" });
+    try dt.define("usage", "( <name> -- <description> ) Print the usage notes of a given command.", .{ .builtin = usage });
+    try dt.define("def-usage", "( <name> <description> -- ) Define the usage notes of a given command.", .{ .builtin = @"def-usage" });
+    try dt.define(":", "( ... [<name>] -- ) Bind variables to a quote of names.", .{ .builtin = @":" });
 
-    try machine.define("do!", "( <action> -- ? ) Execute an action. " ++ bangDescription, .{ .builtin = @"do!" });
-    try machine.define("do", "( <action> -- ? ) Execute an action.", .{ .builtin = do });
-    try machine.define("doin", "( <context> <action> -- ) Execute an action in a context.", .{ .builtin = doin });
-    try machine.define("do!?", "( <action> <condition> -- ? ) Conditionally execute an action. " ++ bangDescription, .{ .builtin = @"do!?" });
-    try machine.define("do?", "( <action> <condition> -- ? ) Conditionally execute an action.", .{ .builtin = @"do?" });
-    try machine.define("loop", "( <action> -- ? ) Execute an action forever until it fails.", .{ .builtin = loop });
+    try dt.define("do!", "( <action> -- ? ) Execute an action. " ++ bangDescription, .{ .builtin = @"do!" });
+    try dt.define("do", "( <action> -- ? ) Execute an action.", .{ .builtin = do });
+    try dt.define("doin", "( <context> <action> -- ) Execute an action in a context.", .{ .builtin = doin });
+    try dt.define("do!?", "( <action> <condition> -- ? ) Conditionally execute an action. " ++ bangDescription, .{ .builtin = @"do!?" });
+    try dt.define("do?", "( <action> <condition> -- ? ) Conditionally execute an action.", .{ .builtin = @"do?" });
+    try dt.define("loop", "( <action> -- ? ) Execute an action forever until it fails.", .{ .builtin = loop });
 
-    try machine.define("dup", "( <a> -- <a> <a> ) Duplicate the most recent value.", .{ .builtin = dup });
-    try machine.define("drop", "( <a> -- ) Drop the most recent value.", .{ .builtin = drop });
-    try machine.define("swap", "( <a> <b> -- <b> <a> ) Swap the two most recent values.", .{ .builtin = swap });
-    try machine.define("rot", "( <a> <b> <c> -- <c> <a> <b> ) Rotate the three most recent values.", .{ .builtin = rot });
+    try dt.define("dup", "( <a> -- <a> <a> ) Duplicate the most recent value.", .{ .builtin = dup });
+    try dt.define("drop", "( <a> -- ) Drop the most recent value.", .{ .builtin = drop });
+    try dt.define("swap", "( <a> <b> -- <b> <a> ) Swap the two most recent values.", .{ .builtin = swap });
+    try dt.define("rot", "( <a> <b> <c> -- <c> <a> <b> ) Rotate the three most recent values.", .{ .builtin = rot });
 
-    try machine.define("p", "( <a> -- ) Print the most recent value to standard output.", .{ .builtin = p });
-    try machine.define("ep", "( <a> -- ) Print the most recent value to standard error.", .{ .builtin = ep });
-    try machine.define("red", "( -- ) Print a control character for red to standard output and standard error.", .{ .builtin = red });
-    try machine.define("green", "( -- ) Print a control character for green and bold (for the colorblind) to standard output and standard error.", .{ .builtin = green });
-    try machine.define("norm", "( -- ) Print a control character to reset any styling to standard output and standard error.", .{ .builtin = norm });
-    try machine.define(".s", "( -- ) Print the state of the process: all available values.", .{ .builtin = @".s" });
+    try dt.define("p", "( <a> -- ) Print the most recent value to standard output.", .{ .builtin = p });
+    try dt.define("ep", "( <a> -- ) Print the most recent value to standard error.", .{ .builtin = ep });
+    try dt.define("red", "( -- ) Print a control character for red to standard output and standard error.", .{ .builtin = red });
+    try dt.define("green", "( -- ) Print a control character for green and bold (for the colorblind) to standard output and standard error.", .{ .builtin = green });
+    try dt.define("norm", "( -- ) Print a control character to reset any styling to standard output and standard error.", .{ .builtin = norm });
+    try dt.define(".s", "( -- ) Print the state of the process: all available values.", .{ .builtin = @".s" });
 
-    try machine.define("rl", "( -- <line> ) Read a string from standard input until newline.", .{ .builtin = rl });
-    try machine.define("rls", "( -- [<line>] ) Read strings, separated by newlines, from standard input until EOF. (For example: until ctrl+d in a Unix-like system, or until a pipe is closed.)", .{ .builtin = rls });
-    try machine.define("procname", "( -- <name> ) Produce the name of the current process. This can be used, for example, to get the name of a shebang script.", .{ .builtin = procname });
-    try machine.define("args", "( -- [<arg>] ) Produce the arguments provided to the process when it was launched.", .{ .builtin = args });
-    try machine.define("eval", "( <code> -- ? ) Evaluate a string as dt commands and execute them.", .{ .builtin = eval });
-    try machine.define("interactive?", "( -- <bool> ) Determine if the input mode is interactive (a TTY) or not.", .{ .builtin = @"interactive?" });
+    try dt.define("rl", "( -- <line> ) Read a string from standard input until newline.", .{ .builtin = rl });
+    try dt.define("rls", "( -- [<line>] ) Read strings, separated by newlines, from standard input until EOF. (For example: until ctrl+d in a Unix-like system, or until a pipe is closed.)", .{ .builtin = rls });
+    try dt.define("procname", "( -- <name> ) Produce the name of the current process. This can be used, for example, to get the name of a shebang script.", .{ .builtin = procname });
+    try dt.define("args", "( -- [<arg>] ) Produce the arguments provided to the process when it was launched.", .{ .builtin = args });
+    try dt.define("eval", "( <code> -- ? ) Evaluate a string as dt commands and execute them.", .{ .builtin = eval });
+    try dt.define("interactive?", "( -- <bool> ) Determine if the input mode is interactive (a TTY) or not.", .{ .builtin = @"interactive?" });
 
-    try machine.define("+", "( <a> <b> -- <c> ) Add two numeric values.", .{ .builtin = @"+" });
-    try machine.define("-", "( <a> <b> -- <c> ) Subtract two numeric values. In standard notation: a - b = c", .{ .builtin = @"-" });
-    try machine.define("*", "( <a> <b> -- <c> ) Multiply two numeric values.", .{ .builtin = @"*" });
-    try machine.define("/", "( <a> <b> -- <c> ) Divide two numeric values. In standard notation: a / b = c", .{ .builtin = @"/" });
-    try machine.define("%", "( <a> <b> -- <c> ) Modulo two numeric values. In standard notation: a % b = c", .{ .builtin = @"%" });
-    try machine.define("abs", "( <a> -- <b> ) Determine the absolute value of a number.", .{ .builtin = abs });
-    try machine.define("rand", "( -- <a> ) Produces a random integer.", .{ .builtin = rand });
+    try dt.define("+", "( <a> <b> -- <c> ) Add two numeric values.", .{ .builtin = @"+" });
+    try dt.define("-", "( <a> <b> -- <c> ) Subtract two numeric values. In standard notation: a - b = c", .{ .builtin = @"-" });
+    try dt.define("*", "( <a> <b> -- <c> ) Multiply two numeric values.", .{ .builtin = @"*" });
+    try dt.define("/", "( <a> <b> -- <c> ) Divide two numeric values. In standard notation: a / b = c", .{ .builtin = @"/" });
+    try dt.define("%", "( <a> <b> -- <c> ) Modulo two numeric values. In standard notation: a % b = c", .{ .builtin = @"%" });
+    try dt.define("abs", "( <a> -- <b> ) Determine the absolute value of a number.", .{ .builtin = abs });
+    try dt.define("rand", "( -- <a> ) Produces a random integer.", .{ .builtin = rand });
 
-    try machine.define("eq?", "( <a> <b> -- <bool> ) Determine if two values are equal. Works for most types with coercion.", .{ .builtin = @"eq?" });
-    try machine.define("gt?", "( <a> <b> -- <bool> ) Determine if a value is greater than another. In standard notation: a > b", .{ .builtin = @"gt?" });
-    try machine.define("gte?", "( <a> <b> -- <bool> ) Determine if a value is greater-than/equal-to another. In standard notation: a ≧ b", .{ .builtin = @"gte?" });
-    try machine.define("lt?", "( <a> <b> -- <bool> ) Determine if a value is less than another. In standard notation: a < b", .{ .builtin = @"lt?" });
-    try machine.define("lte?", "( <a> <b> -- <bool> ) Determine if a value is less-than/equal-to another. In standard notation: a ≦ b", .{ .builtin = @"lte?" });
+    try dt.define("eq?", "( <a> <b> -- <bool> ) Determine if two values are equal. Works for most types with coercion.", .{ .builtin = @"eq?" });
+    try dt.define("gt?", "( <a> <b> -- <bool> ) Determine if a value is greater than another. In standard notation: a > b", .{ .builtin = @"gt?" });
+    try dt.define("gte?", "( <a> <b> -- <bool> ) Determine if a value is greater-than/equal-to another. In standard notation: a ≧ b", .{ .builtin = @"gte?" });
+    try dt.define("lt?", "( <a> <b> -- <bool> ) Determine if a value is less than another. In standard notation: a < b", .{ .builtin = @"lt?" });
+    try dt.define("lte?", "( <a> <b> -- <bool> ) Determine if a value is less-than/equal-to another. In standard notation: a ≦ b", .{ .builtin = @"lte?" });
 
-    try machine.define("and", "( <a> <b> -- <bool> ) Determine if two values are both truthy.", .{ .builtin = boolAnd });
-    try machine.define("or", "( <a> <b> -- <bool> ) Determine if either of two values are truthy.", .{ .builtin = boolOr });
-    try machine.define("not", "( <a> -- <bool> ) Determine the inverse truthiness of a value.", .{ .builtin = not });
+    try dt.define("and", "( <a> <b> -- <bool> ) Determine if two values are both truthy.", .{ .builtin = boolAnd });
+    try dt.define("or", "( <a> <b> -- <bool> ) Determine if either of two values are truthy.", .{ .builtin = boolOr });
+    try dt.define("not", "( <a> -- <bool> ) Determine the inverse truthiness of a value.", .{ .builtin = not });
 
-    try machine.define("split", "( <string> <delim> -- [<substring>] ) Split a string on all occurrences of a delimiter.", .{ .builtin = split });
-    try machine.define("join", "( [<substring>] <delim> -- <string> ) Join strings with a delimiter.", .{ .builtin = join });
-    try machine.define("upcase", "( <string> -- <upper> ) Convert a string to its uppercase form.", .{ .builtin = upcase });
-    try machine.define("downcase", "( <string> -- <lower> ) Convert a string to its lowercase form.", .{ .builtin = downcase });
-    try machine.define("starts-with?", "( <string> <prefix> -- <bool> ) Determine if a string starts with a prefix.", .{ .builtin = startsWith });
-    try machine.define("ends-with?", "( <string> <suffix> -- <bool> ) Determine if a string ends with a suffix.", .{ .builtin = endsWith });
-    try machine.define("contains?", "( <haystack> <needle> -- <bool> ) With Strings, determine if a string contains a substring. With quotes, determine if a quote contains a value.", .{ .builtin = contains });
+    try dt.define("split", "( <string> <delim> -- [<substring>] ) Split a string on all occurrences of a delimiter.", .{ .builtin = split });
+    try dt.define("join", "( [<substring>] <delim> -- <string> ) Join strings with a delimiter.", .{ .builtin = join });
+    try dt.define("upcase", "( <string> -- <upper> ) Convert a string to its uppercase form.", .{ .builtin = upcase });
+    try dt.define("downcase", "( <string> -- <lower> ) Convert a string to its lowercase form.", .{ .builtin = downcase });
+    try dt.define("starts-with?", "( <string> <prefix> -- <bool> ) Determine if a string starts with a prefix.", .{ .builtin = startsWith });
+    try dt.define("ends-with?", "( <string> <suffix> -- <bool> ) Determine if a string ends with a suffix.", .{ .builtin = endsWith });
+    try dt.define("contains?", "( <haystack> <needle> -- <bool> ) With Strings, determine if a string contains a substring. With quotes, determine if a quote contains a value.", .{ .builtin = contains });
 
-    try machine.define("map", "( <original> <action> -- <transformed> ) Apply an action to all values in a quote.", .{ .builtin = map });
-    try machine.define("filter", "( <original> <condition> -- <preserved> ) Require some condition of all values in a quote. Truthy results are preserved, and falsy results are not.", .{ .builtin = filter });
-    try machine.define("any?", "( <original> <condition> -- <bool> ) Determine whether any value in a quote passes a condition. Stops at the first truthy result.", .{ .builtin = any });
-    try machine.define("len", "( <a> -- <length> ) The length of a string or quote. (Always 1 for single values.)", .{ .builtin = len });
+    try dt.define("map", "( <original> <action> -- <transformed> ) Apply an action to all values in a quote.", .{ .builtin = map });
+    try dt.define("filter", "( <original> <condition> -- <preserved> ) Require some condition of all values in a quote. Truthy results are preserved, and falsy results are not.", .{ .builtin = filter });
+    try dt.define("any?", "( <original> <condition> -- <bool> ) Determine whether any value in a quote passes a condition. Stops at the first truthy result.", .{ .builtin = any });
+    try dt.define("len", "( <a> -- <length> ) The length of a string or quote. (Always 1 for single values.)", .{ .builtin = len });
 
-    try machine.define("...", "( <original> -- ? ) Unpack a quote.", .{ .builtin = ellipsis });
-    try machine.define("rev", "( <original> -- <reversed> ) Reverse a quote or string. Other types are unmodified.", .{ .builtin = rev });
-    try machine.define("sort", "( [<a>] -- [<b>] ) Sort a list of values. When values are of different type, they are sorted in the following order: bool, int, float, string, command, deferred command, quote.", .{ .builtin = sort });
-    try machine.define("quote", "( <a> -- [<a>] ) Quote a value.", .{ .builtin = quoteVal });
-    try machine.define("quote-all", "( ? -- [<?>] ) Quote all current context.", .{ .builtin = quoteAll });
-    try machine.define("anything?", "( -- <bool> ) True if any value is present.", .{ .builtin = @"anything?" });
-    try machine.define("concat", "( [<a>] [<b>] -- [<c>] ) Concatenate two quotes. Values are coerced into quotes. (For String concatenation, see join.)", .{ .builtin = concat });
-    try machine.define("push", "( [<a>] <b> -- [<c>] ) Push a value into a quote as its new last value.", .{ .builtin = push });
-    try machine.define("pop", "( [<a>] -- [<b>] <c> ) Pop the last value from a quote.", .{ .builtin = pop });
-    try machine.define("enq", "( <a> [<b>] -- [<c>] ) Enqueue a value into a quote as its new first value.", .{ .builtin = enq });
-    try machine.define("deq", "( [<a>] -- <b> [<c>] ) Dequeue the first value from a quote.", .{ .builtin = deq });
+    try dt.define("...", "( <original> -- ? ) Unpack a quote.", .{ .builtin = ellipsis });
+    try dt.define("rev", "( <original> -- <reversed> ) Reverse a quote or string. Other types are unmodified.", .{ .builtin = rev });
+    try dt.define("sort", "( [<a>] -- [<b>] ) Sort a list of values. When values are of different type, they are sorted in the following order: bool, int, float, string, command, deferred command, quote.", .{ .builtin = sort });
+    try dt.define("quote", "( <a> -- [<a>] ) Quote a value.", .{ .builtin = quoteVal });
+    try dt.define("quote-all", "( ? -- [<?>] ) Quote all current context.", .{ .builtin = quoteAll });
+    try dt.define("anything?", "( -- <bool> ) True if any value is present.", .{ .builtin = @"anything?" });
+    try dt.define("concat", "( [<a>] [<b>] -- [<c>] ) Concatenate two quotes. Values are coerced into quotes. (For String concatenation, see join.)", .{ .builtin = concat });
+    try dt.define("push", "( [<a>] <b> -- [<c>] ) Push a value into a quote as its new last value.", .{ .builtin = push });
+    try dt.define("pop", "( [<a>] -- [<b>] <c> ) Pop the last value from a quote.", .{ .builtin = pop });
+    try dt.define("enq", "( <a> [<b>] -- [<c>] ) Enqueue a value into a quote as its new first value.", .{ .builtin = enq });
+    try dt.define("deq", "( [<a>] -- <b> [<c>] ) Dequeue the first value from a quote.", .{ .builtin = deq });
 
-    try machine.define("to-bool", "( <a> -- <bool> ) Coerce a value to a boolean.", .{ .builtin = @"to-bool" });
-    try machine.define("to-int", "( <a> -- <int> ) Coerce a value to an integer.", .{ .builtin = @"to-int" });
-    try machine.define("to-float", "( <a> -- <float> ) Coerce a value to a floating-point number.", .{ .builtin = @"to-float" });
-    try machine.define("to-string", "( <a> -- <string> ) Coerce a value to a string.", .{ .builtin = @"to-string" });
-    try machine.define("to-cmd", "( <a> -- <cmd> ) Coerce a value to a command.", .{ .builtin = @"to-cmd" });
-    try machine.define("to-def", "( <a> -- <def> ) Coerce a value to a deferred command. (Read as \"definition\" or \"deferred\".)", .{ .builtin = @"to-def" });
-    try machine.define("to-quote", "( <a> -- [<a>] ) Coerce value to a quote. To quote a quote, use quote.", .{ .builtin = @"to-quote" });
+    try dt.define("to-bool", "( <a> -- <bool> ) Coerce a value to a boolean.", .{ .builtin = @"to-bool" });
+    try dt.define("to-int", "( <a> -- <int> ) Coerce a value to an integer.", .{ .builtin = @"to-int" });
+    try dt.define("to-float", "( <a> -- <float> ) Coerce a value to a floating-point number.", .{ .builtin = @"to-float" });
+    try dt.define("to-string", "( <a> -- <string> ) Coerce a value to a string.", .{ .builtin = @"to-string" });
+    try dt.define("to-cmd", "( <a> -- <cmd> ) Coerce a value to a command.", .{ .builtin = @"to-cmd" });
+    try dt.define("to-def", "( <a> -- <def> ) Coerce a value to a deferred command. (Read as \"definition\" or \"deferred\".)", .{ .builtin = @"to-def" });
+    try dt.define("to-quote", "( <a> -- [<a>] ) Coerce value to a quote. To quote a quote, use quote.", .{ .builtin = @"to-quote" });
 
-    try machine.define("inspire", "( -- <wisdom> ) Get inspiration.", .{ .builtin = inspire });
+    try dt.define("inspire", "( -- <wisdom> ) Get inspiration.", .{ .builtin = inspire });
 }
 
 pub fn quit(dt: *DtMachine) !void {
