@@ -5,11 +5,13 @@ const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
 const interpret = @import("interpret.zig");
-const DtVal = interpret.DtVal;
 const Command = interpret.Command;
-const Quote = interpret.Quote;
-const Error = interpret.DtError;
 const DtMachine = interpret.DtMachine;
+
+const types = @import("types.zig");
+const Val = types.Val;
+const Quote = types.Quote;
+const Error = types.Error;
 
 const builtin = @import("builtin");
 
@@ -154,7 +156,7 @@ test "drop quit" {
 pub fn exit(dt: *DtMachine) !void {
     const log = std.log.scoped(.exit);
 
-    const val = dt.pop() catch DtVal{ .int = 255 };
+    const val = dt.pop() catch Val{ .int = 255 };
     var i = val.intoInt() catch it: {
         log.err("Attempted to exit with a value that could not be coerced to integer: {any}", .{val});
         log.err("The program will exit with status code of 1.", .{});
@@ -421,7 +423,7 @@ pub fn defs(dt: *DtMachine) !void {
     }
 
     const items = quote.items;
-    std.mem.sort(DtVal, items, dt, DtVal.isLessThan);
+    std.mem.sort(Val, items, dt, Val.isLessThan);
 
     try dt.push(.{ .quote = quote });
 }
@@ -482,7 +484,7 @@ pub fn @":"(dt: *DtMachine) !void {
 
     var terms = (try termVal.intoQuote(dt)).items;
 
-    var vals = try dt.alloc.alloc(DtVal, terms.len);
+    var vals = try dt.alloc.alloc(Val, terms.len);
 
     var i = terms.len;
 
@@ -497,7 +499,7 @@ pub fn @":"(dt: *DtMachine) !void {
 
     for (terms, vals) |termV, val| {
         const term = try termV.intoString(dt);
-        var quote = ArrayList(DtVal).init(dt.alloc);
+        var quote = ArrayList(Val).init(dt.alloc);
         try quote.append(val);
         try dt.define(term, term, .{ .quote = quote });
     }
@@ -552,7 +554,7 @@ pub fn ep(dt: *DtMachine) !void {
     try _p(val, stderr);
 }
 
-fn _p(val: DtVal, writer: std.fs.File.Writer) !void {
+fn _p(val: Val, writer: std.fs.File.Writer) !void {
     switch (val) {
         // When printing strings, do not show " around a string.
         .string => |s| try writer.print("{s}", .{s}),
@@ -782,31 +784,31 @@ pub fn rand(dt: *DtMachine) !void {
 
 pub fn @"eq?"(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
-    const eq = DtVal.isEqualTo(dt, vals[0], vals[1]);
+    const eq = Val.isEqualTo(dt, vals[0], vals[1]);
     try dt.push(.{ .bool = eq });
 }
 
 pub fn @"gt?"(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
-    const gt = DtVal.isLessThan(dt, vals[1], vals[0]);
+    const gt = Val.isLessThan(dt, vals[1], vals[0]);
     try dt.push(.{ .bool = gt });
 }
 
 pub fn @"gte?"(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
-    const gte = !DtVal.isLessThan(dt, vals[0], vals[1]);
+    const gte = !Val.isLessThan(dt, vals[0], vals[1]);
     try dt.push(.{ .bool = gte });
 }
 
 pub fn @"lt?"(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
-    const lt = DtVal.isLessThan(dt, vals[0], vals[1]);
+    const lt = Val.isLessThan(dt, vals[0], vals[1]);
     try dt.push(.{ .bool = lt });
 }
 
 pub fn @"lte?"(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
-    const lte = !DtVal.isLessThan(dt, vals[1], vals[0]);
+    const lte = !Val.isLessThan(dt, vals[1], vals[0]);
     try dt.push(.{ .bool = lte });
 }
 
@@ -1026,7 +1028,7 @@ pub fn doin(dt: *DtMachine) !void {
     _doin(dt, quote, f) catch |e| return dt.rewindN(2, log, vals, e);
 }
 
-fn _doin(dt: *DtMachine, quote: Quote, f: DtVal) !void {
+fn _doin(dt: *DtMachine, quote: Quote, f: Val) !void {
     var child = try dt.child();
 
     try child.push(.{ .quote = quote });
@@ -1050,7 +1052,7 @@ pub fn map(dt: *DtMachine) !void {
     _map(dt, quote, f) catch |e| return dt.rewindN(2, log, vals, e);
 }
 
-fn _map(dt: *DtMachine, as: Quote, f: DtVal) !void {
+fn _map(dt: *DtMachine, as: Quote, f: Val) !void {
     var child = try dt.child();
 
     for (as.items) |a| {
@@ -1061,7 +1063,7 @@ fn _map(dt: *DtMachine, as: Quote, f: DtVal) !void {
 
     const newQuote = try child.popContext();
 
-    try dt.push(DtVal{ .quote = newQuote });
+    try dt.push(Val{ .quote = newQuote });
 }
 
 pub fn filter(dt: *DtMachine) !void {
@@ -1075,7 +1077,7 @@ pub fn filter(dt: *DtMachine) !void {
     _filter(dt, quote, f) catch |e| return dt.rewindN(2, log, vals, e);
 }
 
-fn _filter(dt: *DtMachine, as: Quote, f: DtVal) !void {
+fn _filter(dt: *DtMachine, as: Quote, f: Val) !void {
     var quote = Quote.init(dt.alloc);
 
     for (as.items) |a| {
@@ -1093,7 +1095,7 @@ fn _filter(dt: *DtMachine, as: Quote, f: DtVal) !void {
         }
     }
 
-    try dt.push(DtVal{ .quote = quote });
+    try dt.push(Val{ .quote = quote });
 }
 
 pub fn any(dt: *DtMachine) !void {
@@ -1112,7 +1114,7 @@ pub fn any(dt: *DtMachine) !void {
     _any(dt, quote, f) catch |e| return dt.rewindN(2, log, vals, e);
 }
 
-fn _any(dt: *DtMachine, as: Quote, f: DtVal) !void {
+fn _any(dt: *DtMachine, as: Quote, f: Val) !void {
     for (as.items) |a| {
         var child = try dt.child();
 
@@ -1124,12 +1126,12 @@ fn _any(dt: *DtMachine, as: Quote, f: DtVal) !void {
         var cond = lastVal.intoBool(dt);
 
         if (cond) {
-            try dt.push(DtVal{ .bool = true });
+            try dt.push(Val{ .bool = true });
             return;
         }
     }
 
-    try dt.push(DtVal{ .bool = false });
+    try dt.push(Val{ .bool = false });
 }
 
 pub fn pop(dt: *DtMachine) !void {
@@ -1141,7 +1143,7 @@ pub fn pop(dt: *DtMachine) !void {
 
     if (quote.items.len > 0) {
         const lastVal = quote.pop();
-        try dt.push(DtVal{ .quote = quote });
+        try dt.push(Val{ .quote = quote });
         try dt.push(lastVal);
         return;
     }
@@ -1156,7 +1158,7 @@ pub fn push(dt: *DtMachine) !void {
     var quote = try vals[0].intoQuote(dt);
 
     try quote.append(pushMe);
-    try dt.push(DtVal{ .quote = quote });
+    try dt.push(Val{ .quote = quote });
 }
 
 pub fn enq(dt: *DtMachine) !void {
@@ -1185,7 +1187,7 @@ pub fn deq(dt: *DtMachine) !void {
 
     const firstVal = quote.orderedRemove(0);
     try dt.push(firstVal);
-    try dt.push(DtVal{ .quote = quote });
+    try dt.push(Val{ .quote = quote });
 }
 
 pub fn len(dt: *DtMachine) !void {
@@ -1226,7 +1228,7 @@ pub fn rev(dt: *DtMachine) !void {
         const quote = try val.intoQuote(dt);
         const length = quote.items.len;
 
-        var newItems = try dt.alloc.alloc(DtVal, length);
+        var newItems = try dt.alloc.alloc(Val, length);
         for (quote.items, 0..) |v, i| {
             newItems[length - i - 1] = v;
         }
@@ -1261,7 +1263,7 @@ pub fn sort(dt: *DtMachine) !void {
 
     const quote = try val.intoQuote(dt);
     const items = quote.items;
-    std.mem.sort(DtVal, items, dt, DtVal.isLessThan);
+    std.mem.sort(Val, items, dt, Val.isLessThan);
 
     try dt.push(.{ .quote = quote });
 }
