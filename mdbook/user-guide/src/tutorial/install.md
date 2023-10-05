@@ -70,6 +70,22 @@ to run dt, but is intended for development reasons and is not a general
 entrypoint.)
 
 
+## Build from source (Nix)
+
+Prerequisites
+
+1. [Install][install-nix] or [upgrade to][upgrade-nix] the latest Nix release
+
+```
+git clone https://github.com/so-dang-cool/dt.git
+cd ./dt
+nix build
+```
+
+[install-nix]: https://nixos.org/manual/nix/unstable/installation/installation
+[upgrade-nix]: https://nixos.org/manual/nix/unstable/installation/upgrading
+
+
 ## Build from source (rtx and crozbi)
 
 Prerequisites
@@ -79,6 +95,23 @@ Prerequisites
 
 ```
 rtx x zig@0.11 -- crozbi so-dang-cool/dt
+```
+
+## Usage as a flake
+
+[![FlakeHub](https://img.shields.io/endpoint?url=https://flakehub.com/f/so-dang-cool/dt/badge)](https://flakehub.com/flake/so-dang-cool/dt)
+
+Add dt to your `flake.nix`:
+
+```nix
+{
+  inputs.dt.url = "https://flakehub.com/f/so-dang-cool/dt/*.tar.gz";
+
+  outputs = { self, dt }: {
+    # Use in your outputs
+  };
+}
+
 ```
 
 ## Docker
@@ -124,4 +157,3 @@ With the project cloned:
 ```
 zig build cross
 ```
-
