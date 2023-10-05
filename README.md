@@ -1,8 +1,14 @@
-![License](https://img.shields.io/github/license/so-dang-cool/dt)
-[![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
+[![License](https://img.shields.io/github/license/so-dang-cool/dt)](https://github.com/so-dang-cool/dt/blob/core/LICENSE.md)
+[![AUR package](https://repology.org/badge/version-for-repo/aur/dt.svg)](https://repology.org/project/dt/versions)
+[![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/dt.svg)](https://repology.org/project/dt/versions)
+[![FlakeHub](https://img.shields.io/endpoint?url=https://flakehub.com/f/so-dang-cool/dt/badge)](https://flakehub.com/flake/so-dang-cool/dt)
 [![discord badge](https://img.shields.io/discord/1150472957093744721?logo=discord)](https://discord.gg/pwrVPJJMfZ)
 
-# `dt`
+[![unconventions.org](https://img.shields.io/badge/unconventions-%E7%84%A1%E9%99%90-orange)](https://unconventions.org)
+[![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
+
+
+# dt
 
 It's duct tape for your unix pipes. A programming language for doing small
 stuff fast, easy, and readable.
