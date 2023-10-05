@@ -130,7 +130,7 @@ REPL
 
 ```
 $ docker run -it booniepepper/dt ''
-dt 1.2.3
+dt 1.x.x
 Learn from my mistakes - someone should.
 » 
 ```
