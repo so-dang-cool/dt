@@ -117,7 +117,7 @@ pub fn defineAll(dt: *DtMachine) !void {
 
     try dt.define("to-bool", "( a -- bool ) Coerce a value to a boolean.", .{ .builtin = @"to-bool" });
     try dt.define("to-int", "( a -- int ) Coerce a value to an integer.", .{ .builtin = @"to-int" });
-    try dt.define("to-float", "( a -- float ) Coerce a value to a floating-point number.", .{ .builtin = @"to-float" });
+    try dt.define("to-rat", "( a -- rat ) Coerce a value to a rational number.", .{ .builtin = @"to-rat" });
     try dt.define("to-string", "( a -- string ) Coerce a value to a string.", .{ .builtin = @"to-string" });
     try dt.define("to-cmd", "( a -- command ) Coerce a value to a command.", .{ .builtin = @"to-cmd" });
     try dt.define("to-def", "( a -- deferred ) Coerce a value to a deferred command. (Read as \"definition\" or \"deferred\".)", .{ .builtin = @"to-def" });
@@ -1309,12 +1309,12 @@ pub fn @"to-int"(dt: *DtMachine) !void {
     try dt.push(.{ .int = i });
 }
 
-pub fn @"to-float"(dt: *DtMachine) !void {
-    const log = std.log.scoped(.@"to-float");
+pub fn @"to-rat"(dt: *DtMachine) !void {
+    const log = std.log.scoped(.@"to-rat");
 
     const val = try dt.pop();
-    const f = val.intoFloat() catch |e| return dt.rewind(log, val, e);
-    try dt.push(.{ .float = f });
+    const f = val.intoRat() catch |e| return dt.rewind(log, val, e);
+    try dt.push(.{ .rat = f });
 }
 
 pub fn @"to-string"(dt: *DtMachine) !void {

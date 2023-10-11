@@ -1,5 +1,6 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
+const BigInteger = std.math.big.int.Managed;
 const Allocator = std.mem.Allocator;
 
 const specialChars = .{
@@ -93,7 +94,7 @@ pub const Token = union(enum) {
         };
     }
 
-    fn parseOneToken(part: []const u8) Token {
+    fn parseOneToken(part: []const u8, allocator: Allocator) Token {
         if (std.mem.eql(u8, part, "[")) {
             return .left_bracket;
         }
@@ -110,7 +111,10 @@ pub const Token = union(enum) {
             const deferredTerm = part[1..];
             return .{ .deferred_term = deferredTerm };
         }
-        if (std.fmt.parseInt(i64, part, 10)) |i| {
+        if (std.mem.trim(u8, part, "0123456789").len == 0) {
+            const limbcount = std.math.big.int.calcSetStringLimbCount(10, part.len);
+            var i: std.math.big.int.Managed = std.math.big.int.Managed.initCapacity(allocator, limbcount);
+            i.setString(10, part);
             return .{ .int = i };
         } else |_| {}
         if (std.fmt.parseFloat(f64, part)) |f| {

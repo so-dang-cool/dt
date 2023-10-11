@@ -3,6 +3,8 @@ const Atomic = std.atomic.Atomic;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
+const Integer = std.math.big.int.Managed;
+const Rational = std.math.big.Rational;
 
 const string = @import("string.zig");
 const String = string.String;
@@ -16,27 +18,12 @@ pub const Dictionary = StringHashMap(Command);
 
 pub const Val = union(enum) {
     bool: bool,
-    int: i64, // TODO: std.math.big.int.Mutable?
-    float: f64, // TODO: std.math.big.Rational?
+    int: Integer,
+    rat: Rational,
     string: String,
     command: String,
     deferred_command: String,
     quote: Quote,
-
-    pub fn deinit(self: *Val, state: *DtMachine) void {
-        switch (self.*) {
-            .string => |s| state.alloc.free(s),
-            .command => |cmd| state.alloc.free(cmd),
-            .deferred_command => |cmd| state.alloc.free(cmd),
-            .quote => |q| {
-                for (q.items) |*i| {
-                    i.deinit(state);
-                }
-                q.deinit();
-            },
-            else => {},
-        }
-    }
 
     pub fn isBool(self: Val) bool {
         return switch (self) {
@@ -48,8 +35,8 @@ pub const Val = union(enum) {
     pub fn intoBool(self: Val, state: *DtMachine) bool {
         return switch (self) {
             .bool => |b| b,
-            .int => |i| i > 0,
-            .float => |f| f > 0,
+            .int => |i| i.isPositive(),
+            .rat => |r| r.p.isPositive() == r.q.isPositive(),
             .string => |s| !std.mem.eql(u8, "", s),
             .quote => |q| q.items.len > 0,
 
@@ -66,32 +53,32 @@ pub const Val = union(enum) {
         };
     }
 
-    pub fn intoInt(self: Val) !i64 {
+    pub fn intoInt(self: Val) !Integer {
         return switch (self) {
             .int => |i| i,
 
             .bool => |b| if (b) 1 else 0,
             .float => |f| @as(i64, @intFromFloat(f)),
             .string => |s| std.fmt.parseInt(i64, s, 10),
-            else => Error.NoCoercionToInteger,
+            else => .NoCoercionToInteger,
         };
     }
 
-    pub fn isFloat(self: Val) bool {
+    pub fn isRat(self: Val) bool {
         return switch (self) {
-            .float => true,
+            .rat => true,
             else => false,
         };
     }
 
-    pub fn intoFloat(self: Val) !f64 {
+    pub fn intoRat(self: Val) !Rational {
         return switch (self) {
-            .float => |f| f,
+            .rat => |r| r,
 
             .bool => |b| if (b) 1 else 0,
-            .int => |i| @as(f64, @floatFromInt(i)),
+            .int => |i| @as(f64, i.toConst().to(f64)),
             .string => |s| std.fmt.parseFloat(f64, s),
-            else => Error.NoCoercionToInteger,
+            else => .NoCoercionToInteger,
         };
     }
 
@@ -124,11 +111,11 @@ pub const Val = union(enum) {
             .string => |s| s,
             .bool => |b| if (b) "true" else "false",
             .int => |i| try std.fmt.allocPrint(state.alloc, "{}", .{i}),
-            .float => |f| try std.fmt.allocPrint(state.alloc, "{}", .{f}),
+            .rat => |r| try std.fmt.allocPrint(state.alloc, "{}", .{r}),
             .quote => |q| switch (q.items.len) {
                 0 => "",
                 1 => q.items[0].intoString(state),
-                else => Error.NoCoercionToString,
+                else => .NoCoercionToString,
             },
         };
     }
@@ -151,33 +138,6 @@ pub const Val = union(enum) {
         };
     }
 
-    pub fn deepClone(self: Val, state: *DtMachine) anyerror!Val {
-        switch (self) {
-            .string => |s| {
-                var cloned = try state.alloc.dupe(u8, s);
-                return .{ .string = cloned };
-            },
-            .command => |cmd| {
-                var cloned = try state.alloc.dupe(u8, cmd);
-                return .{ .command = cloned };
-            },
-            .deferred_command => |cmd| {
-                var cloned = try state.alloc.dupe(u8, cmd);
-                return .{ .deferred_command = cloned };
-            },
-            .quote => |q| return .{ .quote = try _deepClone(q, state) },
-            else => return self,
-        }
-    }
-
-    fn _deepClone(quote: Quote, state: *DtMachine) anyerror!Quote {
-        var cloned = try Quote.initCapacity(state.alloc, quote.items.len);
-        for (quote.items) |item| {
-            try cloned.append(try item.deepClone(state));
-        }
-        return cloned;
-    }
-
     pub fn isEqualTo(dt: *DtMachine, lhs: Val, rhs: Val) bool {
         if (lhs.isBool() and rhs.isBool()) {
             const a = lhs.intoBool(dt);
@@ -193,7 +153,7 @@ pub const Val = union(enum) {
             return a == b;
         }
 
-        if ((lhs.isInt() or lhs.isFloat()) and (rhs.isInt() or rhs.isFloat())) {
+        if ((lhs.isInt() or lhs.isRat()) and (rhs.isInt() or rhs.isRat())) {
             const a = lhs.intoFloat() catch unreachable;
             const b = rhs.intoFloat() catch unreachable;
 
@@ -263,13 +223,13 @@ pub const Val = union(enum) {
             const b = rhs.intoInt() catch unreachable;
             return a < b;
         }
-        if ((lhs.isInt() or lhs.isFloat()) and (rhs.isInt() or rhs.isFloat())) {
+        if ((lhs.isInt() or lhs.isRat()) and (rhs.isInt() or rhs.isRat())) {
             const a = lhs.intoFloat() catch unreachable;
             const b = rhs.intoFloat() catch unreachable;
             return a < b;
         }
         if (lhs.isInt()) return true;
-        if (lhs.isFloat()) return true;
+        if (lhs.isRat()) return true;
 
         if (lhs.isString() and rhs.isString()) {
             const a = lhs.intoString(dt) catch unreachable;
