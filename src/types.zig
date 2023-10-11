@@ -2,6 +2,7 @@ const std = @import("std");
 const Atomic = std.atomic.Atomic;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
+const HashMap = std.hash_map.HashMap;
 const StringHashMap = std.StringHashMap;
 
 const string = @import("string.zig");
@@ -11,7 +12,10 @@ const interpret = @import("interpret.zig");
 const Command = interpret.Command;
 const DtMachine = interpret.DtMachine;
 
+/// dt quote
 pub const Quote = ArrayList(Val);
+
+/// dt dictionary
 pub const Dictionary = StringHashMap(Command);
 
 pub const Val = union(enum) {
@@ -23,14 +27,14 @@ pub const Val = union(enum) {
     deferred_command: String,
     quote: Quote,
 
-    pub fn deinit(self: *Val, state: *DtMachine) void {
+    pub fn deinit(self: *Val, dt: *DtMachine) void {
         switch (self.*) {
-            .string => |s| state.alloc.free(s),
-            .command => |cmd| state.alloc.free(cmd),
-            .deferred_command => |cmd| state.alloc.free(cmd),
+            .string => |s| s.releaseRef(dt.alloc),
+            .command => |cmd| cmd.releaseRef(dt.alloc),
+            .deferred_command => |cmd| cmd.releaseRef(dt.alloc),
             .quote => |q| {
                 for (q.items) |*i| {
-                    i.deinit(state);
+                    i.deinit(dt);
                 }
                 q.deinit();
             },
@@ -45,17 +49,26 @@ pub const Val = union(enum) {
         };
     }
 
-    pub fn intoBool(self: Val, state: *DtMachine) bool {
+    pub fn intoBool(self: Val, dt: *DtMachine) bool {
         return switch (self) {
             .bool => |b| b,
             .int => |i| i > 0,
             .float => |f| f > 0,
-            .string => |s| !std.mem.eql(u8, "", s),
+            .string => |s| {
+                defer s.releaseRef(dt.alloc);
+                return !std.mem.eql(u8, "", s.str);
+            },
             .quote => |q| q.items.len > 0,
 
             // Commands are truthy if defined
-            .command => |cmd| state.defs.contains(cmd),
-            .deferred_command => |cmd| state.defs.contains(cmd),
+            .command => |cmd| {
+                defer cmd.releaseRef(dt.alloc);
+                return dt.defs.contains(cmd.str);
+            },
+            .deferred_command => |cmd| {
+                defer cmd.releaseRef(dt.alloc);
+                return dt.defs.contains(cmd.str);
+            },
         };
     }
 
@@ -72,7 +85,7 @@ pub const Val = union(enum) {
 
             .bool => |b| if (b) 1 else 0,
             .float => |f| @as(i64, @intFromFloat(f)),
-            .string => |s| std.fmt.parseInt(i64, s, 10),
+            .string => |s| std.fmt.parseInt(i64, s.str, 10), // TODO: releaseRef
             else => Error.NoCoercionToInteger,
         };
     }
@@ -90,7 +103,7 @@ pub const Val = union(enum) {
 
             .bool => |b| if (b) 1 else 0,
             .int => |i| @as(f64, @floatFromInt(i)),
-            .string => |s| std.fmt.parseFloat(f64, s),
+            .string => |s| std.fmt.parseFloat(f64, s.str),
             else => Error.NoCoercionToInteger,
         };
     }
@@ -116,18 +129,35 @@ pub const Val = union(enum) {
         };
     }
 
-    pub fn intoString(self: Val, state: *DtMachine) !String {
+    pub fn intoByteString(self: Val, dt: *DtMachine) ![]const u8 {
+        return switch (self) {
+            .command => |cmd| cmd.str,
+
+            .deferred_command => |cmd| cmd.str,
+            .string => |s| s.str,
+            .bool => |b| if (b) "true" else "false", // TODO: Could be constants from state
+            .int => |i| try std.fmt.allocPrint(dt.alloc, "{}", .{i}),
+            .float => |f| try std.fmt.allocPrint(dt.alloc, "{}", .{f}),
+            .quote => |q| switch (q.items.len) {
+                0 => "", // TODO: Could be constant from state
+                1 => q.items[0].intoByteString(dt),
+                else => Error.NoCoercionToString,
+            },
+        };
+    }
+
+    pub fn intoString(self: Val, dt: *DtMachine) !String {
         return switch (self) {
             .command => |cmd| cmd,
 
             .deferred_command => |cmd| cmd,
             .string => |s| s,
-            .bool => |b| if (b) "true" else "false",
-            .int => |i| try std.fmt.allocPrint(state.alloc, "{}", .{i}),
-            .float => |f| try std.fmt.allocPrint(state.alloc, "{}", .{f}),
+            .bool => |b| String.ofAlloc(if (b) "true" else "false", dt.alloc), // TODO: Could be constants from state
+            .int => |i| String.ofAlloc(try std.fmt.allocPrint(dt.alloc, "{}", .{i}), dt.alloc),
+            .float => |f| String.ofAlloc(try std.fmt.allocPrint(dt.alloc, "{}", .{f}), dt.alloc),
             .quote => |q| switch (q.items.len) {
-                0 => "",
-                1 => q.items[0].intoString(state),
+                0 => String.ofAlloc("", dt.alloc), // TODO: Could be constant from state
+                1 => q.items[0].intoString(dt),
                 else => Error.NoCoercionToString,
             },
         };
@@ -152,22 +182,13 @@ pub const Val = union(enum) {
     }
 
     pub fn deepClone(self: Val, state: *DtMachine) anyerror!Val {
-        switch (self) {
-            .string => |s| {
-                var cloned = try state.alloc.dupe(u8, s);
-                return .{ .string = cloned };
-            },
-            .command => |cmd| {
-                var cloned = try state.alloc.dupe(u8, cmd);
-                return .{ .command = cloned };
-            },
-            .deferred_command => |cmd| {
-                var cloned = try state.alloc.dupe(u8, cmd);
-                return .{ .deferred_command = cloned };
-            },
-            .quote => |q| return .{ .quote = try _deepClone(q, state) },
-            else => return self,
-        }
+        return switch (self) {
+            .string => |s| .{ .string = s.newRef() },
+            .command => |cmd| .{ .string = cmd.newRef() },
+            .deferred_command => |cmd| .{ .string = cmd.newRef() },
+            .quote => |q| .{ .quote = try _deepClone(q, state) },
+            else => self,
+        };
     }
 
     fn _deepClone(quote: Quote, state: *DtMachine) anyerror!Quote {
@@ -202,23 +223,29 @@ pub const Val = union(enum) {
 
         if (lhs.isString() and rhs.isString()) {
             const a = lhs.intoString(dt) catch unreachable;
+            defer a.releaseRef(dt.alloc);
             const b = rhs.intoString(dt) catch unreachable;
+            defer b.releaseRef(dt.alloc);
 
-            return std.mem.eql(u8, a, b);
+            return std.mem.eql(u8, a.str, b.str);
         }
 
         if (lhs.isCommand() and rhs.isCommand()) {
             const a = lhs.intoString(dt) catch unreachable;
+            defer a.releaseRef(dt.alloc);
             const b = rhs.intoString(dt) catch unreachable;
+            defer b.releaseRef(dt.alloc);
 
-            return std.mem.eql(u8, a, b);
+            return std.mem.eql(u8, a.str, b.str);
         }
 
         if (lhs.isDeferredCommand() and rhs.isDeferredCommand()) {
             const a = lhs.intoString(dt) catch unreachable;
+            defer a.releaseRef(dt.alloc);
             const b = rhs.intoString(dt) catch unreachable;
+            defer b.releaseRef(dt.alloc);
 
-            return std.mem.eql(u8, a, b);
+            return std.mem.eql(u8, a.str, b.str);
         }
 
         if (lhs.isQuote() and rhs.isQuote()) {
@@ -273,22 +300,28 @@ pub const Val = union(enum) {
 
         if (lhs.isString() and rhs.isString()) {
             const a = lhs.intoString(dt) catch unreachable;
+            defer a.releaseRef(dt.alloc);
             const b = rhs.intoString(dt) catch unreachable;
-            return std.mem.lessThan(u8, a, b);
+            defer b.releaseRef(dt.alloc);
+            return std.mem.lessThan(u8, a.str, b.str);
         }
         if (lhs.isString()) return true;
 
         if (lhs.isCommand() and rhs.isCommand()) {
             const a = lhs.intoString(dt) catch unreachable;
+            defer a.releaseRef(dt.alloc);
             const b = rhs.intoString(dt) catch unreachable;
-            return std.mem.lessThan(u8, a, b);
+            defer b.releaseRef(dt.alloc);
+            return std.mem.lessThan(u8, a.str, b.str);
         }
         if (lhs.isCommand()) return true;
 
         if (lhs.isDeferredCommand() and rhs.isDeferredCommand()) {
             const a = lhs.intoString(dt) catch unreachable;
+            defer a.releaseRef(dt.alloc);
             const b = rhs.intoString(dt) catch unreachable;
-            return std.mem.lessThan(u8, a, b);
+            defer b.releaseRef(dt.alloc);
+            return std.mem.lessThan(u8, a.str, b.str);
         }
         if (lhs.isDeferredCommand()) return true;
 
@@ -311,8 +344,8 @@ pub const Val = union(enum) {
             .bool => |b| try writer.print("{}", .{b}),
             .int => |i| try writer.print("{}", .{i}),
             .float => |f| try writer.print("{d}", .{f}),
-            .command => |cmd| try writer.print("{s}", .{cmd}),
-            .deferred_command => |cmd| try writer.print("\\{s}", .{cmd}),
+            .command => |cmd| try writer.print("{s}", .{cmd.str}),
+            .deferred_command => |cmd| try writer.print("\\{s}", .{cmd.str}),
             .quote => |q| {
                 try writer.print("[ ", .{});
                 for (q.items) |val| {
@@ -321,7 +354,7 @@ pub const Val = union(enum) {
                 }
                 try writer.print("]", .{});
             },
-            .string => |s| try writer.print("\"{s}\"", .{s}),
+            .string => |s| try writer.print("\"{s}\"", .{s.str}),
         }
     }
 };

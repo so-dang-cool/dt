@@ -6,6 +6,8 @@ const stderr = std.io.getStdErr().writer();
 
 const builtins = @import("builtins.zig");
 
+const String = @import("string.zig").String;
+
 const interpret = @import("interpret.zig");
 const DtMachine = interpret.DtMachine;
 
@@ -16,10 +18,14 @@ const stdlib = @embedFile("stdlib.dt");
 const dtlib = @embedFile("dt.dt");
 
 pub fn main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
+    var gpa = std.heap.GeneralPurposeAllocator(.{
+        // .never_unmap = true,
+    }){};
+    var allocator = gpa.allocator();
+    // var arena = std.heap.ArenaAllocator{ .child_allocator = std.heap.page_allocator };
+    // var allocator = arena.allocator();
 
-    var machine = try DtMachine.init(arena.allocator());
+    var machine = try DtMachine.init(allocator);
 
     try builtins.defineAll(&machine);
     try machine.loadFile(stdlib);
@@ -28,10 +34,10 @@ pub fn main() !void {
     const stdinPiped = !std.io.getStdIn().isTty();
     const stdoutPiped = !std.io.getStdOut().isTty();
 
-    const firstArgMaybe = try readFirstArg(arena.allocator());
+    const firstArgMaybe = try readFirstArg(allocator);
 
     if (firstArgMaybe) |firstArg| {
-        if (try readShebangFile(arena.allocator(), firstArg)) |fileContents| {
+        if (try readShebangFile(allocator, firstArg)) |fileContents| {
             return machine.loadFile(fileContents) catch |e| return doneOrDie(&machine, e);
         } else if ((std.mem.eql(u8, firstArg, "stream") or std.mem.startsWith(u8, firstArg, "stream ")) and (stdinPiped or stdoutPiped)) {
             return handlePipedStdoutOnly(&machine);
@@ -54,18 +60,18 @@ fn readFirstArg(allocator: Allocator) !?[]const u8 {
 }
 
 fn handlePipedStdin(dt: *DtMachine) !void {
-    dt.handleCmd("dt/pipe-thru-args") catch |e| return doneOrDie(dt, e);
+    dt.handleCmd(try String.ofAlloc("dt/pipe-thru-args", dt.alloc)) catch |e| return doneOrDie(dt, e);
 }
 
 fn handlePipedStdoutOnly(dt: *DtMachine) !void {
-    dt.handleCmd("dt/run-args") catch |e| return doneOrDie(dt, e);
+    dt.handleCmd(try String.ofAlloc("dt/run-args", dt.alloc)) catch |e| return doneOrDie(dt, e);
 }
 
 fn readEvalPrintLoop(dt: *DtMachine) !void {
-    dt.handleCmd("dt/run-args") catch |e| return doneOrDie(dt, e);
+    dt.handleCmd(try String.ofAlloc("dt/run-args", dt.alloc)) catch |e| return doneOrDie(dt, e);
 
     // TODO: Can this catch be done in the stdlib? Other people need to catch errors too!
-    while (true) dt.handleCmd("dt/main-repl") catch |e| switch (e) {
+    while (true) dt.handleCmd(try String.ofAlloc("dt/main-repl", dt.alloc)) catch |e| switch (e) {
         error.EndOfStream => {
             try stderr.print("\n", .{});
             return;

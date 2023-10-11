@@ -31,7 +31,7 @@ pub const DtMachine = struct {
     stdoutConfig: std.io.tty.Config,
     stderrConfig: std.io.tty.Config,
 
-    inspiration: ArrayList(String),
+    inspiration: ArrayList(*[]const u8),
 
     pub fn init(alloc: Allocator) !DtMachine {
         var nest = Stack(Quote){};
@@ -39,10 +39,11 @@ pub const DtMachine = struct {
         mainNode.* = Stack(Quote).Node{ .data = Quote.init(alloc) };
         nest.prepend(mainNode);
 
-        var inspirations = ArrayList(String).init(alloc);
+        var inspirations = ArrayList(*[]const u8).init(alloc);
         var lines = std.mem.tokenizeScalar(u8, inspiration, '\n');
         while (lines.next()) |line| {
-            try inspirations.append(line);
+            var copy = try alloc.dupe(u8, line);
+            try inspirations.append(&copy);
         }
 
         return .{
@@ -58,6 +59,10 @@ pub const DtMachine = struct {
 
     pub fn deinit(self: *DtMachine) void {
         self.defs.deinit();
+
+        for (self.inspiration.items) |item| {
+            self.alloc.free(item.*);
+        }
         self.inspiration.deinit();
 
         var node = self.nest.first;
@@ -69,8 +74,9 @@ pub const DtMachine = struct {
     }
 
     pub fn interpret(self: *DtMachine, tok: Token) !void {
+        tok.debugPrint();
         switch (tok) {
-            .term => |cmdName| try self.handleCmd(cmdName),
+            .term => |cmdName| try self.handleCmd(try String.ofAlloc(cmdName, self.alloc)),
             .left_bracket => {
                 try self.pushContext();
                 self.depth += 1;
@@ -83,16 +89,16 @@ pub const DtMachine = struct {
                 self.depth -= 1;
 
                 var context = try self.popContext();
-                try self.push(Val{ .quote = context });
+                try self.push(.{ .quote = context });
             },
-            .bool => |b| try self.push(Val{ .bool = b }),
-            .int => |i| try self.push(Val{ .int = i }),
-            .float => |f| try self.push(Val{ .float = f }),
+            .bool => |b| try self.push(.{ .bool = b }),
+            .int => |i| try self.push(.{ .int = i }),
+            .float => |f| try self.push(.{ .float = f }),
             .string => |s| {
-                const unescaped = try string.unescape(self.alloc, s);
-                try self.push(Val{ .string = unescaped });
+                var unescaped = try string.unescape(self.alloc, s);
+                try self.push(.{ .string = try String.of(unescaped, self.alloc) });
             },
-            .deferred_term => |cmd| try self.push(Val{ .deferred_command = cmd }),
+            .deferred_term => |cmd| try self.push(.{ .deferred_command = try String.ofAlloc(cmd, self.alloc) }),
             .none => {},
         }
     }
@@ -102,33 +108,37 @@ pub const DtMachine = struct {
 
         switch (val) {
             .command => |name| {
+                log.debug("DEBUG: name: {s}", .{name.str});
                 self.handleCmd(name) catch |e| {
+                    log.debug("DEBUG_ERR: name: {s}", .{name.str});
                     if (e != error.CommandUndefined) return e;
                     try self.red();
-                    log.warn("Undefined: {s}", .{name});
+                    log.warn("Undefined: {s}", .{name.str});
+                    name.releaseRef(self.alloc);
                     try self.norm();
                 };
             },
-            // TODO: Ensure that this is never necessary; Clone immediately before words that mutate for efficiency.
-            else => try self.push(try val.deepClone(self)),
+            else => try self.push(val),
         }
     }
 
+    /// Owns the cmdName.
     pub fn handleCmd(self: *DtMachine, cmdName: String) !void {
         const log = std.log.scoped(.@"dt.handleCmd");
 
         if (self.depth > 0) {
-            try self.push(Val{ .command = cmdName });
+            try self.push(.{ .command = cmdName });
             return;
         }
 
-        if (self.defs.get(cmdName)) |cmd| {
+        if (self.defs.get(cmdName.str)) |cmd| {
             try cmd.run(self);
             return;
         } else {
             try self.red();
-            log.warn("Undefined: {s}", .{cmdName});
+            log.warn("Undefined: {s}", .{cmdName.str});
             try self.norm();
+            cmdName.releaseRef(self.alloc);
         }
     }
 
@@ -165,9 +175,28 @@ pub const DtMachine = struct {
         return newMachine;
     }
 
-    pub fn define(self: *DtMachine, name: String, description: String, action: Action) !void {
-        const cmd = Command{ .name = name, .description = description, .action = action };
-        try self.defs.put(name, cmd);
+    /// Clones the strings into dt Strings.
+    pub fn define(self: *DtMachine, nameRaw: []const u8, descriptionRaw: []const u8, action: Action) !void {
+        var allocator = self.alloc;
+
+        const cmd = Command{
+            .name = try String.ofAlloc(nameRaw, allocator),
+            .description = try String.ofAlloc(descriptionRaw, allocator),
+            .action = action,
+        };
+        try self.defs.put(nameRaw, cmd);
+    }
+
+    /// Causes the dictionary to own the name/description dt Strings.
+    /// Caller should clone before calling if appropriate.
+    pub fn defineDynamic(self: *DtMachine, name: String, description: String, action: Action) !void {
+        const cmd = .{
+            .name = name,
+            .description = description,
+            .action = action,
+        };
+        var key: []const u8 = name.str;
+        try self.defs.put(key, cmd);
     }
 
     pub fn rewind(self: *DtMachine, log: anytype, val: Val, err: anyerror) anyerror!void {
@@ -244,9 +273,9 @@ pub const Command = struct {
     description: String,
     action: Action,
 
-    pub fn run(self: Command, state: *DtMachine) anyerror!void {
+    pub fn run(self: Command, dt: *DtMachine) anyerror!void {
         switch (self.action) {
-            .builtin => |b| return try b(state),
+            .builtin => |b| return try b(dt),
             .quote => |quote| {
                 var again = true;
 
@@ -257,7 +286,7 @@ pub const Command = struct {
                     again = false;
 
                     for (vals[0..lastIndex]) |val| {
-                        try state.handleVal(val);
+                        try dt.handleVal(val);
                     }
 
                     const lastVal = vals[lastIndex];
@@ -266,17 +295,18 @@ pub const Command = struct {
                         // Tail calls optimized, yay!
                         .command => |cmdName| {
                             // Even if this is the same command name, we should re-fetch in case it's been redefined
-                            const cmd = state.defs.get(cmdName) orelse return Error.CommandUndefined;
+                            const cmd = dt.defs.get(cmdName.str) orelse return Error.CommandUndefined;
+                            defer cmdName.releaseRef(dt.alloc);
                             switch (cmd.action) {
                                 .quote => |nextQuote| {
                                     again = true;
                                     vals = nextQuote.items;
                                     lastIndex = vals.len - 1;
                                 },
-                                .builtin => |b| return try b(state),
+                                .builtin => |b| return try b(dt),
                             }
                         },
-                        else => try state.handleVal(lastVal),
+                        else => try dt.handleVal(lastVal),
                     }
                 }
             },

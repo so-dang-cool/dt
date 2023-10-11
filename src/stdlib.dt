@@ -4,13 +4,13 @@
 \def def!
 \def "( action name -- ) Define a command." def-usage
 
-[ swap rot dup rot def   swap def-usage ]
+[ [action description name]: action name def   action description def-usage ]
 \define def!
 \define "( action description name -- ) Define a command with a description." def-usage
 
 [ dup rot swap dup rot   [ do ] enq swap def!   usage def-usage ]
-\alias def!
-\alias "( prev new -- ) Alias a new command from another, copying the description of the previous command." def-usage
+"( prev new -- ) Alias a new command from another, copying the description of the previous command."
+\alias define
 
 [ def? not ] "( name -- bool ) Determine whether a command is undefined."
 \undef? define

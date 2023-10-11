@@ -4,6 +4,8 @@ const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
+const String = @import("string.zig").String;
+
 const interpret = @import("interpret.zig");
 const Command = interpret.Command;
 const DtMachine = interpret.DtMachine;
@@ -187,7 +189,7 @@ test "7 exit" {
 }
 
 pub fn version(dt: *DtMachine) !void {
-    try dt.push(.{ .string = main.version });
+    try dt.push(.{ .string = try String.ofAlloc(main.version, dt.alloc) }); // TODO: Make this a constant from machine
 }
 
 test "version" {
@@ -201,8 +203,8 @@ test "version" {
 }
 
 pub fn cwd(dt: *DtMachine) !void {
-    const theCwd = try std.process.getCwdAlloc(dt.alloc);
-    try dt.push(.{ .string = theCwd });
+    var theCwd = try std.process.getCwdAlloc(dt.alloc);
+    try dt.push(.{ .string = try String.of(theCwd, dt.alloc) });
 }
 
 test "cwd" {
@@ -211,9 +213,8 @@ test "cwd" {
 
     try cwd(&dt);
     var dir = try dt.pop();
-    defer std.testing.allocator.free(dir.string);
-
     try std.testing.expect(dir.isString());
+    defer dir.string.releaseRef(dt.alloc);
 }
 
 pub fn cd(dt: *DtMachine) !void {
@@ -222,19 +223,22 @@ pub fn cd(dt: *DtMachine) !void {
     const val = try dt.pop();
     var path = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
-    if (std.mem.eql(u8, path, "~")) {
+    if (std.mem.eql(u8, path.str, "~")) {
         // TODO: Consider windows and other OS conventions.
-        path = try std.process.getEnvVarOwned(dt.alloc, "HOME");
+        const home = try std.process.getEnvVarOwned(dt.alloc, "HOME");
+        std.os.chdir(home) catch |e| return dt.rewind(log, val, e);
+    } else {
+        std.os.chdir(path.str) catch |e| return dt.rewind(log, val, e);
     }
 
-    std.os.chdir(path) catch |e| return dt.rewind(log, val, e);
+    path.releaseRef(dt.alloc);
 }
 
 test "\".\" cd" {
     var dt = try DtMachine.init(std.testing.allocator);
     defer dt.deinit();
 
-    try dt.push(.{ .string = "." });
+    try dt.push(.{ .string = try String.ofAlloc(".", std.testing.allocator) });
     try cd(&dt);
 }
 
@@ -247,8 +251,7 @@ pub fn ls(dt: *DtMachine) !void {
 
     var quote = Quote.init(dt.alloc);
     while (try entries.next()) |entry| {
-        var name = try dt.alloc.dupe(u8, entry.name);
-        try quote.append(.{ .string = name });
+        try quote.append(.{ .string = try String.ofAlloc(entry.name, dt.alloc) });
     }
 
     try dt.push(.{ .quote = quote });
@@ -267,7 +270,7 @@ test "ls" {
 
     for (files.items) |file| {
         try std.testing.expect(file.isString());
-        std.testing.allocator.free(file.string);
+        defer file.string.releaseRef(dt.alloc);
     }
 }
 
@@ -276,17 +279,18 @@ pub fn readf(dt: *DtMachine) !void {
 
     const val = try dt.pop();
     const filename = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
+    defer filename.releaseRef(dt.alloc);
 
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
     defer dt.alloc.free(theCwdPath);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
-    var contents = _readf(dt, log, theCwd, filename) catch |e| {
+    var contents = _readf(dt, log, theCwd, filename.str) catch |e| {
         try dt.red();
         switch (e) {
-            error.IsDir => log.warn("\"{s}\" is a directory.", .{filename}),
-            error.FileNotFound => log.warn("\"{s}\" not found.", .{filename}),
+            error.IsDir => log.warn("\"{s}\" is a directory.", .{filename.str}),
+            error.FileNotFound => log.warn("\"{s}\" not found.", .{filename.str}),
             else => {
                 try dt.norm();
                 return e;
@@ -296,7 +300,7 @@ pub fn readf(dt: *DtMachine) !void {
         return;
     };
 
-    try dt.push(.{ .string = contents });
+    try dt.push(.{ .string = try String.ofAlloc(contents, dt.alloc) });
 }
 
 fn _readf(dt: *DtMachine, log: anytype, dir: std.fs.Dir, filename: []const u8) ![]const u8 {
@@ -310,14 +314,14 @@ test "\"src/inspiration\" readf" {
     var dt = try DtMachine.init(std.testing.allocator);
     defer dt.deinit();
 
-    try dt.push(.{ .string = "src/inspiration" });
+    try dt.push(.{ .string = try String.ofAlloc("src/inspiration", std.testing.allocator) });
     try readf(&dt);
     var contents = try dt.pop();
 
     try std.testing.expect(contents.isString());
-    try std.testing.expect(contents.string.len > 0);
+    defer contents.string.releaseRef(std.testing.allocator);
 
-    std.testing.allocator.free(contents.string);
+    try std.testing.expect(contents.string.str.len > 0);
 }
 
 pub fn writef(dt: *DtMachine) !void {
@@ -326,12 +330,15 @@ pub fn writef(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
     const filename = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
     const contents = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    defer filename.releaseRef(dt.alloc);
+    defer contents.releaseRef(dt.alloc);
 
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
-    var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
+    defer dt.alloc.free(theCwdPath);
 
-    try theCwd.writeFile(filename, contents);
+    var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
+    try theCwd.writeFile(filename.str, contents.str);
     theCwd.close();
 }
 
@@ -341,17 +348,19 @@ pub fn appendf(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
     const filename = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
     const contents = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    defer filename.releaseRef(dt.alloc);
+    defer contents.releaseRef(dt.alloc);
 
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
     defer theCwd.close();
 
-    var file = try theCwd.openFile(filename, .{ .mode = .write_only });
+    var file = try theCwd.openFile(filename.str, .{ .mode = .write_only });
     defer file.close();
 
     try file.seekFromEnd(0);
-    try file.writeAll(contents);
+    try file.writeAll(contents.str);
 }
 
 pub fn exec(dt: *DtMachine) !void {
@@ -359,7 +368,9 @@ pub fn exec(dt: *DtMachine) !void {
 
     const val = try dt.pop();
     const childProcess = try val.intoString(dt);
-    var childArgs = std.mem.splitAny(u8, childProcess, " \t");
+    defer childProcess.releaseRef(dt.alloc);
+
+    var childArgs = std.mem.splitAny(u8, childProcess.str, " \t");
     var argv = ArrayList([]const u8).init(dt.alloc);
     defer argv.deinit();
 
@@ -373,7 +384,7 @@ pub fn exec(dt: *DtMachine) !void {
     switch (result.term) {
         .Exited => |code| if (code == 0) {
             dt.alloc.free(result.stderr);
-            try dt.push(.{ .string = result.stdout });
+            try dt.push(.{ .string = try String.of(result.stdout, dt.alloc) });
             return;
         },
         else => {
@@ -393,13 +404,14 @@ test "\"echo hi\" exec" {
     var dt = try DtMachine.init(std.testing.allocator);
     defer dt.deinit();
 
-    try dt.push(.{ .string = "echo hi" });
+    try dt.push(.{ .string = try String.ofAlloc("echo hi", std.testing.allocator) });
     try exec(&dt);
 
     const res = try dt.pop();
     try std.testing.expect(res.isString());
-    try std.testing.expectEqualStrings("hi\n", res.string);
-    std.testing.allocator.free(res.string);
+    res.string.releaseRef(std.testing.allocator);
+
+    try std.testing.expectEqualStrings("hi\n", res.string.str);
 }
 
 pub fn @"def!"(dt: *DtMachine) !void {
@@ -410,16 +422,15 @@ pub fn @"def!"(dt: *DtMachine) !void {
     const quote = try vals[0].intoQuote(dt);
     const name = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
-    try dt.define(name, name, .{ .quote = quote });
+    try dt.defineDynamic(name, name.newRef(), .{ .quote = quote });
 }
 
 pub fn defs(dt: *DtMachine) !void {
     var quote = Quote.init(dt.alloc);
-    var defNames = dt.defs.keyIterator();
+    var cmds = dt.defs.valueIterator();
 
-    while (defNames.next()) |defName| {
-        var cmdName = try dt.alloc.dupe(u8, defName.*);
-        try quote.append(.{ .string = cmdName });
+    while (cmds.next()) |cmd| {
+        try quote.append(.{ .string = cmd.name.newRef() });
     }
 
     const items = quote.items;
@@ -433,8 +444,9 @@ pub fn @"def?"(dt: *DtMachine) !void {
 
     const val = try dt.pop();
     const name = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
+    defer name.releaseRef(dt.alloc);
 
-    try dt.push(.{ .bool = dt.defs.contains(name) });
+    try dt.push(.{ .bool = dt.defs.contains(name.str) });
 }
 
 pub fn usage(dt: *DtMachine) !void {
@@ -442,12 +454,11 @@ pub fn usage(dt: *DtMachine) !void {
 
     const val = try dt.pop();
     const cmdName = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
+    defer cmdName.releaseRef(dt.alloc);
 
-    const cmd = dt.defs.get(cmdName) orelse return dt.rewind(log, val, Error.CommandUndefined);
+    const cmd = dt.defs.get(cmdName.str) orelse return dt.rewind(log, val, Error.CommandUndefined);
 
-    var description = try dt.alloc.dupe(u8, cmd.description);
-
-    try dt.push(.{ .string = description });
+    try dt.push(.{ .string = cmd.description.newRef() });
 }
 
 pub fn @"def-usage"(dt: *DtMachine) !void {
@@ -457,9 +468,9 @@ pub fn @"def-usage"(dt: *DtMachine) !void {
     const name = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
     const description = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
-    const cmd = dt.defs.get(name) orelse return dt.rewindN(2, log, vals, Error.CommandUndefined);
+    const cmd = dt.defs.get(name.str) orelse return dt.rewindN(2, log, vals, Error.CommandUndefined);
 
-    try dt.define(name, description, cmd.action);
+    try dt.defineDynamic(name, description, cmd.action);
 }
 
 // Variable binding
@@ -476,7 +487,7 @@ pub fn @":"(dt: *DtMachine) !void {
 
         var quote = Quote.init(dt.alloc);
         try quote.append(val);
-        try dt.define(cmdName, cmdName, .{ .quote = quote });
+        try dt.defineDynamic(cmdName, cmdName.newRef(), .{ .quote = quote });
         return;
     }
 
@@ -499,22 +510,31 @@ pub fn @":"(dt: *DtMachine) !void {
 
     for (terms, vals) |termV, val| {
         const term = try termV.intoString(dt);
+
         var quote = ArrayList(Val).init(dt.alloc);
         try quote.append(val);
-        try dt.define(term, term, .{ .quote = quote });
+
+        try dt.defineDynamic(term, term.newRef(), .{ .quote = quote });
     }
 }
 
 pub fn loop(dt: *DtMachine) !void {
     const val = try dt.pop();
     switch (val) {
-        .command => |cmd| return while (true) try dt.handleCmd(cmd),
-        .deferred_command => |cmd| return while (true) try dt.handleCmd(cmd),
+        .command => |cmd| return {
+            defer cmd.releaseRef(dt.alloc);
+            while (true) try dt.handleCmd(cmd.newRef());
+        },
+        .deferred_command => |cmd| return {
+            defer cmd.releaseRef(dt.alloc);
+            while (true) try dt.handleCmd(cmd.newRef());
+        },
         else => {},
     }
 
     const quote = try val.intoQuote(dt);
-    const cmd = Command{ .name = "anonymous loop", .description = "", .action = .{ .quote = quote } };
+    const anonloop = try String.ofAlloc("<anonymous-loop>", dt.alloc); // TODO: Make a static string in machine
+    const cmd: Command = .{ .name = anonloop, .description = anonloop.newRef(), .action = .{ .quote = quote } };
 
     while (true) try cmd.run(dt);
 }
@@ -522,11 +542,12 @@ pub fn loop(dt: *DtMachine) !void {
 pub fn dup(dt: *DtMachine) !void {
     const val = try dt.pop();
     try dt.push(val);
-    try dt.push(val);
+    try dt.push(try val.deepClone(dt));
 }
 
 pub fn drop(dt: *DtMachine) !void {
-    _ = try dt.pop();
+    var val = try dt.pop();
+    val.deinit(dt);
 }
 
 pub fn swap(dt: *DtMachine) !void {
@@ -557,7 +578,7 @@ pub fn ep(dt: *DtMachine) !void {
 fn _p(val: Val, writer: std.fs.File.Writer) !void {
     switch (val) {
         // When printing strings, do not show " around a string.
-        .string => |s| try writer.print("{s}", .{s}),
+        .string => |s| try writer.print("{s}", .{s.str}),
         else => try val.print(writer),
     }
 }
@@ -594,7 +615,7 @@ pub fn rl(dt: *DtMachine) !void {
     var line = ArrayList(u8).init(dt.alloc);
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
 
-    try dt.push(.{ .string = line.items });
+    try dt.push(.{ .string = try String.ofAlloc(line.items, dt.alloc) });
 }
 
 pub fn rls(dt: *DtMachine) !void {
@@ -616,7 +637,7 @@ pub fn rls(dt: *DtMachine) !void {
 pub fn procname(dt: *DtMachine) !void {
     var procArgs = try std.process.argsWithAllocator(dt.alloc);
     var name = procArgs.next() orelse return Error.ProcessNameUnknown;
-    try dt.push(.{ .string = name });
+    try dt.push(.{ .string = try String.ofAlloc(name, dt.alloc) });
 }
 
 pub fn args(dt: *DtMachine) !void {
@@ -625,7 +646,7 @@ pub fn args(dt: *DtMachine) !void {
     _ = procArgs.next(); // Discard process name
 
     while (procArgs.next()) |arg| {
-        try quote.append(.{ .string = arg });
+        try quote.append(.{ .string = try String.ofAlloc(arg, dt.alloc) });
     }
 
     try dt.push(.{ .quote = quote });
@@ -636,8 +657,9 @@ pub fn eval(dt: *DtMachine) !void {
 
     var val = try dt.pop();
     var code = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
+    defer code.releaseRef(dt.alloc);
 
-    var tokens = Token.parse(dt.alloc, code);
+    var tokens = Token.parse(dt.alloc, code.str);
     while (try tokens.next()) |tok| {
         try dt.interpret(tok);
     }
@@ -842,22 +864,24 @@ pub fn split(dt: *DtMachine) !void {
 
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    var string = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    defer string.releaseRef(dt.alloc);
     var delim = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    defer delim.releaseRef(dt.alloc);
 
-    if (delim.len > 0) {
-        var parts = std.mem.split(u8, str, delim);
+    if (delim.str.len > 0) {
+        var parts = std.mem.split(u8, string.str, delim.str);
         var quote = Quote.init(dt.alloc);
         while (parts.next()) |part| {
-            try quote.append(.{ .string = part });
+            try quote.append(.{ .string = try String.ofAlloc(part, dt.alloc) });
         }
         try dt.push(.{ .quote = quote });
     } else {
         var quote = Quote.init(dt.alloc);
-        for (str) |c| {
-            var s = try dt.alloc.create([1]u8);
+        for (string.str) |c| {
+            var s = try dt.alloc.alloc(u8, 1);
             s[0] = c;
-            try quote.append(.{ .string = s });
+            try quote.append(.{ .string = try String.of(s, dt.alloc) });
         }
         try dt.push(.{ .quote = quote });
     }
@@ -875,15 +899,18 @@ pub fn join(dt: *DtMachine) !void {
     }
 
     var strs = try vals[0].intoQuote(dt);
+    defer strs.deinit();
     var delim = try vals[1].intoString(dt);
+    defer delim.releaseRef(dt.alloc);
 
     var parts = try ArrayList([]const u8).initCapacity(dt.alloc, strs.items.len);
     for (strs.items) |part| {
-        const s = try part.intoString(dt);
+        const s = try part.intoByteString(dt);
         try parts.append(s);
     }
-    var acc = try std.mem.join(dt.alloc, delim, parts.items);
-    try dt.push(.{ .string = acc });
+
+    var acc = try std.mem.join(dt.alloc, delim.str, parts.items);
+    try dt.push(.{ .string = try String.of(acc, dt.alloc) });
 }
 
 pub fn upcase(dt: *DtMachine) !void {
@@ -891,10 +918,11 @@ pub fn upcase(dt: *DtMachine) !void {
 
     var val = try dt.pop();
     const before = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
+    defer before.releaseRef(dt.alloc);
 
-    const after = try std.ascii.allocUpperString(dt.alloc, before);
+    var after = try std.ascii.allocUpperString(dt.alloc, before.str);
 
-    try dt.push(.{ .string = after });
+    try dt.push(.{ .string = try String.of(after, dt.alloc) });
 }
 
 pub fn downcase(dt: *DtMachine) !void {
@@ -902,10 +930,11 @@ pub fn downcase(dt: *DtMachine) !void {
 
     var val = try dt.pop();
     const before = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
+    defer before.releaseRef(dt.alloc);
 
-    const after = try std.ascii.allocLowerString(dt.alloc, before);
+    var after = try std.ascii.allocLowerString(dt.alloc, before.str);
 
-    try dt.push(.{ .string = after });
+    try dt.push(.{ .string = try String.of(after, dt.alloc) });
 }
 
 pub fn startsWith(dt: *DtMachine) !void {
@@ -914,9 +943,11 @@ pub fn startsWith(dt: *DtMachine) !void {
     var vals = try dt.popN(2);
 
     var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    defer str.releaseRef(dt.alloc);
     var prefix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    defer prefix.releaseRef(dt.alloc);
 
-    try dt.push(.{ .bool = std.mem.startsWith(u8, str, prefix) });
+    try dt.push(.{ .bool = std.mem.startsWith(u8, str.str, prefix.str) });
 }
 
 pub fn endsWith(dt: *DtMachine) !void {
@@ -925,9 +956,11 @@ pub fn endsWith(dt: *DtMachine) !void {
     var vals = try dt.popN(2);
 
     var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    defer str.releaseRef(dt.alloc);
     var suffix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    defer suffix.releaseRef(dt.alloc);
 
-    try dt.push(.{ .bool = std.mem.endsWith(u8, str, suffix) });
+    try dt.push(.{ .bool = std.mem.endsWith(u8, str.str, suffix.str) });
 }
 
 pub fn contains(dt: *DtMachine) !void {
@@ -937,9 +970,11 @@ pub fn contains(dt: *DtMachine) !void {
 
     if (vals[0].isString() and vals[1].isString()) {
         var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+        defer str.releaseRef(dt.alloc);
         var substr = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+        defer substr.releaseRef(dt.alloc);
 
-        try dt.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
+        try dt.push(.{ .bool = std.mem.containsAtLeast(u8, str.str, 1, substr.str) });
         return;
     }
 
@@ -1195,8 +1230,9 @@ pub fn len(dt: *DtMachine) !void {
 
     if (val.isString()) {
         const s = try val.intoString(dt);
-        const length: i64 = @intCast(s.len);
+        const length: i64 = @intCast(s.str.len);
         try dt.push(.{ .int = length });
+        s.releaseRef(dt.alloc);
         return;
     }
 
@@ -1240,14 +1276,15 @@ pub fn rev(dt: *DtMachine) !void {
     }
 
     if (val.isString()) {
-        const str = try val.intoString(dt);
-        var newStr = try dt.alloc.alloc(u8, str.len);
+        const original = try val.intoString(dt);
+        var reversed = try dt.alloc.alloc(u8, original.str.len);
 
-        for (str, 0..) |c, i| {
-            newStr[str.len - 1 - i] = c;
+        for (original.str, 0..) |c, i| {
+            reversed[original.str.len - 1 - i] = c;
         }
 
-        try dt.push(.{ .string = newStr });
+        try dt.push(.{ .string = try String.of(reversed, dt.alloc) });
+        original.releaseRef(dt.alloc);
         return;
     }
 
@@ -1349,5 +1386,5 @@ pub fn @"to-quote"(dt: *DtMachine) !void {
 
 pub fn inspire(dt: *DtMachine) !void {
     const i = std.crypto.random.uintLessThan(usize, dt.inspiration.items.len);
-    try dt.push(.{ .string = dt.inspiration.items[i] });
+    try dt.push(.{ .string = try String.ofAlloc(dt.inspiration.items[i].*, dt.alloc) });
 }

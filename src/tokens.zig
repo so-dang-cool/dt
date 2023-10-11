@@ -133,6 +133,20 @@ pub const Token = union(enum) {
             .none => std.debug.assert(other == Token.none),
         }
     }
+
+    pub fn debugPrint(self: Token) void {
+        switch (self) {
+            .left_bracket => std.log.debug("PARSE: [", .{}),
+            .right_bracket => std.log.debug("PARSE: ]", .{}),
+            .bool => |b| std.log.debug("PARSE: bool:{}", .{b}),
+            .int => |i| std.log.debug("PARSE: int:{}", .{i}),
+            .float => |f| std.log.debug("PARSE: float:{}", .{f}),
+            .string => |s| std.log.debug("PARSE: string:\"{s}\"", .{s}),
+            .term => |t| std.log.debug("PARSE: term:\"{s}\"", .{t}),
+            .deferred_term => |t| std.log.debug("PARSE: deferred_term:\"\\{s}\"", .{t}),
+            .none => std.log.debug("PARSE: none:void", .{}),
+        }
+    }
 };
 
 // Testing!
