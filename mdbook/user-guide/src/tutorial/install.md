@@ -3,15 +3,10 @@
 
 ## Install from a package manager
 
-Installing dt from a package manager for your operating system **will be the
-preferred way of installing and updating dt in the future.**
+If your package manager supports it, install it! The package is likely named `dt`
+or `dt-script`.
 
-Currently this is waiting on:
-
-1. The release of Zig 0.11.+
-2. Adoption of Zig 0.11.+ by package managers
-3. Package maintainers adding support
-
+[![Packaging status](https://repology.org/badge/vertical-allrepos/dt-script.svg)](https://repology.org/project/dt-script/versions)
 
 ## Getting updates
 
