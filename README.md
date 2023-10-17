@@ -1,6 +1,4 @@
 [![License](https://img.shields.io/github/license/so-dang-cool/dt)](https://github.com/so-dang-cool/dt/blob/core/LICENSE.md)
-[![discord badge](https://img.shields.io/discord/1150472957093744721?logo=discord)](https://discord.gg/pwrVPJJMfZ)
-
 [![unconventions.org](https://img.shields.io/badge/unconventions-%E7%84%A1%E9%99%90-orange)](https://unconventions.org)
 [![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
 
@@ -134,6 +132,20 @@ configuration files to set an alias that persists will vary by your shell.
 
 More ways to install: https://dt.plumbing/user-guide/tutorial/install.html
 
+
+## Community and resources
+
+Discuss dt on Discord. As interest grows and the language matures we will probably prefer
+discussion to be on platforms that can be indexed for searches. Let us know of other communities!
+
+* Scripters, packagers, and terminal fans:  [![discord badge](https://img.shields.io/discord/1141777454164365382?logo=discord)](https://discord.gg/9ByutGCrJX)
+* Concatenative language theorists: [![discord badge](https://img.shields.io/discord/1150472957093744721?logo=discord)](https://discord.gg/pwrVPJJMfZ)
+
+Other resources:
+
+* [dt User Guide](https://dt.plumbing/user-guide/) ([sources](https://github.com/so-dang-cool/dt/tree/gh-pages))
+* [dt on Rosetta Code](https://www.rosettacode.org/wiki/Category:Dt)
+* [dt on the concatenative wiki](https://concatenative.org/wiki/view/dt)
 
 ## The nerdy stuff
 
