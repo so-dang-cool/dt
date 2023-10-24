@@ -1,71 +1,66 @@
 const std = @import("std");
-const Color = std.io.tty.Color;
-const ArrayList = std.ArrayList;
-const Stack = std.SinglyLinkedList;
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
+const Color = std.io.tty.Color;
+const Stack = std.SinglyLinkedList;
 // const stdin = std.io.getStdIn().reader();
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
-const string = @import("string.zig");
-const String = string.String;
-
 const Token = @import("tokens.zig").Token;
 
-const inspiration = @embedFile("inspiration");
+const inspirationFile = @embedFile("inspiration");
 
 const types = @import("types.zig");
-const Error = types.Error;
+const string = types.string;
 const Dictionary = types.Dictionary;
-const Val = types.Val;
+const Error = types.Error;
 const Quote = types.Quote;
+const String = string.String;
+const Val = types.Val;
 
 pub const DtMachine = struct {
-    alloc: Allocator,
-
-    nest: Stack(ArrayList(Val)),
-    depth: u8,
-
-    defs: Dictionary,
+    context: ArrayList(Quote),
+    depth: usize,
 
     stdoutConfig: std.io.tty.Config,
     stderrConfig: std.io.tty.Config,
 
-    inspiration: ArrayList(String),
+    allocator: Allocator,
 
-    pub fn init(alloc: Allocator) !DtMachine {
-        var nest = Stack(Quote){};
-        var mainNode = try alloc.create(Stack(Quote).Node);
-        mainNode.* = Stack(Quote).Node{ .data = Quote.init(alloc) };
-        nest.prepend(mainNode);
+    inspirations: ArrayList([]const u8),
 
-        var inspirations = ArrayList(String).init(alloc);
-        var lines = std.mem.tokenizeScalar(u8, inspiration, '\n');
+    pub fn init(allocator: Allocator) !DtMachine {
+        const arbitraryInitialCapacity: comptime_int = 64;
+
+        var context = try ArrayList(Quote).initCapacity(allocator, arbitraryInitialCapacity);
+        var mainContext = try Quote.init(allocator);
+        try context.append(mainContext);
+
+        var inspirations = ArrayList([]const u8).init(allocator);
+        var lines = std.mem.tokenizeScalar(u8, inspirationFile, '\n'); // TODO: This could handle \r too?
         while (lines.next()) |line| {
+            // No need to clone as these are built into the binary.
             try inspirations.append(line);
         }
 
         return .{
-            .alloc = alloc,
-            .nest = nest,
+            .allocator = allocator,
+            .context = context,
             .depth = 0,
-            .defs = Dictionary.init(alloc),
             .stdoutConfig = std.io.tty.detectConfig(std.io.getStdOut()),
             .stderrConfig = std.io.tty.detectConfig(std.io.getStdErr()),
-            .inspiration = inspirations,
+            .inspirations = inspirations,
         };
     }
 
     pub fn deinit(self: *DtMachine) void {
-        self.defs.deinit();
         self.inspiration.deinit();
 
-        var node = self.nest.first;
-        while (node) |n| {
-            node = n.next;
-            n.data.deinit();
-            self.alloc.destroy(n);
+        for (self.context.items) |item| {
+            item.deinit();
         }
+        self.context.deinit();
     }
 
     pub fn interpret(self: *DtMachine, tok: Token) !void {
@@ -156,18 +151,28 @@ pub const DtMachine = struct {
         try self.stderrConfig.setColor(stderr, Color.reset);
     }
 
-    pub fn child(self: *DtMachine) !DtMachine {
-        var newMachine = try DtMachine.init(self.alloc);
+    // pub fn child(self: *DtMachine) !DtMachine {
+    //     var newMachine = try DtMachine.init(self.alloc);
 
-        // TODO: Persistent map for dictionary would make this much cheaper.
-        newMachine.defs = try self.defs.clone();
+    //     // TODO: Persistent map for dictionary would make this much cheaper.
+    //     newMachine.defs = try self.defs.clone();
 
-        return newMachine;
+    //     return newMachine;
+    // }
+
+    pub fn top(self: DtMachine) Quote {
+        return self.context.getLast();
     }
 
-    pub fn define(self: *DtMachine, name: String, description: String, action: Action) !void {
+    pub fn define(self: *DtMachine, name: []const u8, description: []const u8, action: Action) !void {
         const cmd = Command{ .name = name, .description = description, .action = action };
-        try self.defs.put(name, cmd);
+
+        try self.top().defs.put(name, cmd);
+    }
+
+    pub fn cwd(self: DtMachine) !String {
+        var theCwd = try std.process.getCwdAlloc(self.allocator);
+        return String.init(theCwd, self.allocator);
     }
 
     pub fn rewind(self: *DtMachine, log: anytype, val: Val, err: anyerror) anyerror!void {
@@ -193,11 +198,11 @@ pub const DtMachine = struct {
     }
 
     pub fn pop(self: *DtMachine) !Val {
-        var top = self.nest.first orelse return Error.ContextStackUnderflow;
-        if (top.data.items.len < 1) {
+        var theTop = self.top();
+        if (theTop.data.items.len < 1) {
             return Error.StackUnderflow;
         }
-        return top.data.pop();
+        return theTop.data.pop();
     }
 
     // Removes and returns top N values from the stack from oldest to youngest. Last index is the most recent, 0 is the oldest.
@@ -239,9 +244,14 @@ pub const DtMachine = struct {
     }
 };
 
+pub const Action = union(enum) {
+    builtin: *const fn (*DtMachine) anyerror!void,
+    quote: Quote,
+};
+
 pub const Command = struct {
-    name: String,
-    description: String,
+    name: []const u8,
+    description: []const u8,
     action: Action,
 
     pub fn run(self: Command, state: *DtMachine) anyerror!void {
@@ -282,9 +292,4 @@ pub const Command = struct {
             },
         }
     }
-};
-
-pub const Action = union(enum) {
-    builtin: *const fn (*DtMachine) anyerror!void,
-    quote: Quote,
 };

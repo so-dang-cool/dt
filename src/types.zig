@@ -4,14 +4,15 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
 
-const string = @import("string.zig");
-const String = string.String;
-
 const interpret = @import("interpret.zig");
 const Command = interpret.Command;
 const DtMachine = interpret.DtMachine;
 
-pub const Quote = ArrayList(Val);
+pub const string = @import("types/string.zig");
+pub const String = string.String;
+
+pub const Quote = @import("types/Quote.zig");
+
 pub const Dictionary = StringHashMap(Command);
 
 pub const Val = union(enum) {

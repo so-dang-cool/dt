@@ -239,7 +239,7 @@ test "\".\" cd" {
 }
 
 pub fn ls(dt: *DtMachine) !void {
-    const theCwd = try std.process.getCwdAlloc(dt.alloc);
+    const theCwd = try dt.cwd();
     defer dt.alloc.free(theCwd);
 
     var dir = try std.fs.openIterableDirAbsolute(theCwd, .{});
