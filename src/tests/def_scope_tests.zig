@@ -32,7 +32,7 @@ test "basic_do_def" {
     try expectEqualStrings("", (try dt(&.{source})).stdout);
 }
 
-test "basic_arrow_do" {
+test "basic_colon_do" {
     const source =
         \\ 3 "banana"
         \\
@@ -47,13 +47,14 @@ test "basic_arrow_do" {
     try expectEqualStrings("banana" ** 3, res.stdout);
 }
 
-test "arrow_in_times" {
+test "colon_in_times" {
     const source =
         \\ 1
         \\ [ [n] :
         \\     n println
         \\     n 2 *
         \\ ] 7 times
+        \\ drop
         \\
         \\ \n undef? "times must not leak definitions, but n was defined" assert-true
     ;
@@ -62,7 +63,7 @@ test "arrow_in_times" {
     try expectEqualStrings("1\n" ++ "2\n" ++ "4\n" ++ "8\n" ++ "16\n" ++ "32\n" ++ "64\n", res.stdout);
 }
 
-test "arrow_in_each" {
+test "colon_in_each" {
     const source =
         \\ [ 1 2 3 4 5 ]
         \\ [ \n : n n * println ] each
@@ -74,7 +75,7 @@ test "arrow_in_each" {
     try expectEqualStrings("1\n" ++ "4\n" ++ "9\n" ++ "16\n" ++ "25\n", res.stdout);
 }
 
-test "arrow_in_map" {
+test "colon_in_map" {
     const source =
         \\ ["apple" "banana" "cereal"]
         \\ [[food]: food upcase] map print
@@ -86,7 +87,7 @@ test "arrow_in_map" {
     try expectEqualStrings("[ \"APPLE\" \"BANANA\" \"CEREAL\" ]", res.stdout);
 }
 
-test "arrow_in_filter" {
+test "colon_in_filter" {
     const source =
         \\ [[1 "banana"] [2 "banana"] [3 "banana"] [4 "bananas make a bunch!"]]
         \\ [...[n str]: n even? str len odd?] filter ... print
@@ -117,7 +118,7 @@ test "shadowing_in_do" {
     try expectEqualStrings("5\n" ++ "8\n" ++ "5\n", res.stdout);
 }
 
-test "shadowing_arrow_in_do" {
+test "shadowing_colon_in_do" {
     const source =
         \\ [ 6 ] "fav-number" def
         \\
@@ -137,6 +138,7 @@ test "shadowing_in_times" {
         \\ [ 1 ] \n def
         \\
         \\ n [ \n :   n println   n 1 + ] 3 times
+        \\ drop
         \\
         \\ n println
     ;

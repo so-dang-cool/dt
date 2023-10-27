@@ -33,7 +33,7 @@ pub fn main() !void {
     if (firstArgMaybe) |firstArg| {
         if (try readShebangFile(arena.allocator(), firstArg)) |fileContents| {
             return machine.loadFile(fileContents) catch |e| return doneOrDie(&machine, e);
-        } else if ((std.mem.eql(u8, firstArg, "stream") or std.mem.startsWith(u8, firstArg, "stream ")) and (stdinPiped or stdoutPiped)) {
+        } else if ((std.mem.eql(u8, firstArg, "--stream") or std.mem.startsWith(u8, firstArg, "--stream ")) and (stdinPiped or stdoutPiped)) {
             return handlePipedStdoutOnly(&machine);
         }
     }
@@ -66,10 +66,7 @@ fn readEvalPrintLoop(dt: *DtMachine) !void {
 
     // TODO: Can this catch be done in the stdlib? Other people need to catch errors too!
     while (true) dt.handleCmd("dt/main-repl") catch |e| switch (e) {
-        error.EndOfStream => {
-            try stderr.print("\n", .{});
-            return;
-        },
+        error.EndOfStream => return,
         else => {
             try dt.red();
             try stderr.print("\nRestarting REPL after error: {s}\n\n", .{@errorName(e)});
@@ -81,11 +78,11 @@ fn readEvalPrintLoop(dt: *DtMachine) !void {
 fn doneOrDie(dt: *DtMachine, reason: anyerror) !void {
     try stderr.print("\n", .{});
     switch (reason) {
-        error.EndOfStream => return,
-        error.BrokenPipe => return,
+        error.EndOfStream => {},
+        error.BrokenPipe => {},
         else => {
             try dt.red();
-            try stderr.print("RIP: {any}\n", .{reason});
+            try stderr.print("\nRIP: {any}\n", .{reason});
             try dt.norm();
 
             std.os.exit(1);

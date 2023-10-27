@@ -6,6 +6,7 @@
 ] \dt/handle-flag def
 
 [ "dt " p version pl ] \dt/print-version def
+[ anything? \pls swap do? ] \dt/print-last-val def
 
 [ dt/print-version
   [ "USAGE: dt FLAGS CODE..."
@@ -31,9 +32,9 @@
 
 [ args unwords words
   dup len 0 neq?   \has-args:
-  # Drop the first arg if it's 'stream'
+  # Drop the first arg if it's '--stream'
   [ deq swap   \first-arg:
-    first-arg "stream" neq?   \keep:
+    first-arg "--stream" neq?   \keep:
     [ first-arg swap enq ] keep do?
   ] has-args do?
 ] \dt/args def
@@ -43,7 +44,7 @@
 
 ### PIPE things ###
 
-[ readlns   dt/run-args ] \dt/pipe-thru-args def!
+[ readlns   dt/run-args   dt/print-last-val ] \dt/pipe-thru-args def!
 
 
 ### REPL things ###
