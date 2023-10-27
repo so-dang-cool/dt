@@ -4,14 +4,14 @@ const allocator = std.heap.page_allocator;
 
 const MAX_FILE_SIZE = 1 << 12;
 
-pub fn dtRunFile(file_path: []const u8) !Child.ExecResult {
+pub fn dtRunFile(file_path: []const u8) !Child.RunResult {
     const cur_dir = std.fs.cwd();
     const contents = try cur_dir.readFileAlloc(allocator, file_path, MAX_FILE_SIZE);
     return try dtStdin(contents);
 }
 
-pub fn dtStdin(input: []const u8) !Child.ExecResult {
-    return try Child.exec(.{ .allocator = allocator, .argv = &.{
+pub fn dtStdin(input: []const u8) !Child.RunResult {
+    return try Child.run(.{ .allocator = allocator, .argv = &.{
         "./zig-out/bin/dt",
         "[\"#\" starts-with? not] filter",
         "unwords",
@@ -20,7 +20,7 @@ pub fn dtStdin(input: []const u8) !Child.ExecResult {
     } });
 }
 
-pub fn dt(argv: []const []const u8) !Child.ExecResult {
+pub fn dt(argv: []const []const u8) !Child.RunResult {
     var args = std.ArrayList([]const u8).init(allocator);
     defer args.deinit();
 
@@ -30,5 +30,5 @@ pub fn dt(argv: []const []const u8) !Child.ExecResult {
         try args.append(arg);
     }
 
-    return try Child.exec(.{ .allocator = allocator, .argv = args.items });
+    return try Child.run(.{ .allocator = allocator, .argv = args.items });
 }
