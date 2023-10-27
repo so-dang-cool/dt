@@ -9,8 +9,9 @@ args first \script-name:
 
 [usage [do eprint] each   1 exit] \usage-fail def
 
-shebang-args pop to-int \n:
-  \usage-fail n not do?
+\usage-fail shebang-args len not do?
+
+shebang-args first to-int \n:
 
 n 1 - \n:
   \usage-fail n 0 lt? do?
