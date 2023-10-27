@@ -34,11 +34,13 @@ pub fn build(b: *std.Build) !void {
 
         const cross_install = b.addInstallArtifact(cross, .{});
 
-        const cross_tar = b.addSystemCommand(&.{ "tar", "--transform", "s|" ++ exe ++ "|dt|", "-czvf", exe ++ ".tgz", switch (cross.target.cpu_arch.?) {
-            .wasm32 => exe ++ ".wasm",
-            else => exe,
-        } });
-        cross_tar.cwd = "./zig-out/bin/";
+        const cross_tar = b.addSystemCommand(&.{
+            "tar", "--transform", "s|" ++ exe ++ "|dt|", "-czvf", exe ++ ".tgz", switch (cross.target.cpu_arch.?) {
+                .wasm32 => exe ++ ".wasm",
+                else => exe,
+            },
+        });
+        cross_tar.setCwd(.{ .path = "./zig-out/bin/" });
 
         cross_tar.step.dependOn(&cross_install.step);
         cross_step.dependOn(&cross_tar.step);

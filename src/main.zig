@@ -1,8 +1,5 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const stdin = std.io.getStdIn().reader();
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
 
 const builtins = @import("builtins.zig");
 
@@ -27,6 +24,10 @@ pub fn main() !void {
 
     const stdinPiped = !std.io.getStdIn().isTty();
     const stdoutPiped = !std.io.getStdOut().isTty();
+
+    if (@import("builtin").os.tag == .windows) {
+        _ = std.os.windows.kernel32.SetConsoleOutputCP(65001);
+    }
 
     const firstArgMaybe = try readFirstArg(arena.allocator());
 
@@ -68,6 +69,7 @@ fn readEvalPrintLoop(dt: *DtMachine) !void {
     while (true) dt.handleCmd("dt/main-repl") catch |e| switch (e) {
         error.EndOfStream => return,
         else => {
+            const stderr = std.io.getStdErr().writer();
             try dt.red();
             try stderr.print("\nRestarting REPL after error: {s}\n\n", .{@errorName(e)});
             try dt.norm();
@@ -76,6 +78,7 @@ fn readEvalPrintLoop(dt: *DtMachine) !void {
 }
 
 fn doneOrDie(dt: *DtMachine, reason: anyerror) !void {
+    const stderr = std.io.getStdErr().writer();
     try stderr.print("\n", .{});
     switch (reason) {
         error.EndOfStream => {},

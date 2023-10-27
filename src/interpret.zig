@@ -4,8 +4,8 @@ const ArrayList = std.ArrayList;
 const Stack = std.SinglyLinkedList;
 const Allocator = std.mem.Allocator;
 // const stdin = std.io.getStdIn().reader();
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
+// const stdout = std.io.getStdOut().writer();
+// const stderr = std.io.getStdErr().writer();
 
 const string = @import("string.zig");
 const String = string.String;
@@ -31,6 +31,9 @@ pub const DtMachine = struct {
     stdoutConfig: std.io.tty.Config,
     stderrConfig: std.io.tty.Config,
 
+    stdout: std.fs.File.Writer,
+    stderr: std.fs.File.Writer,
+
     inspiration: ArrayList(String),
 
     pub fn init(alloc: Allocator) !DtMachine {
@@ -52,6 +55,8 @@ pub const DtMachine = struct {
             .defs = Dictionary.init(alloc),
             .stdoutConfig = std.io.tty.detectConfig(std.io.getStdOut()),
             .stderrConfig = std.io.tty.detectConfig(std.io.getStdErr()),
+            .stdout = std.io.getStdOut().writer(),
+            .stderr = std.io.getStdErr().writer(),
             .inspiration = inspirations,
         };
     }
@@ -139,21 +144,21 @@ pub const DtMachine = struct {
 
     pub fn red(self: *DtMachine) !void {
         try self.norm();
-        try self.stdoutConfig.setColor(stdout, Color.red);
-        try self.stderrConfig.setColor(stderr, Color.red);
+        try self.stdoutConfig.setColor(self.stdout, Color.red);
+        try self.stderrConfig.setColor(self.stderr, Color.red);
     }
 
     pub fn green(self: *DtMachine) !void {
-        try self.stdoutConfig.setColor(stdout, Color.green);
-        try self.stdoutConfig.setColor(stdout, Color.bold);
+        try self.stdoutConfig.setColor(self.stdout, Color.green);
+        try self.stdoutConfig.setColor(self.stdout, Color.bold);
 
-        try self.stderrConfig.setColor(stderr, Color.green);
-        try self.stdoutConfig.setColor(stdout, Color.bold);
+        try self.stderrConfig.setColor(self.stderr, Color.green);
+        try self.stdoutConfig.setColor(self.stdout, Color.bold);
     }
 
     pub fn norm(self: *DtMachine) !void {
-        try self.stdoutConfig.setColor(stdout, Color.reset);
-        try self.stderrConfig.setColor(stderr, Color.reset);
+        try self.stdoutConfig.setColor(self.stdout, Color.reset);
+        try self.stderrConfig.setColor(self.stderr, Color.reset);
     }
 
     pub fn child(self: *DtMachine) !DtMachine {
@@ -202,7 +207,7 @@ pub const DtMachine = struct {
 
     // Removes and returns top N values from the stack from oldest to youngest. Last index is the most recent, 0 is the oldest.
     pub fn popN(self: *DtMachine, comptime n: comptime_int) ![n]Val {
-        var vals: [n]Val = .{};
+        var vals: [n]Val = undefined;
 
         comptime var i = n - 1;
         inline while (i >= 0) : (i -= 1) {

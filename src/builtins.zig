@@ -1,8 +1,5 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
-const stdin = std.io.getStdIn().reader();
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
 
 const interpret = @import("interpret.zig");
 const Command = interpret.Command;
@@ -130,6 +127,7 @@ pub fn quit(dt: *DtMachine) !void {
     const ctx = try dt.popContext();
 
     if (ctx.items.len > 0) {
+        const stderr = std.io.getStdErr().writer();
         try dt.red();
         try stderr.print("warning(quit): Exited with unused values: [ ", .{});
 
@@ -365,7 +363,7 @@ pub fn exec(dt: *DtMachine) !void {
 
     while (childArgs.next()) |arg| try argv.append(arg);
 
-    var result = std.process.Child.exec(.{
+    var result = std.process.Child.run(.{
         .allocator = dt.alloc,
         .argv = argv.items,
     }) catch |e| return dt.rewind(log, val, e);
@@ -546,11 +544,13 @@ pub fn rot(dt: *DtMachine) !void {
 
 pub fn p(dt: *DtMachine) !void {
     const val = try dt.pop();
+    const stdout = std.io.getStdOut().writer();
     try _p(val, stdout);
 }
 
 pub fn ep(dt: *DtMachine) !void {
     const val = try dt.pop();
+    const stderr = std.io.getStdErr().writer();
     try _p(val, stderr);
 }
 
@@ -575,6 +575,7 @@ pub fn norm(dt: *DtMachine) !void {
 }
 
 pub fn @".s"(dt: *DtMachine) !void {
+    const stderr = std.io.getStdErr().writer();
     try stderr.print("[ ", .{});
 
     var top = dt.nest.first orelse {
@@ -592,6 +593,7 @@ pub fn @".s"(dt: *DtMachine) !void {
 
 pub fn rl(dt: *DtMachine) !void {
     var line = ArrayList(u8).init(dt.alloc);
+    const stdin = std.io.getStdIn().reader();
     try stdin.streamUntilDelimiter(line.writer(), '\n', null);
 
     try dt.push(.{ .string = line.items });
@@ -768,13 +770,13 @@ pub fn abs(dt: *DtMachine) !void {
     if (val.isInt()) {
         const a = try val.intoInt();
 
-        try dt.push(.{ .int = try std.math.absInt(a) });
+        try dt.push(.{ .int = @intCast(@abs(a)) });
         return;
     }
 
     const a = val.intoFloat() catch |e| return dt.rewind(log, val, e);
 
-    try dt.push(.{ .float = std.math.fabs(a) });
+    try dt.push(.{ .float = @abs(a) });
 }
 
 pub fn rand(dt: *DtMachine) !void {
