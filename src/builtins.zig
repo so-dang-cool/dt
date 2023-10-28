@@ -771,15 +771,17 @@ pub fn abs(dt: *DtMachine) !void {
 
     if (val.isInt()) {
         const a = try val.intoInt();
-
-        try dt.push(.{ .int = try std.math.absInt(a) });
+        
+        // Safe abs for 0.11.x and 0.12.x
+        try dt.push(.{ .int = if (a >= 0) a else -a });
     
         return;
     }
 
     const a = val.intoFloat() catch |e| return dt.rewind(log, val, e);
 
-    try dt.push(.{ .float = std.math.fabs(a) });
+    // Safe abs for 0.11.x and 0.12.x
+    try dt.push(.{ .float = if (a >= 0) a else -a });
 }
 
 pub fn rand(dt: *DtMachine) !void {
