@@ -17,7 +17,11 @@ jobs:
         os: [ubuntu-latest]
         experimental: [false]
         include:
-          - os: windows-latest
+          - zig_version: 0.11.0
+            os: windows-latest
+            experimental: true
+          - zig_version: master
+            os: windows-latest
             experimental: true
 
     continue-on-error: ${{ matrix.experimental }}
