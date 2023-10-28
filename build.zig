@@ -34,13 +34,19 @@ pub fn build(b: *std.Build) !void {
 
         const cross_install = b.addInstallArtifact(cross, .{});
 
+        const exe_filename = if (cross.target.cpu_arch == .wasm32) exe ++ ".wasm" else if (cross.target.os_tag == .windows) exe ++ ".exe" else exe;
+
         const cross_tar = b.addSystemCommand(&.{
-            "tar", "--transform", "s|" ++ exe ++ "|dt|", "-czvf", exe ++ ".tgz", switch (cross.target.cpu_arch.?) {
-                .wasm32 => exe ++ ".wasm",
-                else => exe,
-            },
+            "tar", "--transform", "s|" ++ exe ++ "|dt|", "-czvf", exe ++ ".tgz", exe_filename,
         });
-        cross_tar.setCwd(.{ .path = "./zig-out/bin/" });
+
+        if (comptime @hasDecl(@TypeOf(cross_tar.*), "setCwd")) {
+            // Zig 0.12.0
+            cross_tar.setCwd(.{ .path="./zig-out/bin/"});
+        } else {
+            // Zig 0.11.0
+            cross_tar.cwd = "./zig-out/bin/";
+        }
 
         cross_tar.step.dependOn(&cross_install.step);
         cross_step.dependOn(&cross_tar.step);
@@ -87,4 +93,6 @@ const TRIPLES = .{
     "x86_64-macos-none",
     "x86-linux-gnu",
     "x86-linux-musl",
+    "x86-windows-gnu",
+    "x86_64-windows-gnu"
 };

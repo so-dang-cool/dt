@@ -11,13 +11,18 @@ on:
 
 jobs:
   compile:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        zig_version: [0.11.0, master]
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Set up Zig
         uses: goto-bus-stop/setup-zig@v2.1.0
         with:
-          version: 0.11.0
+          version: ${{ matrix.zig_version }}
 
       - name: Check out repository
         uses: actions/checkout@v3

@@ -363,7 +363,9 @@ pub fn exec(dt: *DtMachine) !void {
 
     while (childArgs.next()) |arg| try argv.append(arg);
 
-    var result = std.process.Child.run(.{
+    const run = if (comptime @hasDecl(std.process.Child, "run"))std.process.Child.run else std.process.Child.exec;
+
+    var result = run(.{
         .allocator = dt.alloc,
         .argv = argv.items,
     }) catch |e| return dt.rewind(log, val, e);
@@ -770,13 +772,14 @@ pub fn abs(dt: *DtMachine) !void {
     if (val.isInt()) {
         const a = try val.intoInt();
 
-        try dt.push(.{ .int = @intCast(@abs(a)) });
+        try dt.push(.{ .int = try std.math.absInt(a) });
+    
         return;
     }
 
     const a = val.intoFloat() catch |e| return dt.rewind(log, val, e);
 
-    try dt.push(.{ .float = @abs(a) });
+    try dt.push(.{ .float = std.math.fabs(a) });
 }
 
 pub fn rand(dt: *DtMachine) !void {
