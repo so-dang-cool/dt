@@ -6,7 +6,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "dt";
-  version = "1.2.5";
+  version = "1.3.1";
 
   src = lib.cleanSource ./.;
 
