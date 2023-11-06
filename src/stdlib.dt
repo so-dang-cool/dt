@@ -157,7 +157,6 @@
 ### Unixy things ###
 
 [ args deq swap drop ] \shebang-args def!
-[ "» " p   readln eval   repl ] \repl def!
 
 
 ### Parsing ###
@@ -174,7 +173,9 @@
 \assert-true define
 
 
-### REPL Helpers ###
+### REPL ###
+
+[ "» " p   readln eval   repl ] \repl def!
 
 [ defs [ [ name ]: green name p   norm "\t" p   name usage pl ] each ]
 "( -- ) Print commands and their usage"
