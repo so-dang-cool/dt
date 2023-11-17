@@ -16,11 +16,11 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
-    var machine = try DtMachine.init(arena.allocator());
+    var dt = try DtMachine.init(arena.allocator());
 
-    try builtins.defineAll(&machine);
-    try machine.loadFile(stdlib);
-    try machine.loadFile(dtlib);
+    try builtins.defineAll(&dt);
+    try dt.loadFile(stdlib);
+    try dt.loadFile(dtlib);
 
     const stdinPiped = !std.io.getStdIn().isTty();
     const stdoutPiped = !std.io.getStdOut().isTty();
@@ -33,19 +33,19 @@ pub fn main() !void {
 
     if (firstArgMaybe) |firstArg| {
         if (try readShebangFile(arena.allocator(), firstArg)) |fileContents| {
-            return machine.loadFile(fileContents) catch |e| return doneOrDie(&machine, e);
+            return dt.loadFile(fileContents) catch |e| return doneOrDie(&dt, e);
         } else if ((std.mem.eql(u8, firstArg, "--stream") or std.mem.startsWith(u8, firstArg, "--stream ")) and (stdinPiped or stdoutPiped)) {
-            return handlePipedStdoutOnly(&machine);
+            return handlePipedStdoutOnly(&dt);
         }
     }
 
     if (stdinPiped) {
-        return handlePipedStdin(&machine);
+        return handlePipedStdin(&dt);
     } else if (stdoutPiped) {
-        return handlePipedStdoutOnly(&machine);
+        return handlePipedStdoutOnly(&dt);
     }
 
-    return readEvalPrintLoop(&machine);
+    return readEvalPrintLoop(&dt);
 }
 
 fn readFirstArg(allocator: Allocator) !?[]const u8 {
