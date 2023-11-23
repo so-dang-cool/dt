@@ -26,7 +26,7 @@ pub const TokenIterator = struct {
 
         switch (self.buf[start]) {
             '"' => { // Parse a string
-                var strStart = start + 1;
+                const strStart = start + 1;
                 var end = start + 1;
                 var keepLookin = true;
                 while (keepLookin) {
@@ -66,7 +66,7 @@ pub const TokenIterator = struct {
                 return .{ .term = ":" };
             },
             else => { // Parse a token
-                var end = std.mem.indexOfAnyPos(u8, self.buf, start, specialChars.alwaysSingle ++ specialChars.whitespace) orelse self.buf.len;
+                const end = std.mem.indexOfAnyPos(u8, self.buf, start, specialChars.alwaysSingle ++ specialChars.whitespace) orelse self.buf.len;
                 self.index = end;
                 return Token.parseOneToken(self.buf[start..end]);
             },

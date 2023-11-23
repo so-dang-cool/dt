@@ -5,7 +5,7 @@ const allocator = std.heap.page_allocator;
 const MAX_FILE_SIZE = 1 << 12;
 
 const ChildResult = if (@hasDecl(Child, "RunResult")) Child.RunResult else Child.ExecResult;
-const run = if(@hasDecl(Child, "run")) Child.run else Child.exec;
+const run = if (@hasDecl(Child, "run")) Child.run else Child.exec;
 
 pub fn dtRunFile(file_path: []const u8) !ChildResult {
     const cur_dir = std.fs.cwd();

@@ -145,7 +145,7 @@ pub fn quit(dt: *DtMachine) !void {
 test "drop quit" {
     const dt = @import("tests/dt_test_utils.zig").dt;
 
-    var res = try dt(&.{ "drop", "quit" });
+    const res = try dt(&.{ "drop", "quit" });
     try std.testing.expectEqualStrings("", res.stdout);
     try std.testing.expectEqualStrings("", res.stderr);
     try std.testing.expectEqual(@as(u8, 0), res.term.Exited);
@@ -178,7 +178,7 @@ pub fn exit(dt: *DtMachine) !void {
 test "7 exit" {
     const dt = @import("tests/dt_test_utils.zig").dt;
 
-    var res = try dt(&.{ "7", "exit" });
+    const res = try dt(&.{ "7", "exit" });
     try std.testing.expectEqualStrings("", res.stdout);
     try std.testing.expectEqualStrings("", res.stderr);
     try std.testing.expectEqual(@as(u8, 7), res.term.Exited);
@@ -245,7 +245,7 @@ pub fn ls(dt: *DtMachine) !void {
 
     var quote = Quote.init(dt.alloc);
     while (try entries.next()) |entry| {
-        var name = try dt.alloc.dupe(u8, entry.name);
+        const name = try dt.alloc.dupe(u8, entry.name);
         try quote.append(.{ .string = name });
     }
 
@@ -278,9 +278,9 @@ pub fn readf(dt: *DtMachine) !void {
     // We get a Dir from CWD so we can resolve relative paths
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
     defer dt.alloc.free(theCwdPath);
-    var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
+    const theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
-    var contents = _readf(dt, log, theCwd, filename) catch |e| {
+    const contents = _readf(dt, log, theCwd, filename) catch |e| {
         try dt.red();
         switch (e) {
             error.IsDir => log.warn("\"{s}\" is a directory.", .{filename}),
@@ -363,9 +363,9 @@ pub fn exec(dt: *DtMachine) !void {
 
     while (childArgs.next()) |arg| try argv.append(arg);
 
-    const run = if (comptime @hasDecl(std.process.Child, "run"))std.process.Child.run else std.process.Child.exec;
+    const run = if (comptime @hasDecl(std.process.Child, "run")) std.process.Child.run else std.process.Child.exec;
 
-    var result = run(.{
+    const result = run(.{
         .allocator = dt.alloc,
         .argv = argv.items,
     }) catch |e| return dt.rewind(log, val, e);
@@ -418,7 +418,7 @@ pub fn defs(dt: *DtMachine) !void {
     var defNames = dt.defs.keyIterator();
 
     while (defNames.next()) |defName| {
-        var cmdName = try dt.alloc.dupe(u8, defName.*);
+        const cmdName = try dt.alloc.dupe(u8, defName.*);
         try quote.append(.{ .string = cmdName });
     }
 
@@ -445,7 +445,7 @@ pub fn usage(dt: *DtMachine) !void {
 
     const cmd = dt.defs.get(cmdName) orelse return dt.rewind(log, val, Error.CommandUndefined);
 
-    var description = try dt.alloc.dupe(u8, cmd.description);
+    const description = try dt.alloc.dupe(u8, cmd.description);
 
     try dt.push(.{ .string = description });
 }
@@ -482,7 +482,7 @@ pub fn @":"(dt: *DtMachine) !void {
 
     // Multiple terms
 
-    var terms = (try termVal.intoQuote(dt)).items;
+    const terms = (try termVal.intoQuote(dt)).items;
 
     var vals = try dt.alloc.alloc(Val, terms.len);
 
@@ -580,7 +580,7 @@ pub fn @".s"(dt: *DtMachine) !void {
     const stderr = std.io.getStdErr().writer();
     try stderr.print("[ ", .{});
 
-    var top = dt.nest.first orelse {
+    const top = dt.nest.first orelse {
         try stderr.print("]", .{});
         return;
     };
@@ -619,7 +619,7 @@ pub fn rls(dt: *DtMachine) !void {
 
 pub fn procname(dt: *DtMachine) !void {
     var procArgs = try std.process.argsWithAllocator(dt.alloc);
-    var name = procArgs.next() orelse return Error.ProcessNameUnknown;
+    const name = procArgs.next() orelse return Error.ProcessNameUnknown;
     try dt.push(.{ .string = name });
 }
 
@@ -639,7 +639,7 @@ pub fn eval(dt: *DtMachine) !void {
     const log = std.log.scoped(.eval);
 
     var val = try dt.pop();
-    var code = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
+    const code = val.intoString(dt) catch |e| return dt.rewind(log, val, e);
 
     var tokens = Token.parse(dt.alloc, code);
     while (try tokens.next()) |tok| {
@@ -771,10 +771,10 @@ pub fn abs(dt: *DtMachine) !void {
 
     if (val.isInt()) {
         const a = try val.intoInt();
-        
+
         // Safe abs for 0.11.x and 0.12.x
         try dt.push(.{ .int = if (a >= 0) a else -a });
-    
+
         return;
     }
 
@@ -822,8 +822,8 @@ pub fn @"lte?"(dt: *DtMachine) !void {
 pub fn boolAnd(dt: *DtMachine) !void {
     var vals = try dt.popN(2);
 
-    var a = vals[0].intoBool(dt);
-    var b = vals[1].intoBool(dt);
+    const a = vals[0].intoBool(dt);
+    const b = vals[1].intoBool(dt);
 
     try dt.push(.{ .bool = a and b });
 }
@@ -831,8 +831,8 @@ pub fn boolAnd(dt: *DtMachine) !void {
 pub fn boolOr(dt: *DtMachine) !void {
     var vals = try dt.popN(2);
 
-    var a = vals[0].intoBool(dt);
-    var b = vals[1].intoBool(dt);
+    const a = vals[0].intoBool(dt);
+    const b = vals[1].intoBool(dt);
 
     try dt.push(.{ .bool = a or b });
 }
@@ -840,7 +840,7 @@ pub fn boolOr(dt: *DtMachine) !void {
 pub fn not(dt: *DtMachine) !void {
     var val = try dt.pop();
 
-    var a = val.intoBool(dt);
+    const a = val.intoBool(dt);
     try dt.push(.{ .bool = !a });
 }
 
@@ -849,8 +849,8 @@ pub fn split(dt: *DtMachine) !void {
 
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
-    var delim = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const delim = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     if (delim.len > 0) {
         var parts = std.mem.split(u8, str, delim);
@@ -881,15 +881,15 @@ pub fn join(dt: *DtMachine) !void {
         return;
     }
 
-    var strs = try vals[0].intoQuote(dt);
-    var delim = try vals[1].intoString(dt);
+    const strs = try vals[0].intoQuote(dt);
+    const delim = try vals[1].intoString(dt);
 
     var parts = try ArrayList([]const u8).initCapacity(dt.alloc, strs.items.len);
     for (strs.items) |part| {
         const s = try part.intoString(dt);
         try parts.append(s);
     }
-    var acc = try std.mem.join(dt.alloc, delim, parts.items);
+    const acc = try std.mem.join(dt.alloc, delim, parts.items);
     try dt.push(.{ .string = acc });
 }
 
@@ -920,8 +920,8 @@ pub fn startsWith(dt: *DtMachine) !void {
 
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
-    var prefix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const prefix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = std.mem.startsWith(u8, str, prefix) });
 }
@@ -931,8 +931,8 @@ pub fn endsWith(dt: *DtMachine) !void {
 
     var vals = try dt.popN(2);
 
-    var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
-    var suffix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+    const suffix = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     try dt.push(.{ .bool = std.mem.endsWith(u8, str, suffix) });
 }
@@ -943,8 +943,8 @@ pub fn contains(dt: *DtMachine) !void {
     var vals = try dt.popN(2);
 
     if (vals[0].isString() and vals[1].isString()) {
-        var str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
-        var substr = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+        const str = vals[0].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
+        const substr = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
         try dt.push(.{ .bool = std.mem.containsAtLeast(u8, str, 1, substr) });
         return;
@@ -952,8 +952,8 @@ pub fn contains(dt: *DtMachine) !void {
 
     var child = try dt.child();
 
-    var haystack = try vals[0].intoQuote(dt);
-    var needle = vals[1];
+    const haystack = try vals[0].intoQuote(dt);
+    const needle = vals[1];
 
     for (haystack.items) |item| {
         try child.push(item);
@@ -1095,7 +1095,7 @@ fn _filter(dt: *DtMachine, as: Quote, f: Val) !void {
         try do(&child);
 
         var lastVal = try child.pop();
-        var cond = lastVal.intoBool(dt);
+        const cond = lastVal.intoBool(dt);
 
         if (cond) {
             try quote.append(a);
@@ -1130,7 +1130,7 @@ fn _any(dt: *DtMachine, as: Quote, f: Val) !void {
         try do(&child);
 
         var lastVal = try child.pop();
-        var cond = lastVal.intoBool(dt);
+        const cond = lastVal.intoBool(dt);
 
         if (cond) {
             try dt.push(Val{ .bool = true });
@@ -1161,7 +1161,7 @@ pub fn pop(dt: *DtMachine) !void {
 pub fn push(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
 
-    var pushMe = vals[1];
+    const pushMe = vals[1];
     var quote = try vals[0].intoQuote(dt);
 
     try quote.append(pushMe);
@@ -1171,8 +1171,8 @@ pub fn push(dt: *DtMachine) !void {
 pub fn enq(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
 
-    var pushMe = vals[0];
-    var quote = try vals[1].intoQuote(dt);
+    const pushMe = vals[0];
+    const quote = try vals[1].intoQuote(dt);
 
     var newQuote = Quote.init(dt.alloc);
     try newQuote.append(pushMe);
@@ -1217,7 +1217,7 @@ pub fn ellipsis(dt: *DtMachine) !void {
 
     const val = try dt.pop();
 
-    var quote = val.intoQuote(dt) catch |e| return dt.rewind(log, val, e);
+    const quote = val.intoQuote(dt) catch |e| return dt.rewind(log, val, e);
 
     // TODO: Push as slice
     for (quote.items) |v| {
@@ -1240,7 +1240,7 @@ pub fn rev(dt: *DtMachine) !void {
             newItems[length - i - 1] = v;
         }
 
-        var newQuote = Quote.fromOwnedSlice(dt.alloc, newItems);
+        const newQuote = Quote.fromOwnedSlice(dt.alloc, newItems);
 
         try dt.push(.{ .quote = newQuote });
         return;
@@ -1295,7 +1295,7 @@ pub fn concat(dt: *DtMachine) !void {
     const vals = try dt.popN(2);
 
     var a = try vals[0].intoQuote(dt);
-    var b = try vals[1].intoQuote(dt);
+    const b = try vals[1].intoQuote(dt);
 
     try a.appendSlice(b.items);
 

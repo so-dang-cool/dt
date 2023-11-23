@@ -154,15 +154,15 @@ pub const Val = union(enum) {
     pub fn deepClone(self: Val, state: *DtMachine) anyerror!Val {
         switch (self) {
             .string => |s| {
-                var cloned = try state.alloc.dupe(u8, s);
+                const cloned = try state.alloc.dupe(u8, s);
                 return .{ .string = cloned };
             },
             .command => |cmd| {
-                var cloned = try state.alloc.dupe(u8, cmd);
+                const cloned = try state.alloc.dupe(u8, cmd);
                 return .{ .command = cloned };
             },
             .deferred_command => |cmd| {
-                var cloned = try state.alloc.dupe(u8, cmd);
+                const cloned = try state.alloc.dupe(u8, cmd);
                 return .{ .deferred_command = cloned };
             },
             .quote => |q| return .{ .quote = try _deepClone(q, state) },

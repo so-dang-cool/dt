@@ -38,7 +38,7 @@ pub const DtMachine = struct {
 
     pub fn init(alloc: Allocator) !DtMachine {
         var nest = Stack(Quote){};
-        var mainNode = try alloc.create(Stack(Quote).Node);
+        const mainNode = try alloc.create(Stack(Quote).Node);
         mainNode.* = Stack(Quote).Node{ .data = Quote.init(alloc) };
         nest.prepend(mainNode);
 
@@ -87,7 +87,7 @@ pub const DtMachine = struct {
 
                 self.depth -= 1;
 
-                var context = try self.popContext();
+                const context = try self.popContext();
                 try self.push(Val{ .quote = context });
             },
             .bool => |b| try self.push(Val{ .bool = b }),
@@ -224,19 +224,19 @@ pub const DtMachine = struct {
     }
 
     pub fn pushContext(self: *DtMachine) !void {
-        var node = try self.alloc.create(Stack(Quote).Node);
+        const node = try self.alloc.create(Stack(Quote).Node);
         node.* = .{ .data = Quote.init(self.alloc) };
         self.nest.prepend(node);
     }
 
     pub fn popContext(self: *DtMachine) !Quote {
-        var node = self.nest.popFirst() orelse return Error.ContextStackUnderflow;
+        const node = self.nest.popFirst() orelse return Error.ContextStackUnderflow;
         return node.data;
     }
 
     pub fn quoteContext(self: *DtMachine) !void {
-        var node = self.nest.popFirst();
-        var quote = if (node) |n| n.data else Quote.init(self.alloc);
+        const node = self.nest.popFirst();
+        const quote = if (node) |n| n.data else Quote.init(self.alloc);
 
         if (self.nest.first == null) try self.pushContext();
 
