@@ -1150,7 +1150,7 @@ pub fn pop(dt: *DtMachine) !void {
 
     if (quote.items.len > 0) {
         const lastVal = quote.pop();
-        try dt.push(Val{ .quote = quote });
+        try dt.push(.{ .quote = quote });
         try dt.push(lastVal);
         return;
     }
