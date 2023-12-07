@@ -130,7 +130,7 @@ configuration files to set an alias that persists will vary by your shell.
 
 [![FlakeHub](https://img.shields.io/endpoint?url=https://flakehub.com/f/so-dang-cool/dt/badge)](https://flakehub.com/flake/so-dang-cool/dt)
 
-More ways to install: https://dt.plumbing/user-guide/tutorial/install.html
+More ways to install: https://dt.plumbing/user-guide/install.html
 
 
 ## Community and resources
