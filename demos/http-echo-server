@@ -1,0 +1,23 @@
+#!/bin/sh
+
+if ! command -v nc >/dev/null
+then
+  >&2 echo 'Requires netcat (nc) on PATH'
+  exit 1
+elif ! command -v nc >/dev/null
+then
+  >&2 echo 'Requires dt on PATH'
+  exit 1
+fi
+
+while true
+do
+    nc -l 5555 | dt \
+      'deq swap words ... [body method path scheme]:' \
+      '"method: " p method pl' \
+      '"  path: " p path pl' \
+      '"scheme: " p scheme pl' \
+      '"=== body ====" pl ' \
+      'body pls' \
+      '"=== /body ===" pl'
+done
