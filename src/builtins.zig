@@ -237,11 +237,13 @@ test "\".\" cd" {
 }
 
 pub fn ls(dt: *DtMachine) !void {
-    const theCwd = try std.process.getCwdAlloc(dt.alloc);
-    defer dt.alloc.free(theCwd);
-
-    var dir = try std.fs.openIterableDirAbsolute(theCwd, .{});
-    var entries = dir.iterate();
+    var theCwd = if (comptime @hasDecl(std.fs.Dir, "openIterableDir"))
+        // Zig 0.11
+        try std.fs.cwd().openIterableDir("/", .{})
+    else
+        // Zig 0.12
+        try std.fs.cwd().openDir("/", .{ .iterate = true });
+    var entries = theCwd.iterate();
 
     var quote = Quote.init(dt.alloc);
     while (try entries.next()) |entry| {
@@ -251,7 +253,7 @@ pub fn ls(dt: *DtMachine) !void {
 
     try dt.push(.{ .quote = quote });
 
-    dir.close();
+    theCwd.close();
 }
 
 test "ls" {

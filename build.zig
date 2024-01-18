@@ -1,9 +1,10 @@
 const std = @import("std");
+const LazyPath = if (@hasDecl(std.Build, "LazyPath")) std.Build.LazyPath else std.Build.FileSource;
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-    const root_source_file = std.Build.FileSource.relative("src/main.zig");
+    const root_source_file = LazyPath.relative("src/main.zig");
 
     // Dt executable
     const dt_step = b.step("dt", "Install dt executable");
@@ -25,16 +26,23 @@ pub fn build(b: *std.Build) !void {
     inline for (TRIPLES) |TRIPLE| {
         const exe = "dt-" ++ TRIPLE;
 
-        const cross = b.addExecutable(.{
+        const query = try std.zig.CrossTarget.parse(.{ .arch_os_abi = TRIPLE });
+
+        const cross: *std.Build.Step.Compile = b.addExecutable(.{
             .name = exe,
             .root_source_file = root_source_file,
             .optimize = optimize,
-            .target = try std.zig.CrossTarget.parse(.{ .arch_os_abi = TRIPLE }),
+            .target = if (comptime @hasDecl(std.zig.system, "resolveTargetQuery"))
+                // Zig 0.12
+                .{ .query = query, .result = try std.zig.system.resolveTargetQuery(query) }
+            else
+                // Zig 0.11
+                query,
         });
 
         const cross_install = b.addInstallArtifact(cross, .{});
 
-        const exe_filename = if (cross.target.cpu_arch == .wasm32) exe ++ ".wasm" else if (cross.target.os_tag == .windows) exe ++ ".exe" else exe;
+        const exe_filename = if (query.cpu_arch == .wasm32) exe ++ ".wasm" else if (query.os_tag == .windows) exe ++ ".exe" else exe;
 
         const cross_tar = b.addSystemCommand(&.{
             "tar", "--transform", "s|" ++ exe ++ "|dt|", "-czvf", exe ++ ".tgz", exe_filename,
@@ -42,7 +50,7 @@ pub fn build(b: *std.Build) !void {
 
         if (comptime @hasDecl(@TypeOf(cross_tar.*), "setCwd")) {
             // Zig 0.12.0
-            cross_tar.setCwd(.{ .path="./zig-out/bin/"});
+            cross_tar.setCwd(.{ .path = "./zig-out/bin/" });
         } else {
             // Zig 0.11.0
             cross_tar.cwd = "./zig-out/bin/";
@@ -94,5 +102,5 @@ const TRIPLES = .{
     "x86-linux-gnu",
     "x86-linux-musl",
     "x86-windows-gnu",
-    "x86_64-windows-gnu"
+    "x86_64-windows-gnu",
 };
