@@ -334,7 +334,7 @@ pub fn writef(dt: *DtMachine) !void {
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
     const Dir = std.fs.Dir;
-    if (comptime @hasDecl(Dir, "WriteFileOptions") and @typeInfo(@TypeOf(Dir.writeFile)).Fn.params[1].type == Dir.WriteFileOptions) {
+    if (comptime @hasDecl(Dir, "WriteFileOptions") and @typeInfo(@TypeOf(Dir.writeFile)).@"fn".params[1].type == Dir.WriteFileOptions) {
         // Zig 0.13
         try theCwd.writeFile(.{ .data = contents, .sub_path = filename });
     } else {
@@ -864,7 +864,7 @@ pub fn split(dt: *DtMachine) !void {
     const delim = vals[1].intoString(dt) catch |e| return dt.rewindN(2, log, vals, e);
 
     if (delim.len > 0) {
-        var parts = std.mem.split(u8, str, delim);
+        var parts = std.mem.splitSequence(u8, str, delim);
         var quote = Quote.init(dt.alloc);
         while (parts.next()) |part| {
             try quote.append(.{ .string = part });
@@ -1160,7 +1160,7 @@ pub fn pop(dt: *DtMachine) !void {
     var quote = try val.intoQuote(dt);
 
     if (quote.items.len > 0) {
-        const lastVal = quote.pop();
+        const lastVal = quote.pop().?;
         try dt.push(.{ .quote = quote });
         try dt.push(lastVal);
         return;

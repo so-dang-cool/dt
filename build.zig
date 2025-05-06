@@ -28,7 +28,7 @@ pub fn build(b: *Build) !void {
     inline for (TRIPLES) |TRIPLE| {
         const exe = "dt-" ++ TRIPLE;
 
-        const query = try std.zig.CrossTarget.parse(.{ .arch_os_abi = TRIPLE });
+        const query = try std.Target.Query.parse(.{ .arch_os_abi = TRIPLE });
 
         const cross = b.addExecutable(.{
             .name = exe,
@@ -75,10 +75,10 @@ pub fn build(b: *Build) !void {
 
     const test_exe =
         b.addTest(.{
-        .root_source_file = root_source_file,
-        .optimize = optimize,
-        .target = target,
-    });
+            .root_source_file = root_source_file,
+            .optimize = optimize,
+            .target = target,
+        });
 
     const test_run = b.addRunArtifact(test_exe);
     test_run.step.dependOn(dt_step);

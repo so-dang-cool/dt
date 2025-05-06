@@ -202,7 +202,7 @@ pub const DtMachine = struct {
         if (top.data.items.len < 1) {
             return Error.StackUnderflow;
         }
-        return top.data.pop();
+        return top.data.pop().?;
     }
 
     // Removes and returns top N values from the stack from oldest to youngest. Last index is the most recent, 0 is the oldest.
