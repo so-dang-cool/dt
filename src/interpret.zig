@@ -1,7 +1,7 @@
 const std = @import("std");
 const Color = std.io.tty.Color;
 const ArrayList = std.ArrayList;
-const Stack = std.SinglyLinkedList;
+const SinglyLinkedList = std.SinglyLinkedList;
 const Allocator = std.mem.Allocator;
 // const stdin = std.io.getStdIn().reader();
 // const stdout = std.io.getStdOut().writer();
@@ -20,10 +20,23 @@ const Dictionary = types.Dictionary;
 const Val = types.Val;
 const Quote = types.Quote;
 
+pub const Context = struct {
+    data: Quote,
+    node: SinglyLinkedList.Node,
+
+    pub fn init(alloc: Allocator) Context {
+        return .{ .data = Quote.init(alloc), .node = .{} };
+    }
+
+    pub fn deinit(self: *Context) void {
+        self.data.deinit();
+    }
+};
+
 pub const DtMachine = struct {
     alloc: Allocator,
 
-    nest: Stack(ArrayList(Val)),
+    nest: SinglyLinkedList,
     depth: u8,
 
     defs: Dictionary,
@@ -37,28 +50,26 @@ pub const DtMachine = struct {
     inspiration: ArrayList(String),
 
     pub fn init(alloc: Allocator) !DtMachine {
-        var nest = Stack(Quote){};
-        const mainNode = try alloc.create(Stack(Quote).Node);
-        mainNode.* = Stack(Quote).Node{ .data = Quote.init(alloc) };
-        nest.prepend(mainNode);
-
-        var inspirations = ArrayList(String).init(alloc);
-        var lines = std.mem.tokenizeScalar(u8, inspiration, '\n');
-        while (lines.next()) |line| {
-            try inspirations.append(line);
-        }
-
-        return .{
+        var machine: DtMachine = .{
             .alloc = alloc,
-            .nest = nest,
+            .nest = .{},
             .depth = 0,
             .defs = Dictionary.init(alloc),
             .stdoutConfig = std.io.tty.detectConfig(std.io.getStdOut()),
             .stderrConfig = std.io.tty.detectConfig(std.io.getStdErr()),
             .stdout = std.io.getStdOut().writer(),
             .stderr = std.io.getStdErr().writer(),
-            .inspiration = inspirations,
+            .inspiration = ArrayList(String).init(alloc),
         };
+
+        try machine.pushContext();
+
+        var lines = std.mem.tokenizeScalar(u8, inspiration, '\n');
+        while (lines.next()) |line| {
+            try machine.inspiration.append(line);
+        }
+
+        return machine;
     }
 
     pub fn deinit(self: *DtMachine) void {
@@ -68,8 +79,9 @@ pub const DtMachine = struct {
         var node = self.nest.first;
         while (node) |n| {
             node = n.next;
-            n.data.deinit();
-            self.alloc.destroy(n);
+            const context: *Context = @fieldParentPtr("node", n);
+            context.deinit();
+            self.alloc.destroy(context);
         }
     }
 
@@ -188,8 +200,8 @@ pub const DtMachine = struct {
     }
 
     pub fn push(self: *DtMachine, val: Val) !void {
-        var top = self.nest.first orelse return Error.ContextStackUnderflow;
-        try top.data.append(val);
+        const top = try self.getContext();
+        try top.append(val);
     }
 
     pub fn pushN(self: *DtMachine, comptime n: comptime_int, vals: [n]Val) !void {
@@ -198,11 +210,11 @@ pub const DtMachine = struct {
     }
 
     pub fn pop(self: *DtMachine) !Val {
-        var top = self.nest.first orelse return Error.ContextStackUnderflow;
-        if (top.data.items.len < 1) {
+        const top = try self.getContext();
+        if (top.items.len < 1) {
             return Error.StackUnderflow;
         }
-        return top.data.pop().?;
+        return top.pop().?;
     }
 
     // Removes and returns top N values from the stack from oldest to youngest. Last index is the most recent, 0 is the oldest.
@@ -224,19 +236,28 @@ pub const DtMachine = struct {
     }
 
     pub fn pushContext(self: *DtMachine) !void {
-        const node = try self.alloc.create(Stack(Quote).Node);
-        node.* = .{ .data = Quote.init(self.alloc) };
-        self.nest.prepend(node);
+        const context = try self.alloc.create(Context);
+        context.* = Context.init(self.alloc);
+        self.nest.prepend(&context.node);
+    }
+
+    pub fn getContext(self: *DtMachine) !*Quote {
+        const node = self.nest.first orelse return Error.ContextStackUnderflow;
+        const context: *Context = @fieldParentPtr("node", node);
+        return &context.data;
     }
 
     pub fn popContext(self: *DtMachine) !Quote {
         const node = self.nest.popFirst() orelse return Error.ContextStackUnderflow;
-        return node.data;
+        const context: *Context = @fieldParentPtr("node", node);
+        const quote = context.data;
+        self.alloc.destroy(context);
+        return quote;
     }
 
     pub fn quoteContext(self: *DtMachine) !void {
         const node = self.nest.popFirst();
-        const quote = if (node) |n| n.data else Quote.init(self.alloc);
+        const quote = if (node) |n| @as(*Context, @fieldParentPtr("node", n)).data else Quote.init(self.alloc);
 
         if (self.nest.first == null) try self.pushContext();
 

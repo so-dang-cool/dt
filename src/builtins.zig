@@ -5,6 +5,7 @@ const osChdir = if (@hasDecl(std, "posix")) std.posix.chdir else std.os.chdir;
 
 const interpret = @import("interpret.zig");
 const Command = interpret.Command;
+const Context = interpret.Context;
 const DtMachine = interpret.DtMachine;
 
 const types = @import("types.zig");
@@ -591,10 +592,12 @@ pub fn @".s"(dt: *DtMachine) !void {
     const stderr = std.io.getStdErr().writer();
     try stderr.print("[ ", .{});
 
-    const top = dt.nest.first orelse {
+    const node = dt.nest.first orelse {
         try stderr.print("]", .{});
         return;
     };
+
+    const top: *Context = @fieldParentPtr("node", node);
 
     for (top.data.items) |val| {
         try val.print(stderr);
@@ -1298,7 +1301,8 @@ pub fn quoteAll(dt: *DtMachine) !void {
 }
 
 pub fn @"anything?"(dt: *DtMachine) !void {
-    const top = dt.nest.first orelse return Error.ContextStackUnderflow;
+    const node = dt.nest.first orelse return Error.ContextStackUnderflow;
+    const top: *Context = @fieldParentPtr("node", node);
     try dt.push(.{ .bool = top.data.items.len != 0 });
 }
 
