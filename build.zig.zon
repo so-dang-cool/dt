@@ -1,5 +1,6 @@
 .{
-    .name = "dt",
+    .fingerprint = 0x1720097920e57ecd,
+    .name = .dt,
     .version = "2.0.0-rc", // Update in main.zig as well
     .paths = .{""},
 }
