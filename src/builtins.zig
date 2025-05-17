@@ -123,6 +123,7 @@ pub fn defineAll(dt: *DtMachine) !void {
     try dt.define("to-quote", "( a -- [...] ) Coerce value to a quote. To quote a quote, use quote.", .{ .builtin = @"to-quote" });
 
     try dt.define("inspire", "( -- wisdom ) Get inspiration.", .{ .builtin = inspire });
+    try dt.define("buildinfo", "( -- buildinfo ) Get details on how the current dt was built.", .{ .builtin = buildinfo });
 }
 
 pub fn quit(dt: *DtMachine) !void {
@@ -1368,4 +1369,15 @@ pub fn @"to-quote"(dt: *DtMachine) !void {
 pub fn inspire(dt: *DtMachine) !void {
     const i = std.crypto.random.uintLessThan(usize, dt.inspiration.items.len);
     try dt.push(.{ .string = dt.inspiration.items[i] });
+}
+
+// Highly recommend to not take a dependency on the text format here. Only
+// expect that output will be a single string.
+pub fn buildinfo(dt: *DtMachine) !void {
+    const infoBits: [2][]const u8 = .{
+        "zig version:",
+        builtin.zig_version_string,
+    };
+    const info = try std.mem.join(dt.alloc, " ", &infoBits);
+    try dt.push(.{ .string = info });
 }
