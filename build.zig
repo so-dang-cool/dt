@@ -28,7 +28,14 @@ pub fn build(b: *Build) !void {
     inline for (TRIPLES) |TRIPLE| {
         const exe = "dt-" ++ TRIPLE;
 
-        const query = try std.Target.Query.parse(.{ .arch_os_abi = TRIPLE });
+        const targetParser = if (comptime @hasDecl(std.Target, "Query"))
+            // Zig 0.14
+            std.Target.Query
+        else
+            // Zig 0.13
+            std.zig.CrossTarget;
+
+        const query = try targetParser.parse(.{ .arch_os_abi = TRIPLE });
 
         const cross = b.addExecutable(.{
             .name = exe,
