@@ -8,7 +8,7 @@ const interpret = @import("interpret.zig");
 const DtMachine = interpret.DtMachine;
 
 // TODO: Change to @import when it's supported for zon
-pub const version = "2.0.0-rc"; // Update in build.zig.zon as well.
+pub const version = "1.3.2"; // Update in build.zig.zon as well.
 
 const stdlib = @embedFile("stdlib.dt");
 const dtlib = @embedFile("dt.dt");
