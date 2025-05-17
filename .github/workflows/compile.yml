@@ -27,6 +27,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: futz with build.zig.zon (name)
+        if: matrix.zig_version != '0.14.0'
+        run: |
+          sed -i 's/\.dt/"dt"/' build.zig.zon
+
       - name: zig build
         run: |
           zig env

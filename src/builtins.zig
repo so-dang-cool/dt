@@ -334,9 +334,8 @@ pub fn writef(dt: *DtMachine) !void {
     const theCwdPath = try std.process.getCwdAlloc(dt.alloc);
     var theCwd = try std.fs.openDirAbsolute(theCwdPath, .{});
 
-    const Dir = std.fs.Dir;
-    if (comptime @hasDecl(Dir, "WriteFileOptions") and @typeInfo(@TypeOf(Dir.writeFile)).@"fn".params[1].type == Dir.WriteFileOptions) {
-        // Zig 0.13
+    if (builtin.zig_version.major == 0 and builtin.zig_version.minor >= 13) {
+        // Zig 0.14, 0.13
         try theCwd.writeFile(.{ .data = contents, .sub_path = filename });
     } else {
         // Zig 0.12, 0.11
@@ -1161,9 +1160,9 @@ pub fn pop(dt: *DtMachine) !void {
     var quote = try val.intoQuote(dt);
 
     if (quote.items.len > 0) {
-        const lastVal = quote.pop().?;
+        const lastVal = quote.pop();
         try dt.push(.{ .quote = quote });
-        try dt.push(lastVal);
+        try dt.push(if (@TypeOf(lastVal) == ?Val) lastVal.? else lastVal);
         return;
     }
 
